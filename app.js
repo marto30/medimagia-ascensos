@@ -502,9 +502,9 @@ function buildStudentRow(n) {
   const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
   const pct    = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
   const safe   = safeStr(n);
-  const statusCell = asc && nextRk
-    ? `<span class="asc-yes">↑ ${nextRk}</span>`
-    : `<span class="asc-no">—</span>`;
+  const statusCell = grad
+    ? `<span class="asc-yes">🎓 Graduado</span>`
+    : asc && nextRk ? `<span class="asc-yes">↑ ${nextRk}</span>` : `<span class="asc-no">—</span>`;
   const gradBtnCls   = `btn btn-grad sm${grad ? " is-grad" : ""}`;
   const gradBtnTitle = grad ? "Revocar graduación" : "Graduar del Colegio";
   const gradBtnLabel = grad ? "🎓 Grad." : "🎓";
@@ -543,14 +543,10 @@ function renderList() {
     return;
   }
 
-  // Agrupar por rango; graduados van al final
+  // Agrupar por rango — graduados se quedan en su rango
   const groups = {};
   for (const rk of RANKS_ORDER) groups[rk] = [];
-  groups["Graduado"] = [];
-  for (const n of allNames) {
-    if (allGraduated[n]) groups["Graduado"].push(n);
-    else groups[getCurrentRank(allStudents[n])].push(n);
-  }
+  for (const n of allNames) groups[getCurrentRank(allStudents[n])].push(n);
 
   // Ordenar dentro de cada grupo con el sort activo
   const sorter = (a, b) => {
@@ -559,19 +555,18 @@ function renderList() {
     if (va > vb) return  listSort.dir;
     return norm(a).localeCompare(norm(b));
   };
-  for (const key of Object.keys(groups)) groups[key].sort(sorter);
+  for (const rk of RANKS_ORDER) groups[rk].sort(sorter);
 
   const rkBadge = { Aprendiz:"rk-Aprendiz", Principiante:"rk-Principiante",
-                    Intermedio:"rk-Intermedio", Avanzado:"rk-Avanzado", Graduado:"rk-Graduado" };
+                    Intermedio:"rk-Intermedio", Avanzado:"rk-Avanzado" };
 
-  const html = [...RANKS_ORDER, "Graduado"].map(rk => {
+  const html = RANKS_ORDER.map(rk => {
     const members = groups[rk];
     if (!members.length) return "";
-    const label  = rk === "Graduado" ? "Graduados del Colegio" : rk;
-    const count  = members.length;
+    const count = members.length;
     return `<div class="rank-section">
       <div class="rank-section-header">
-        <span class="rank-badge ${rkBadge[rk]}">${label}</span>
+        <span class="rank-badge ${rkBadge[rk]}">${rk}</span>
         <span class="rank-count">${count} alumno${count !== 1 ? "s" : ""}</span>
       </div>
       ${buildRankTable(members)}
