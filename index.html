@@ -57,6 +57,7 @@ input::placeholder{color:#3a3530}
 .rk-Principiante{background:rgba(70,130,180,.14);border:1px solid rgba(70,130,180,.3);color:#7ab0d4}
 .rk-Intermedio{background:rgba(60,179,113,.14);border:1px solid rgba(60,179,113,.3);color:#5bc49a}
 .rk-Avanzado{background:rgba(148,0,211,.14);border:1px solid rgba(148,0,211,.32);color:#b06ad4}
+.rk-Graduado{background:linear-gradient(135deg,rgba(212,175,55,.28),rgba(240,210,80,.1));border:1px solid rgba(212,175,55,.7);color:#f0d060;box-shadow:0 0 14px rgba(212,175,55,.25);font-weight:bold;letter-spacing:.08em}
 .admin-badge{display:inline-block;background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);color:#a09050;font-size:.7rem;padding:.12rem .55rem;border-radius:12px;margin-left:.6rem;vertical-align:middle}
 .ov-wrap{max-width:400px;margin:0 auto 1.5rem}
 .ov-labels{display:flex;justify-content:space-between;font-size:.78rem;color:#6a6060;margin-bottom:.4rem}
@@ -106,6 +107,25 @@ input::placeholder{color:#3a3530}
 .spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(212,175,55,.2);border-top-color:#d4af37;border-radius:50%;animation:spin .8s linear infinite;margin-right:.5rem;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty-state{color:#4a4540;font-size:.88rem;font-style:italic;padding:1rem 0}
+/* Graduation */
+.grad-banner{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(212,175,55,.16),rgba(180,140,20,.06));border:1px solid rgba(212,175,55,.55);border-radius:14px;padding:1.5rem 1.6rem;text-align:center;margin-bottom:1.3rem}
+.grad-banner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,rgba(212,175,55,.2) 0%,transparent 65%);pointer-events:none}
+.grad-banner::after{content:'✦  ✧  ✦  ✧  ✦';position:absolute;top:.5rem;left:0;right:0;text-align:center;font-size:.65rem;color:rgba(212,175,55,.35);letter-spacing:.4em;pointer-events:none}
+.grad-banner .grad-icon{font-size:2.4rem;margin-bottom:.4rem;filter:drop-shadow(0 0 10px rgba(212,175,55,.5))}
+.grad-banner .big{font-size:1.45rem;color:#f0d060;margin-bottom:.25rem;text-shadow:0 0 20px rgba(212,175,55,.4)}
+.grad-banner .sub{font-size:.84rem;color:#a09050}
+.grad-banner .grad-divider{margin:.5rem auto;width:60px;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,.5),transparent)}
+.card.grad-card{border-color:rgba(212,175,55,.5);box-shadow:0 0 28px rgba(212,175,55,.1),inset 0 0 40px rgba(212,175,55,.03)}
+.grad-row{background:rgba(212,175,55,.05)!important}
+.grad-row td{border-bottom-color:rgba(212,175,55,.12)!important}
+.grad-badge-inline{display:inline-flex;align-items:center;gap:.25rem;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.4);color:#d4af37;font-size:.72rem;padding:.1rem .5rem;border-radius:10px;margin-left:.4rem;vertical-align:middle}
+/* Graduados grid */
+.grad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.85rem;margin-top:.5rem}
+.grad-card-item{background:linear-gradient(135deg,rgba(212,175,55,.1),rgba(180,140,20,.05));border:1px solid rgba(212,175,55,.4);border-radius:12px;padding:1.1rem 1.2rem;text-align:center;position:relative;overflow:hidden}
+.grad-card-item::before{content:'';position:absolute;top:-30%;left:-30%;width:160%;height:160%;background:radial-gradient(ellipse at 50% 30%,rgba(212,175,55,.08) 0%,transparent 60%);pointer-events:none}
+.grad-card-item .g-icon{font-size:1.8rem;margin-bottom:.4rem;display:block}
+.grad-card-item .g-name{font-size:.92rem;color:#e8c860;margin-bottom:.2rem}
+.grad-card-item .g-rank{font-size:.75rem;color:#7a6a30}
 /* Rank selector */
 .rank-selector{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.4rem}
 @media(max-width:480px){.rank-selector{grid-template-columns:repeat(2,1fr)}}
@@ -187,6 +207,7 @@ input::placeholder{color:#3a3530}
     <div class="rk-grid" id="pGrid"></div>
     <div class="save-row">
       <button class="btn success" id="saveBtn" onclick="guardarCambios()">Guardar cambios</button>
+      <button class="btn" id="gradBtn" style="display:none" onclick="toggleGraduation()"></button>
       <span class="saved-msg" id="savedMsg">✓ Guardado</span>
     </div>
   </div>
@@ -214,6 +235,7 @@ input::placeholder{color:#3a3530}
   <div class="admin-tabs">
     <button class="tab active" onclick="showTab('tabList')">Lista de alumnos</button>
     <button class="tab" onclick="showTab('tabAscensos')">Ascensos</button>
+    <button class="tab" onclick="showTab('tabGrad')">Graduados</button>
     <button class="tab" onclick="showTab('tabAdd')">Crear alumno</button>
   </div>
 
@@ -227,6 +249,11 @@ input::placeholder{color:#3a3530}
   <div class="admin-section" id="tabAscensos">
     <p class="notice">Alumnos que superan el <strong>67 %</strong> en su rango y pueden ascender.</p>
     <div id="ascTable"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
+  </div>
+
+  <div class="admin-section" id="tabGrad">
+    <p class="notice">Alumnos que han sido <strong>graduados</strong> por un administrador.</p>
+    <div id="gradListWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
   </div>
 
   <div class="admin-section" id="tabAdd">
@@ -343,32 +370,38 @@ document.getElementById('confirmModal').addEventListener('click',e=>{if(e.target
 
 // ---- FIRESTORE ----
 let allStudents={};
+let allGraduated={};
 let isAdmin=false;
+
+function docId(name){return name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'X');}
 
 async function loadAllStudents(){
   const snap=await getDocs(collection(db,'alumnos'));
-  allStudents={};
+  allStudents={};allGraduated={};
   if(snap.empty){
     for(const[name,spells]of Object.entries(BASE_DATA)){
-      const id=name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'X');
-      await setDoc(doc(db,'alumnos',id),{name,spells});
-      allStudents[name]=spells;
+      const id=docId(name);
+      await setDoc(doc(db,'alumnos',id),{name,spells,graduated:false});
+      allStudents[name]=spells;allGraduated[name]=false;
     }
   } else {
-    snap.forEach(d=>{const data=d.data();allStudents[data.name]=data.spells;});
+    snap.forEach(d=>{const data=d.data();allStudents[data.name]=data.spells;allGraduated[data.name]=data.graduated||false;});
   }
 }
 
 async function saveStudent(name,spells){
-  const id=name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'X');
-  await setDoc(doc(db,'alumnos',id),{name,spells});
+  await setDoc(doc(db,'alumnos',docId(name)),{name,spells,graduated:allGraduated[name]||false});
   allStudents[name]=spells;
 }
 
+async function setGraduated(name,val){
+  allGraduated[name]=val;
+  await setDoc(doc(db,'alumnos',docId(name)),{name,spells:allStudents[name],graduated:val});
+}
+
 async function deleteStudent(name){
-  const id=name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'X');
-  await deleteDoc(doc(db,'alumnos',id));
-  delete allStudents[name];
+  await deleteDoc(doc(db,'alumnos',docId(name)));
+  delete allStudents[name];delete allGraduated[name];
 }
 
 // ---- UI STATE ----
@@ -428,13 +461,28 @@ function renderProfile(){
   const all=allSpells();
   const totalPct=Math.round(all.filter(s=>sp[s]).length/all.length*100);
 
+  const graduated=allGraduated[name]||false;
   document.getElementById('pName').textContent=name;
   const rkEl=document.getElementById('pRank');
-  rkEl.textContent=rank;rkEl.className='rank-badge rk-'+rank;
+  if(graduated){rkEl.textContent='Graduado';rkEl.className='rank-badge rk-Graduado';}
+  else{rkEl.textContent=rank;rkEl.className='rank-badge rk-'+rank;}
   document.getElementById('adminBadge').style.display=isAdmin?'inline':'none';
 
+  const profileCard=document.querySelector('#scProfile .card');
+  if(graduated)profileCard.classList.add('grad-card');
+  else profileCard.classList.remove('grad-card');
+
+  const gradBtn=document.getElementById('gradBtn');
+  if(isAdmin){
+    gradBtn.style.display='inline-flex';
+    gradBtn.textContent=graduated?'✕ Revocar graduación':'🎓 Graduar alumno';
+    gradBtn.className=graduated?'btn danger':'btn';
+  } else {gradBtn.style.display='none';}
+
   const banner=document.getElementById('ascBanner');
-  if(ascending&&nextRank){
+  if(graduated){
+    banner.innerHTML=`<div class="grad-banner"><div class="grad-icon">🎓</div><div class="big">Graduado/a de Medimagia</div><div class="grad-divider"></div><div class="sub">Ha completado su formación con distinción.</div></div>`;
+  } else if(ascending&&nextRank){
     banner.innerHTML=`<div class="ascenso-banner"><div class="big">✦ Listo para ascender a ${nextRank}</div><div class="sub">Has alcanzado el ${ASCENSO_PCT}% en ${rank}. Contacta con un administrador.</div></div>`;
   } else if(rank===RANKS_ORDER[RANKS_ORDER.length-1]&&getRkPct(sp,rank).pct>=ASCENSO_PCT){
     banner.innerHTML=`<div class="ascenso-banner"><div class="big">✦ Rango máximo alcanzado</div><div class="sub">Has completado todos los hechizos Avanzados.</div></div>`;
