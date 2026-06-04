@@ -383,7 +383,39 @@ input::placeholder { color: var(--text-ghost); }
 .student-table tr:hover td { background: rgba(255,255,255,.025); }
 .asc-yes { color: var(--green); font-size: .78rem; }
 .asc-no  { color: #3a3530; font-size: .78rem; }
-.td-actions { display: flex; gap: .4rem; }
+.td-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+/* Sortable column headers */
+.th-sort {
+  cursor: pointer; user-select: none;
+  white-space: nowrap; transition: color var(--t);
+}
+.th-sort:hover { color: var(--gold); }
+.sort-arr { font-size: .65rem; margin-left: .25rem; color: #2a2520; }
+.sort-arr.on { color: var(--gold); }
+
+/* Graduation toggle button in list */
+.btn.btn-grad {
+  background: rgba(212,175,55,.06);
+  border-color: rgba(212,175,55,.2);
+  color: #5a5040;
+  font-size: .78rem; padding: .35rem .65rem;
+}
+.btn.btn-grad:hover {
+  background: rgba(212,175,55,.14);
+  border-color: rgba(212,175,55,.4);
+  color: var(--gold);
+}
+.btn.btn-grad.is-grad {
+  background: rgba(212,175,55,.16);
+  border-color: rgba(212,175,55,.55);
+  color: var(--gold-light);
+}
+.btn.btn-grad.is-grad:hover {
+  background: var(--red-dim);
+  border-color: rgba(192,80,74,.45);
+  color: var(--red);
+}
 
 /* Graduated row highlight */
 .grad-row td { background: rgba(212,175,55,.03) !important; border-bottom-color: rgba(212,175,55,.1) !important; }
