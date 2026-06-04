@@ -568,10 +568,11 @@ window.showTab=function(id){
   document.querySelectorAll('.admin-section').forEach(el=>el.className='admin-section');
   document.querySelectorAll('.tab').forEach(el=>el.className='tab');
   document.getElementById(id).className='admin-section show';
-  const idx={'tabList':0,'tabAscensos':1,'tabAdd':2}[id];
+  const idx={'tabList':0,'tabAscensos':1,'tabGrad':2,'tabAdd':3}[id];
   document.querySelectorAll('.tab')[idx].className='tab active';
   if(id==='tabAscensos')renderAscensos();
   if(id==='tabList')renderList();
+  if(id==='tabGrad')renderGraduados();
 };
 
 function renderList(){
