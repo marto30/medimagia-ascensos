@@ -417,6 +417,22 @@ input::placeholder { color: var(--text-ghost); }
   color: var(--red);
 }
 
+/* Grouped rank sections in admin list */
+.rank-section { margin-bottom: 1.6rem; }
+.rank-section:last-child { margin-bottom: 0; }
+.rank-section-header {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .55rem .5rem .55rem 0;
+  border-bottom: 1px solid var(--border-sub);
+  margin-bottom: .2rem;
+}
+.rank-section-header .rank-badge { font-size: .78rem; }
+.rank-count {
+  font-size: .75rem; color: #4a4540;
+  margin-left: auto;
+}
+.rank-section .student-table tr:last-child td { border-bottom: none; }
+
 /* Graduated row highlight */
 .grad-row td { background: rgba(212,175,55,.03) !important; border-bottom-color: rgba(212,175,55,.1) !important; }
 

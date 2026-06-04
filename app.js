@@ -459,9 +459,8 @@ function sortValue(n) {
   const rk   = getCurrentRank(sp);
   const pct  = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
   switch (listSort.key) {
-    case "rank":   return grad ? RANKS_ORDER.length : RANKS_ORDER.indexOf(rk);
     case "pct":    return pct;
-    case "status": return grad ? 3 : canAscend(sp, rk) ? 2 : 1;
+    case "status": return canAscend(sp, rk) ? 1 : 0;
     default:       return norm(n);
   }
 }
@@ -495,66 +494,91 @@ window.quickGraduate = async function(name) {
   renderGraduados();
 };
 
+function buildStudentRow(n) {
+  const sp     = allStudents[n];
+  const grad   = allGraduated[n] || false;
+  const rk     = getCurrentRank(sp);
+  const asc    = canAscend(sp, rk);
+  const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
+  const pct    = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
+  const safe   = safeStr(n);
+  const statusCell = asc && nextRk
+    ? `<span class="asc-yes">↑ ${nextRk}</span>`
+    : `<span class="asc-no">—</span>`;
+  const gradBtnCls   = `btn btn-grad sm${grad ? " is-grad" : ""}`;
+  const gradBtnTitle = grad ? "Revocar graduación" : "Graduar del Colegio";
+  const gradBtnLabel = grad ? "🎓 Grad." : "🎓";
+  return `<tr class="${grad ? "grad-row" : ""}">
+    <td>${n}</td>
+    <td>${pct}%</td>
+    <td>${statusCell}</td>
+    <td><div class="td-actions">
+      <button class="${gradBtnCls}" title="${gradBtnTitle}"
+              onclick="quickGraduate('${safe}')">${gradBtnLabel}</button>
+      <button class="btn sm" onclick="adminEdit('${safe}')">Ver/Editar</button>
+      <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
+    </div></td>
+  </tr>`;
+}
+
+function buildRankTable(members) {
+  return `<table class="student-table">
+    <thead><tr>
+      <th class="th-sort" onclick="sortList('name')">Nombre ${sortArrow("name")}</th>
+      <th class="th-sort" onclick="sortList('pct')">Total % ${sortArrow("pct")}</th>
+      <th class="th-sort" onclick="sortList('status')">Estado ${sortArrow("status")}</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${members.map(buildStudentRow).join("")}</tbody>
+  </table>`;
+}
+
 function renderList() {
   const q = norm(document.getElementById("adminSearch").value || "");
-  let names = Object.keys(allStudents).filter(n => !q || norm(n).includes(q));
-  names.sort((a, b) => {
-    const va = sortValue(a), vb = sortValue(b);
-    if (va < vb) return -listSort.dir;
-    if (va > vb) return  listSort.dir;
-    return norm(a).localeCompare(norm(b));
-  });
+  const allNames = Object.keys(allStudents).filter(n => !q || norm(n).includes(q));
 
-  if (!names.length) {
+  if (!allNames.length) {
     document.getElementById("adminListWrap").innerHTML =
       '<p class="empty-state">No se encontraron alumnos.</p>';
     return;
   }
 
-  const rows = names.map(n => {
-    const sp     = allStudents[n];
-    const grad   = allGraduated[n] || false;
-    const rk     = getCurrentRank(sp);
-    const asc    = canAscend(sp, rk);
-    const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
-    const pct    = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
-    const safe   = safeStr(n);
+  // Agrupar por rango; graduados van al final
+  const groups = {};
+  for (const rk of RANKS_ORDER) groups[rk] = [];
+  groups["Graduado"] = [];
+  for (const n of allNames) {
+    if (allGraduated[n]) groups["Graduado"].push(n);
+    else groups[getCurrentRank(allStudents[n])].push(n);
+  }
 
-    const rankCell = grad
-      ? `<span class="rank-badge rk-Graduado" style="font-size:.7rem">Graduado</span>`
-      : `<span class="rank-badge rk-${rk}" style="font-size:.7rem">${rk}</span>`;
-    const statusCell = grad
-      ? `<span class="asc-yes">🎓 Grad.</span>`
-      : asc && nextRk ? `<span class="asc-yes">↑ ${nextRk}</span>` : `<span class="asc-no">—</span>`;
-    const gradBtnLabel = grad ? "🎓 Grad." : "🎓";
-    const gradBtnCls   = `btn btn-grad sm${grad ? " is-grad" : ""}`;
-    const gradBtnTitle = grad ? "Revocar graduación" : "Graduar del Colegio";
+  // Ordenar dentro de cada grupo con el sort activo
+  const sorter = (a, b) => {
+    const va = sortValue(a), vb = sortValue(b);
+    if (va < vb) return -listSort.dir;
+    if (va > vb) return  listSort.dir;
+    return norm(a).localeCompare(norm(b));
+  };
+  for (const key of Object.keys(groups)) groups[key].sort(sorter);
 
-    return `<tr class="${grad ? "grad-row" : ""}">
-      <td>${n}</td>
-      <td>${rankCell}</td>
-      <td>${pct}%</td>
-      <td>${statusCell}</td>
-      <td><div class="td-actions">
-        <button class="${gradBtnCls}" title="${gradBtnTitle}"
-                onclick="quickGraduate('${safe}')">${gradBtnLabel}</button>
-        <button class="btn sm" onclick="adminEdit('${safe}')">Ver/Editar</button>
-        <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
-      </div></td>
-    </tr>`;
+  const rkBadge = { Aprendiz:"rk-Aprendiz", Principiante:"rk-Principiante",
+                    Intermedio:"rk-Intermedio", Avanzado:"rk-Avanzado", Graduado:"rk-Graduado" };
+
+  const html = [...RANKS_ORDER, "Graduado"].map(rk => {
+    const members = groups[rk];
+    if (!members.length) return "";
+    const label  = rk === "Graduado" ? "Graduados del Colegio" : rk;
+    const count  = members.length;
+    return `<div class="rank-section">
+      <div class="rank-section-header">
+        <span class="rank-badge ${rkBadge[rk]}">${label}</span>
+        <span class="rank-count">${count} alumno${count !== 1 ? "s" : ""}</span>
+      </div>
+      ${buildRankTable(members)}
+    </div>`;
   }).join("");
 
-  document.getElementById("adminListWrap").innerHTML =
-    `<table class="student-table">
-      <thead><tr>
-        <th class="th-sort" onclick="sortList('name')">Nombre ${sortArrow("name")}</th>
-        <th class="th-sort" onclick="sortList('rank')">Rango ${sortArrow("rank")}</th>
-        <th class="th-sort" onclick="sortList('pct')">Total ${sortArrow("pct")}</th>
-        <th class="th-sort" onclick="sortList('status')">Estado ${sortArrow("status")}</th>
-        <th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  document.getElementById("adminListWrap").innerHTML = html;
 }
 
 // =====================================================================
