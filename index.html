@@ -1,752 +1,242 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Registro de Ascensos — Medimagia</title>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Georgia,'Times New Roman',serif;background:#0d0d1a;color:#e8e0d0;min-height:100vh;font-size:16px;line-height:1.5}
-.bg{position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at top,#1a1a3e 0%,#0d0d1a 60%);z-index:0;pointer-events:none}
-.bg::before{content:'';position:absolute;width:100%;height:100%;background-image:radial-gradient(1px 1px at 10% 15%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(1px 1px at 25% 40%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 40% 10%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1px 1px at 60% 30%,rgba(255,255,255,.3) 0%,transparent 100%),radial-gradient(1px 1px at 75% 55%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(1px 1px at 85% 20%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 15% 70%,rgba(255,255,255,.3) 0%,transparent 100%),radial-gradient(1px 1px at 50% 80%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1px 1px at 90% 75%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 35% 60%,rgba(255,255,255,.3) 0%,transparent 100%)}
-.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:2.5rem 1.5rem 3rem}
-.header{text-align:center;margin-bottom:2.5rem}
-.crest{font-size:3.5rem;margin-bottom:.5rem}
-h1{font-size:2rem;font-weight:normal;letter-spacing:.06em;color:#d4af37;text-shadow:0 0 30px rgba(212,175,55,.35)}
-.subtitle{font-size:.85rem;color:#5a5450;font-style:italic;margin-top:.3rem}
-.card{background:rgba(255,255,255,.045);border:1px solid rgba(212,175,55,.22);border-radius:12px;padding:1.75rem;margin-bottom:1.5rem}
-.card-title{font-size:.78rem;color:#8a8070;letter-spacing:.06em;text-transform:uppercase;margin-bottom:1.2rem;padding-bottom:.6rem;border-bottom:1px solid rgba(212,175,55,.1)}
-label{display:block;font-size:.82rem;color:#8a8070;margin-bottom:.45rem;letter-spacing:.03em}
-input[type=text],input[type=password]{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(212,175,55,.22);border-radius:8px;padding:.75rem 1rem;color:#e8e0d0;font-family:Georgia,serif;font-size:.95rem;outline:none;transition:border-color .2s,background .2s}
-input:focus{border-color:rgba(212,175,55,.55);background:rgba(255,255,255,.09)}
-input::placeholder{color:#3a3530}
-.field{margin-bottom:1.1rem}
-.field:last-child{margin-bottom:0}
-.btn{display:inline-flex;align-items:center;gap:.4rem;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.35);color:#d4af37;padding:.7rem 1.3rem;border-radius:8px;cursor:pointer;font-family:Georgia,serif;font-size:.9rem;white-space:nowrap;transition:background .2s,transform .1s}
-.btn:hover{background:rgba(212,175,55,.22)}
-.btn:active{transform:scale(.97)}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.btn.danger{background:rgba(192,80,74,.1);border-color:rgba(192,80,74,.4);color:#c0504a}
-.btn.danger:hover{background:rgba(192,80,74,.2)}
-.btn.success{background:rgba(91,196,154,.1);border-color:rgba(91,196,154,.35);color:#5bc49a}
-.btn.success:hover{background:rgba(91,196,154,.2)}
-.btn.ghost{background:none;border-color:rgba(255,255,255,.1);color:#5a5450}
-.btn.ghost:hover{border-color:rgba(212,175,55,.28);color:#8a8070}
-.btn.sm{font-size:.78rem;padding:.38rem .85rem}
-.btn.full{width:100%;justify-content:center;margin-top:.5rem}
-.btn-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.8rem}
-.sug{display:none;background:rgba(12,10,25,.98);border:1px solid rgba(212,175,55,.22);border-radius:8px;overflow:hidden;margin-top:6px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.sug.show{display:block}
-.sug-item{padding:.65rem 1rem;cursor:pointer;font-size:.9rem;color:#c8c0b0;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.04)}
-.sug-item:last-child{border-bottom:none}
-.sug-item:hover{background:rgba(212,175,55,.1);color:#d4af37}
-.err{color:#c0504a;font-size:.82rem;margin-top:.45rem;display:none}
-.ok-msg{color:#5bc49a;font-size:.82rem;margin-top:.45rem;display:none}
-.notice{background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.18);border-radius:8px;padding:.9rem 1.1rem;font-size:.84rem;color:#a09070;margin-bottom:1.2rem}
-.notice strong{color:#d4af37;font-weight:normal}
-.ascenso-banner{background:rgba(91,196,154,.08);border:1px solid rgba(91,196,154,.3);border-radius:12px;padding:1.1rem 1.4rem;text-align:center;margin-bottom:1.3rem}
-.ascenso-banner .big{font-size:1.2rem;color:#5bc49a;margin-bottom:.25rem}
-.ascenso-banner .sub{font-size:.82rem;color:#6a9070}
-.no-ascenso-banner{background:rgba(192,80,74,.07);border:1px solid rgba(192,80,74,.25);border-radius:12px;padding:1rem 1.4rem;text-align:center;margin-bottom:1.3rem}
-.no-ascenso-banner .big{font-size:.95rem;color:#c0504a}
-.no-ascenso-banner .sub{font-size:.8rem;color:#7a5050;margin-top:.2rem}
-.stu-header{text-align:center;margin-bottom:1.4rem;padding-bottom:1.2rem;border-bottom:1px solid rgba(212,175,55,.12)}
-.stu-name{font-size:1.5rem;color:#d4af37}
-.rank-badge{display:inline-block;margin-top:.4rem;padding:.22rem 1rem;border-radius:20px;font-size:.8rem;letter-spacing:.05em}
-.rk-Aprendiz{background:rgba(139,90,43,.18);border:1px solid rgba(139,90,43,.4);color:#c4904a}
-.rk-Principiante{background:rgba(70,130,180,.14);border:1px solid rgba(70,130,180,.3);color:#7ab0d4}
-.rk-Intermedio{background:rgba(60,179,113,.14);border:1px solid rgba(60,179,113,.3);color:#5bc49a}
-.rk-Avanzado{background:rgba(148,0,211,.14);border:1px solid rgba(148,0,211,.32);color:#b06ad4}
-.rk-Graduado{background:linear-gradient(135deg,rgba(212,175,55,.28),rgba(240,210,80,.1));border:1px solid rgba(212,175,55,.7);color:#f0d060;box-shadow:0 0 14px rgba(212,175,55,.25);font-weight:bold;letter-spacing:.08em}
-.admin-badge{display:inline-block;background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.3);color:#a09050;font-size:.7rem;padding:.12rem .55rem;border-radius:12px;margin-left:.6rem;vertical-align:middle}
-.ov-wrap{max-width:400px;margin:0 auto 1.5rem}
-.ov-labels{display:flex;justify-content:space-between;font-size:.78rem;color:#6a6060;margin-bottom:.4rem}
-.bar-track{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
-.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#d4af37,#e8c84a);transition:width .6s ease}
-.rk-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.3rem}
-@media(max-width:520px){.rk-grid{grid-template-columns:1fr}}
-.rk-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:1rem 1.1rem}
-.rk-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.65rem}
-.rk-card-name{font-size:.82rem;color:#8a8070;letter-spacing:.04em}
-.rk-pct{font-size:.8rem}
-.c-ok{color:#5bc49a}.c-mid{color:#d4af37}.c-no{color:#c0504a}
-.mini-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-bottom:.7rem;overflow:hidden}
-.mini-fill{height:100%;border-radius:2px;transition:width .4s ease}
-.f-ok{background:#5bc49a}.f-mid{background:#d4af37}.f-no{background:#c0504a}
-.spells-list{display:flex;flex-direction:column;gap:2px}
-.spell-row{display:flex;align-items:center;gap:.5rem;font-size:.82rem;cursor:pointer;border-radius:5px;padding:4px 5px;transition:background .15s}
-.spell-row:hover{background:rgba(255,255,255,.06)}
-.spell-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.15);transition:background .2s}
-.spell-dot.on{background:#5bc49a;border-color:#5bc49a}
-.spell-dot.off{background:rgba(255,255,255,.08)}
-.spell-txt{color:#b0a898;transition:color .2s;user-select:none}
-.spell-txt.off{color:#484038}
-.save-row{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;flex-wrap:wrap;gap:.6rem}
-.saved-msg{font-size:.82rem;color:#5bc49a;display:none}
-.admin-tabs{display:flex;gap:.5rem;margin-bottom:1.4rem;flex-wrap:wrap}
-.tab{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);color:#6a6060;padding:.5rem 1.1rem;border-radius:7px;cursor:pointer;font-size:.85rem;font-family:Georgia,serif;transition:all .2s}
-.tab.active{background:rgba(212,175,55,.12);border-color:rgba(212,175,55,.38);color:#d4af37}
-.tab:hover:not(.active){background:rgba(255,255,255,.07);color:#8a8070}
-.admin-section{display:none}
-.admin-section.show{display:block}
-.search-admin{margin-bottom:1rem}
-.student-table{width:100%;border-collapse:collapse;font-size:.82rem}
-.student-table th{text-align:left;color:#6a6060;font-weight:normal;padding:.5rem .7rem;border-bottom:1px solid rgba(255,255,255,.08);font-size:.78rem;letter-spacing:.03em}
-.student-table td{padding:.55rem .7rem;border-bottom:1px solid rgba(255,255,255,.04);color:#b0a898;vertical-align:middle}
-.student-table tr:hover td{background:rgba(255,255,255,.025)}
-.asc-yes{color:#5bc49a;font-size:.78rem}
-.asc-no{color:#3a3530;font-size:.78rem}
-.td-actions{display:flex;gap:.4rem}
-.back-btn{display:block;text-align:center;margin:.5rem auto 0;background:none;border:1px solid rgba(255,255,255,.09);color:#4a4540;padding:.55rem 1.5rem;border-radius:8px;cursor:pointer;font-family:Georgia,serif;font-size:.85rem;transition:all .2s}
-.back-btn:hover{border-color:rgba(212,175,55,.28);color:#8a8070}
-.footer{text-align:center;margin-top:3rem;font-size:.7rem;color:#2a2520;font-style:italic}
-.admin-link{text-align:center;margin-top:1.2rem}
-.admin-link button{background:none;border:none;color:#2a2520;font-size:.75rem;cursor:pointer;font-family:Georgia,serif;font-style:italic;transition:color .2s}
-.admin-link button:hover{color:#4a4540}
-.loading{text-align:center;padding:2.5rem 1rem;color:#4a4540;font-style:italic;font-size:.92rem}
-.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(212,175,55,.2);border-top-color:#d4af37;border-radius:50%;animation:spin .8s linear infinite;margin-right:.5rem;vertical-align:middle}
-@keyframes spin{to{transform:rotate(360deg)}}
-.empty-state{color:#4a4540;font-size:.88rem;font-style:italic;padding:1rem 0}
-/* Graduation */
-.grad-banner{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(212,175,55,.16),rgba(180,140,20,.06));border:1px solid rgba(212,175,55,.55);border-radius:14px;padding:1.5rem 1.6rem;text-align:center;margin-bottom:1.3rem}
-.grad-banner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,rgba(212,175,55,.2) 0%,transparent 65%);pointer-events:none}
-.grad-banner::after{content:'✦  ✧  ✦  ✧  ✦';position:absolute;top:.5rem;left:0;right:0;text-align:center;font-size:.65rem;color:rgba(212,175,55,.35);letter-spacing:.4em;pointer-events:none}
-.grad-banner .grad-icon{font-size:2.4rem;margin-bottom:.4rem;filter:drop-shadow(0 0 10px rgba(212,175,55,.5))}
-.grad-banner .big{font-size:1.45rem;color:#f0d060;margin-bottom:.25rem;text-shadow:0 0 20px rgba(212,175,55,.4)}
-.grad-banner .sub{font-size:.84rem;color:#a09050}
-.grad-banner .grad-divider{margin:.5rem auto;width:60px;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,.5),transparent)}
-.card.grad-card{border-color:rgba(212,175,55,.5);box-shadow:0 0 28px rgba(212,175,55,.1),inset 0 0 40px rgba(212,175,55,.03)}
-.grad-row{background:rgba(212,175,55,.05)!important}
-.grad-row td{border-bottom-color:rgba(212,175,55,.12)!important}
-.grad-badge-inline{display:inline-flex;align-items:center;gap:.25rem;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.4);color:#d4af37;font-size:.72rem;padding:.1rem .5rem;border-radius:10px;margin-left:.4rem;vertical-align:middle}
-/* Graduados grid */
-.grad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.85rem;margin-top:.5rem}
-.grad-card-item{background:linear-gradient(135deg,rgba(212,175,55,.1),rgba(180,140,20,.05));border:1px solid rgba(212,175,55,.4);border-radius:12px;padding:1.1rem 1.2rem;text-align:center;position:relative;overflow:hidden}
-.grad-card-item::before{content:'';position:absolute;top:-30%;left:-30%;width:160%;height:160%;background:radial-gradient(ellipse at 50% 30%,rgba(212,175,55,.08) 0%,transparent 60%);pointer-events:none}
-.grad-card-item .g-icon{font-size:1.8rem;margin-bottom:.4rem;display:block}
-.grad-card-item .g-name{font-size:.92rem;color:#e8c860;margin-bottom:.2rem}
-.grad-card-item .g-rank{font-size:.75rem;color:#7a6a30}
-/* Rank selector */
-.rank-selector{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.4rem}
-@media(max-width:480px){.rank-selector{grid-template-columns:repeat(2,1fr)}}
-.rank-opt{padding:.55rem .4rem;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#6a6060;font-size:.8rem;text-align:center;cursor:pointer;transition:all .2s;font-family:Georgia,serif;user-select:none}
-.rank-opt:hover{background:rgba(255,255,255,.08);color:#a09070}
-.rank-opt.sel-Aprendiz{background:rgba(139,90,43,.2);border-color:rgba(139,90,43,.5);color:#c4904a}
-.rank-opt.sel-Principiante{background:rgba(70,130,180,.2);border-color:rgba(70,130,180,.4);color:#7ab0d4}
-.rank-opt.sel-Intermedio{background:rgba(60,179,113,.2);border-color:rgba(60,179,113,.4);color:#5bc49a}
-.rank-opt.sel-Avanzado{background:rgba(148,0,211,.2);border-color:rgba(148,0,211,.45);color:#b06ad4}
-/* Spell editor */
-.spell-editor{margin-top:.6rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.8rem 1rem;max-height:260px;overflow-y:auto}
-.spell-editor::-webkit-scrollbar{width:4px}
-.spell-editor::-webkit-scrollbar-track{background:transparent}
-.spell-editor::-webkit-scrollbar-thumb{background:rgba(212,175,55,.2);border-radius:4px}
-.spell-group-label{font-size:.72rem;color:#6a6060;letter-spacing:.04em;text-transform:uppercase;margin:.65rem 0 .3rem}
-.spell-group-label:first-child{margin-top:0}
-.spell-check-row{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:#b0a898;padding:3px 4px;border-radius:4px;cursor:pointer;transition:background .15s}
-.spell-check-row:hover{background:rgba(255,255,255,.05)}
-.spell-check-row input[type=checkbox]{width:14px;height:14px;accent-color:#5bc49a;margin:0;flex-shrink:0;cursor:pointer}
-/* Toast */
-.toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none}
-.toast{background:rgba(18,15,32,.97);border:1px solid rgba(212,175,55,.3);border-radius:8px;padding:.75rem 1.1rem;font-size:.85rem;color:#d4af37;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:tIn .3s ease;pointer-events:auto;max-width:300px}
-.toast.terror{border-color:rgba(192,80,74,.4);color:#c0504a}
-.toast.tsuccess{border-color:rgba(91,196,154,.35);color:#5bc49a}
-@keyframes tIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes tOut{from{transform:translateX(0);opacity:1}to{transform:translateX(110%);opacity:0}}
-.toast.out{animation:tOut .3s ease forwards}
-/* Modal */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9000;align-items:center;justify-content:center;padding:1rem}
-.modal-overlay.show{display:flex}
-.modal{background:#13112a;border:1px solid rgba(212,175,55,.3);border-radius:14px;padding:1.8rem;max-width:380px;width:100%;box-shadow:0 16px 48px rgba(0,0,0,.6)}
-.modal-title{font-size:1rem;color:#d4af37;margin-bottom:.6rem}
-.modal-body{font-size:.88rem;color:#a09070;margin-bottom:1.4rem;line-height:1.6}
-.modal-actions{display:flex;gap:.6rem;justify-content:flex-end}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Ascensos — Medimagia</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="bg"></div>
 <div class="wrap">
 
-<div class="header">
-  <div class="crest">⚕</div>
-  <h1>Registro de Ascensos</h1>
-  <p class="subtitle">Medimagia — Consulta y actualiza tu progreso</p>
-</div>
-
-<!-- BUSCAR -->
-<div id="scSearch">
-  <div class="card">
-    <p class="card-title">Buscar personaje</p>
-    <div class="field">
-      <label for="nameInput">Nombre del personaje</label>
-      <input type="text" id="nameInput" placeholder="Ej: Ymir Aleister" autocomplete="off"/>
-      <div class="sug" id="sugs"></div>
-      <p class="err" id="searchErr">Personaje no encontrado. Comprueba el nombre.</p>
-    </div>
-    <button class="btn full" onclick="buscar()">Consultar progreso</button>
-  </div>
-  <div id="loadingIndicator" class="loading" style="display:none"><span class="spinner"></span>Conectando con la base de datos…</div>
-  <div class="admin-link"><button onclick="showAdminLogin()">⚙ Administrador</button></div>
-</div>
-
-<!-- PERFIL -->
-<div id="scProfile" style="display:none">
-  <div id="ascBanner"></div>
-  <div class="card">
-    <div class="stu-header">
-      <div class="stu-name" id="pName"></div>
-      <div style="margin-top:.4rem">
-        <span class="rank-badge" id="pRank"></span>
-        <span class="admin-badge" id="adminBadge" style="display:none">Admin</span>
-      </div>
-    </div>
-    <div class="ov-wrap">
-      <div class="ov-labels"><span>Progreso total</span><span id="pOvPct"></span></div>
-      <div class="bar-track"><div class="bar-fill" id="pOvBar" style="width:0%"></div></div>
-    </div>
-    <div class="notice" id="pTip"></div>
-    <div class="rk-grid" id="pGrid"></div>
-    <div class="save-row">
-      <button class="btn success" id="saveBtn" onclick="guardarCambios()">Guardar cambios</button>
-      <button class="btn" id="gradBtn" style="display:none" onclick="toggleGraduation()"></button>
-      <span class="saved-msg" id="savedMsg">✓ Guardado</span>
-    </div>
-  </div>
-  <button class="back-btn" id="profileBackBtn" onclick="backFromProfile()">← Volver</button>
-</div>
-
-<!-- LOGIN ADMIN -->
-<div id="scAdminLogin" style="display:none">
-  <div class="card">
-    <p class="card-title">Acceso de administrador</p>
-    <div class="field">
-      <label for="adminPwd">Contraseña</label>
-      <input type="password" id="adminPwd" placeholder="••••••••••" onkeydown="if(event.key==='Enter')loginAdmin()"/>
-      <p class="err" id="adminErr">Contraseña incorrecta.</p>
-    </div>
-    <div class="btn-row">
-      <button class="btn" onclick="loginAdmin()">Entrar</button>
-      <button class="btn ghost" onclick="goSearch()">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<!-- PANEL ADMIN -->
-<div id="scAdmin" style="display:none">
-  <div class="admin-tabs">
-    <button class="tab active" onclick="showTab('tabList')">Lista de alumnos</button>
-    <button class="tab" onclick="showTab('tabAscensos')">Ascensos</button>
-    <button class="tab" onclick="showTab('tabGrad')">Graduados</button>
-    <button class="tab" onclick="showTab('tabAdd')">Crear alumno</button>
+  <!-- CABECERA -->
+  <div class="header">
+    <div class="crest">⚕</div>
+    <h1>Registro de Ascensos</h1>
+    <p class="subtitle">Medimagia — Consulta y actualiza tu progreso</p>
   </div>
 
-  <div class="admin-section show" id="tabList">
-    <div class="search-admin">
-      <input type="text" id="adminSearch" placeholder="Buscar por nombre…" oninput="renderList()"/>
-    </div>
-    <div id="adminListWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
-  </div>
-
-  <div class="admin-section" id="tabAscensos">
-    <p class="notice">Alumnos que superan el <strong>67 %</strong> en su rango y pueden ascender.</p>
-    <div id="ascTable"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
-  </div>
-
-  <div class="admin-section" id="tabGrad">
-    <p class="notice">Alumnos que han sido <strong>graduados</strong> por un administrador.</p>
-    <div id="gradListWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
-  </div>
-
-  <div class="admin-section" id="tabAdd">
-    <div class="card" style="margin-bottom:0">
-      <p class="card-title">Crear nuevo alumno</p>
+  <!-- ── PANTALLA: BUSCAR ─────────────────────────────────────── -->
+  <div id="scSearch">
+    <div class="card">
+      <p class="card-title">Buscar personaje</p>
       <div class="field">
-        <label for="newName">Nombre del personaje</label>
-        <input type="text" id="newName" placeholder="Nombre Apellido"/>
+        <label for="nameInput">Nombre del personaje</label>
+        <input type="text" id="nameInput"
+               placeholder="Ej: Ymir Aleister" autocomplete="off"/>
+        <div class="sug" id="sugs"></div>
+        <p class="err" id="searchErr">Personaje no encontrado. Comprueba el nombre.</p>
       </div>
-      <div class="field">
-        <label>Rango inicial <span style="font-size:.74rem;color:#4a4540">(opcional — sin selección: empieza sin hechizos)</span></label>
-        <div class="rank-selector" id="rankSelector">
-          <div class="rank-opt" data-rank="Aprendiz" onclick="selectRankOpt(this)">Aprendiz</div>
-          <div class="rank-opt" data-rank="Principiante" onclick="selectRankOpt(this)">Principiante</div>
-          <div class="rank-opt" data-rank="Intermedio" onclick="selectRankOpt(this)">Intermedio</div>
-          <div class="rank-opt" data-rank="Avanzado" onclick="selectRankOpt(this)">Avanzado</div>
+      <button class="btn full" onclick="buscar()">Consultar progreso</button>
+    </div>
+
+    <div id="loadingIndicator" class="loading" style="display:none">
+      <span class="spinner"></span>Conectando con la base de datos…
+    </div>
+
+    <div class="admin-link">
+      <button onclick="showAdminLogin()">⚙ Administrador</button>
+    </div>
+  </div>
+
+  <!-- ── PANTALLA: PERFIL ─────────────────────────────────────── -->
+  <div id="scProfile" style="display:none">
+    <div id="ascBanner"></div>
+    <div class="card">
+      <div class="stu-header">
+        <div class="stu-name" id="pName"></div>
+        <div style="margin-top:.4rem">
+          <span class="rank-badge" id="pRank"></span>
+          <span class="admin-badge" id="adminBadge" style="display:none">Admin</span>
         </div>
       </div>
-      <div class="field" id="spellEditorWrap" style="display:none">
-        <label>Ajustar hechizos conocidos <span style="font-size:.74rem;color:#4a4540">(opcional)</span></label>
-        <div class="spell-editor" id="spellEditor"></div>
+
+      <div class="ov-wrap">
+        <div class="ov-labels">
+          <span>Progreso total</span>
+          <span id="pOvPct"></span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="pOvBar" style="width:0%"></div></div>
+      </div>
+
+      <div class="notice" id="pTip"></div>
+      <div class="rk-grid" id="pGrid"></div>
+
+      <div class="save-row">
+        <button class="btn success" id="saveBtn" onclick="guardarCambios()">Guardar cambios</button>
+        <button class="btn" id="gradBtn" style="display:none" onclick="toggleGraduation()"></button>
+        <span class="saved-msg" id="savedMsg">✓ Guardado</span>
+      </div>
+    </div>
+    <button class="back-btn" id="profileBackBtn" onclick="backFromProfile()">← Volver</button>
+  </div>
+
+  <!-- ── PANTALLA: LOGIN ADMIN ────────────────────────────────── -->
+  <div id="scAdminLogin" style="display:none">
+    <div class="card">
+      <p class="card-title">Acceso de administrador</p>
+      <div class="field">
+        <label for="adminPwd">Contraseña</label>
+        <input type="password" id="adminPwd" placeholder="••••••••••"
+               onkeydown="if(event.key==='Enter')loginAdmin()"/>
+        <p class="err" id="adminErr">Contraseña incorrecta.</p>
       </div>
       <div class="btn-row">
-        <button class="btn success" onclick="addAlumno()">Crear alumno</button>
-        <button class="btn ghost" onclick="resetAddForm()">Limpiar</button>
+        <button class="btn" onclick="loginAdmin()">Entrar</button>
+        <button class="btn ghost" onclick="goSearch()">Cancelar</button>
       </div>
-      <p class="err" id="addErr"></p>
-      <p class="ok-msg" id="addOk">✓ Alumno creado correctamente</p>
     </div>
   </div>
 
-  <button class="back-btn" style="margin-top:1.2rem" onclick="goSearch()">← Cerrar panel</button>
-</div>
+  <!-- ── PANTALLA: PANEL ADMIN ────────────────────────────────── -->
+  <div id="scAdmin" style="display:none">
 
-<!-- TOASTS -->
-<div class="toast-wrap" id="toastWrap"></div>
-
-<!-- MODAL CONFIRM -->
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal">
-    <div class="modal-title" id="modalTitle"></div>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-actions">
-      <button class="btn ghost sm" onclick="closeModal(false)">Cancelar</button>
-      <button class="btn sm" id="modalConfirmBtn" onclick="closeModal(true)">Confirmar</button>
+    <div class="admin-tabs">
+      <button class="tab active"  onclick="showTab('tabList')">Alumnos</button>
+      <button class="tab"         onclick="showTab('tabAscensos')">Ascensos</button>
+      <button class="tab"         onclick="showTab('tabGrad')">Graduados</button>
+      <button class="tab"         onclick="showTab('tabAdd')">Crear alumno</button>
+      <button class="tab"         onclick="showTab('tabConfig')">Configuración</button>
     </div>
+
+    <!-- Tab: lista de alumnos -->
+    <div class="admin-section show" id="tabList">
+      <div class="search-admin">
+        <input type="text" id="adminSearch"
+               placeholder="Buscar por nombre…" oninput="renderList()"/>
+      </div>
+      <div id="adminListWrap">
+        <div class="loading"><span class="spinner"></span>Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Tab: ascensos pendientes -->
+    <div class="admin-section" id="tabAscensos">
+      <p class="notice">
+        Alumnos que superan el <strong>67 %</strong> en su rango y pueden ascender.
+      </p>
+      <div id="ascTable">
+        <div class="loading"><span class="spinner"></span>Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Tab: graduados del colegio -->
+    <div class="admin-section" id="tabGrad">
+      <p class="notice">
+        Alumnos <strong>graduados del Colegio</strong> reconocidos por un administrador.
+      </p>
+      <div id="gradListWrap">
+        <div class="loading"><span class="spinner"></span>Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Tab: crear alumno -->
+    <div class="admin-section" id="tabAdd">
+      <div class="card" style="margin-bottom:0">
+        <p class="card-title">Crear nuevo alumno</p>
+
+        <div class="field">
+          <label for="newName">Nombre del personaje</label>
+          <input type="text" id="newName" placeholder="Nombre Apellido"/>
+        </div>
+
+        <div class="field">
+          <label>Rango inicial
+            <span style="font-size:.74rem;color:#4a4540">
+              (opcional — sin selección: empieza sin hechizos)
+            </span>
+          </label>
+          <div class="rank-selector" id="rankSelector">
+            <div class="rank-opt" data-rank="Aprendiz"     onclick="selectRankOpt(this)">Aprendiz</div>
+            <div class="rank-opt" data-rank="Principiante" onclick="selectRankOpt(this)">Principiante</div>
+            <div class="rank-opt" data-rank="Intermedio"   onclick="selectRankOpt(this)">Intermedio</div>
+            <div class="rank-opt" data-rank="Avanzado"     onclick="selectRankOpt(this)">Avanzado</div>
+          </div>
+        </div>
+
+        <div class="field" id="spellEditorWrap" style="display:none">
+          <label>Ajustar hechizos conocidos
+            <span style="font-size:.74rem;color:#4a4540">(opcional)</span>
+          </label>
+          <div class="spell-editor" id="spellEditor"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn success" onclick="addAlumno()">Crear alumno</button>
+          <button class="btn ghost"   onclick="resetAddForm()">Limpiar</button>
+        </div>
+        <p class="err"    id="addErr"></p>
+        <p class="ok-msg" id="addOk">✓ Alumno creado correctamente</p>
+      </div>
+    </div>
+
+    <!-- Tab: configuración -->
+    <div class="admin-section" id="tabConfig">
+      <div class="card" style="margin-bottom:0">
+        <p class="card-title">Cambiar contraseña de administrador</p>
+        <div class="pwd-form">
+          <div class="field">
+            <label for="pwdCurrent">Contraseña actual</label>
+            <input type="password" id="pwdCurrent" placeholder="••••••••••"/>
+          </div>
+          <div class="field">
+            <label for="pwdNew">Nueva contraseña</label>
+            <input type="password" id="pwdNew"
+                   placeholder="Mínimo 8 caracteres"
+                   oninput="updatePwdStrength()"/>
+            <div class="pwd-strength">
+              <div class="pwd-strength-fill" id="pwdStrengthFill"></div>
+            </div>
+            <p class="pwd-hint">Usa mayúsculas, números y símbolos para una contraseña más segura.</p>
+          </div>
+          <div class="field">
+            <label for="pwdConfirm">Confirmar nueva contraseña</label>
+            <input type="password" id="pwdConfirm" placeholder="Repite la contraseña"/>
+          </div>
+          <div class="btn-row">
+            <button class="btn success" onclick="changePassword()">
+              Guardar nueva contraseña
+            </button>
+          </div>
+          <p class="err"    id="pwdErr"></p>
+          <p class="ok-msg" id="pwdOk">✓ Contraseña actualizada</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <p class="card-title" style="margin-top:.2rem">Sesión</p>
+        <button class="btn danger" onclick="cerrarSesion()">
+          Cerrar sesión de administrador
+        </button>
+      </div>
+    </div>
+
+    <button class="back-btn" style="margin-top:1.2rem" onclick="goSearch()">
+      ← Cerrar panel
+    </button>
+  </div>
+
+  <!-- TOASTS -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- MODAL DE CONFIRMACIÓN -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-body"  id="modalBody"></div>
+      <div class="modal-actions">
+        <button class="btn ghost sm" onclick="closeModal(false)">Cancelar</button>
+        <button class="btn sm"       id="modalConfirmBtn" onclick="closeModal(true)">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Los datos se guardan en la nube · Solo tú puedes ver tu progreso
   </div>
 </div>
 
-<div class="footer">Los datos se guardan en la nube · Solo tú puedes ver tu progreso</div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAFeEm4gJv8qcmhWeMnipcmk-Wpwi5I1G4",
-  authDomain: "medimagia-ascensos.firebaseapp.com",
-  projectId: "medimagia-ascensos",
-  storageBucket: "medimagia-ascensos.firebasestorage.app",
-  messagingSenderId: "508815684624",
-  appId: "1:508815684624:web:988d28cf27268deedc4695"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const ADMIN_PWD = "MedimagiaOLEE";
-const ASCENSO_PCT = 67;
-const RANKS_ORDER = ['Aprendiz','Principiante','Intermedio','Avanzado'];
-const RANKS = {
-  Aprendiz:     ['Bullapure','Férula','Osseus Reparo','Tergeo'],
-  Principiante: ['Examino','Vitae Expulso','Leniter','Sommnium','Anapneo','Anesthetica','Brackium Emendo'],
-  Intermedio:   ['Vitalis','Tranquillitas','Melis Sanitas','Tergiverso','Vulnera Curatio','Ennervate','Invenio Cardium'],
-  Avanzado:     ['Restitutio Mobilitas','Medimend','Mind Recupero','Solatio','Finite Incantatem','Confractus','Amicientes','Reparifarge','Panacea','Zanarem','Suturae','Revitalizare']
-};
-const BASE_DATA = {"Ymir Aleister":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":false,"Confractus":true,"Amicientes":false,"Reparifarge":true,"Panacea":true,"Zanarem":true,"Suturae":false,"Revitalizare":false},"Xaden Knight":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":true,"Confractus":false,"Amicientes":true,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":true,"Revitalizare":false},"Makelele D. Shacklebolt":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":true,"Confractus":true,"Amicientes":true,"Reparifarge":true,"Panacea":true,"Zanarem":false,"Suturae":true,"Revitalizare":true},"Filipo Fuentes":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":false,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":true,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Chloe Miller":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Adrian Marston":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":false,"Solatio":true,"Finite Incantatem":false,"Confractus":true,"Amicientes":false,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Indigo Travers":{"Bullapure":true,"Férula":false,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Lilith Hill":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":false,"Confractus":true,"Amicientes":true,"Reparifarge":true,"Panacea":true,"Zanarem":false,"Suturae":true,"Revitalizare":false},"Virgil Macmillan":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":false,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":true,"Invenio Cardium":false,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":true,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Selina Lestrange":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":false,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Antonio Matamoros":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":false,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Arlequin Nott":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":false,"Solatio":true,"Finite Incantatem":true,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":true},"Bella DiLaurentis":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":false,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":false,"Solatio":true,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Gideon Umbrawell":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Clarent Avery":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Paul H. Brown":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":true,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Viktoria Bellamy":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Exequiel Delorian":{"Bullapure":true,"Férula":true,"Osseus Reparo":false,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Bayron Shajad":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Nyx Rowengrave":{"Bullapure":false,"Férula":true,"Osseus Reparo":false,"Tergeo":false,"Examino":true,"Vitae Expulso":false,"Leniter":false,"Sommnium":false,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Margot Reed":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":false,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Rebekah Twist":{"Bullapure":false,"Férula":false,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Zeta Tokito":{"Bullapure":false,"Férula":false,"Osseus Reparo":false,"Tergeo":false,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":false,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Darío Crabbe":{"Bullapure":false,"Férula":false,"Osseus Reparo":false,"Tergeo":false,"Examino":false,"Vitae Expulso":false,"Leniter":false,"Sommnium":false,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Jack Marston":{"Bullapure":true,"Férula":false,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":false,"Medimend":true,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":true,"Revitalizare":true},"Zoey Montes":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":true,"Confractus":false,"Amicientes":true,"Reparifarge":true,"Panacea":true,"Zanarem":true,"Suturae":true,"Revitalizare":true},"Fiore E. Malfoy":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":false,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":false,"Solatio":true,"Finite Incantatem":true,"Confractus":true,"Amicientes":true,"Reparifarge":false,"Panacea":false,"Zanarem":true,"Suturae":true,"Revitalizare":true},"Dustin LaPlace":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":false,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":true,"Confractus":true,"Amicientes":false,"Reparifarge":false,"Panacea":true,"Zanarem":true,"Suturae":true,"Revitalizare":true},"Albert Ronin":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":false,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Aiden Weasley":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":true,"Confractus":true,"Amicientes":true,"Reparifarge":true,"Panacea":true,"Zanarem":true,"Suturae":true,"Revitalizare":true},"Zephyr Beckett":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":true,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Jacoba Van Dijk":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":true,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Rose Silverthorn":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false}};
-
-// ---- HELPERS ----
-function norm(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
-function allSpells(){return Object.values(RANKS).flat();}
-function getRkPct(sp,rk){const l=RANKS[rk];const d=l.filter(s=>sp[s]).length;return{done:d,total:l.length,pct:Math.round(d/l.length*100)};}
-function getCurrentRank(sp){for(let i=RANKS_ORDER.length-1;i>=0;i--){if(getRkPct(sp,RANKS_ORDER[i]).pct>=ASCENSO_PCT)return RANKS_ORDER[Math.min(i+1,RANKS_ORDER.length-1)];}return RANKS_ORDER[0];}
-function canAscend(sp,rank){const idx=RANKS_ORDER.indexOf(rank);if(idx>=RANKS_ORDER.length-1)return false;return getRkPct(sp,rank).pct>=ASCENSO_PCT;}
-function safeStr(n){return n.replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
-
-// ---- TOAST ----
-function toast(msg,type=''){
-  const wrap=document.getElementById('toastWrap');
-  const el=document.createElement('div');
-  el.className='toast'+(type?' t'+type:'');
-  el.textContent=msg;
-  wrap.appendChild(el);
-  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),320);},2800);
-}
-
-// ---- MODAL ----
-let _modalResolve=null;
-function showModal(title,body,confirmLabel='Confirmar',btnCls='danger'){
-  document.getElementById('modalTitle').textContent=title;
-  document.getElementById('modalBody').textContent=body;
-  const btn=document.getElementById('modalConfirmBtn');
-  btn.textContent=confirmLabel;
-  btn.className=`btn sm ${btnCls}`;
-  document.getElementById('confirmModal').classList.add('show');
-  return new Promise(r=>{_modalResolve=r;});
-}
-window.closeModal=function(val){
-  document.getElementById('confirmModal').classList.remove('show');
-  if(_modalResolve){_modalResolve(val);_modalResolve=null;}
-};
-document.getElementById('confirmModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal(false);});
-
-// ---- FIRESTORE ----
-let allStudents={};
-let allGraduated={};
-let isAdmin=false;
-
-function docId(name){return name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'X');}
-
-async function loadAllStudents(){
-  const snap=await getDocs(collection(db,'alumnos'));
-  allStudents={};allGraduated={};
-  if(snap.empty){
-    for(const[name,spells]of Object.entries(BASE_DATA)){
-      const id=docId(name);
-      await setDoc(doc(db,'alumnos',id),{name,spells,graduated:false});
-      allStudents[name]=spells;allGraduated[name]=false;
-    }
-  } else {
-    snap.forEach(d=>{const data=d.data();allStudents[data.name]=data.spells;allGraduated[data.name]=data.graduated||false;});
-  }
-}
-
-async function saveStudent(name,spells){
-  await setDoc(doc(db,'alumnos',docId(name)),{name,spells,graduated:allGraduated[name]||false});
-  allStudents[name]=spells;
-}
-
-async function setGraduated(name,val){
-  allGraduated[name]=val;
-  await setDoc(doc(db,'alumnos',docId(name)),{name,spells:allStudents[name],graduated:val});
-}
-
-async function deleteStudent(name){
-  await deleteDoc(doc(db,'alumnos',docId(name)));
-  delete allStudents[name];delete allGraduated[name];
-}
-
-// ---- UI STATE ----
-let currentStudent=null;
-let pendingChanges={};
-
-function show(id){['scSearch','scProfile','scAdminLogin','scAdmin'].forEach(s=>document.getElementById(s).style.display='none');document.getElementById(id).style.display='block';}
-function goSearch(){show('scSearch');document.getElementById('nameInput').value='';pendingChanges={};isAdmin=false;renderSuggestions();}
-function showAdminLogin(){show('scAdminLogin');document.getElementById('adminPwd').value='';document.getElementById('adminErr').style.display='none';}
-
-window.backFromProfile=function(){
-  if(isAdmin){show('scAdmin');renderList();renderAscensos();}
-  else goSearch();
-};
-
-// ---- SEARCH ----
-const nameInput=document.getElementById('nameInput');
-const sugsEl=document.getElementById('sugs');
-
-function renderSuggestions(){
-  const q=norm(nameInput.value);
-  document.getElementById('searchErr').style.display='none';
-  if(q.length<2){sugsEl.className='sug';return;}
-  const m=Object.keys(allStudents).filter(n=>norm(n).includes(q)).slice(0,6);
-  if(!m.length){sugsEl.className='sug';return;}
-  sugsEl.innerHTML=m.map(n=>`<div class="sug-item" onclick="selectName('${safeStr(n)}')">${n}</div>`).join('');
-  sugsEl.className='sug show';
-}
-
-nameInput.addEventListener('input',renderSuggestions);
-nameInput.addEventListener('keydown',e=>{if(e.key==='Enter')buscar();});
-document.addEventListener('click',e=>{if(!e.target.closest('#scSearch'))sugsEl.className='sug';});
-
-window.selectName=function(n){nameInput.value=n;sugsEl.className='sug';buscar();};
-
-window.buscar=function(){
-  const q=norm(nameInput.value);
-  const found=Object.keys(allStudents).find(n=>norm(n)===q)||Object.keys(allStudents).find(n=>norm(n).includes(q));
-  if(!found){document.getElementById('searchErr').style.display='block';return;}
-  openProfile(found);
-};
-
-// ---- PROFILE ----
-function openProfile(name){
-  currentStudent=name;
-  pendingChanges=JSON.parse(JSON.stringify(allStudents[name]));
-  renderProfile();
-  show('scProfile');
-  document.getElementById('profileBackBtn').textContent=isAdmin?'← Volver al panel':'← Volver';
-}
-
-function renderProfile(){
-  const sp=pendingChanges,name=currentStudent;
-  const rank=getCurrentRank(sp);
-  const ascending=canAscend(sp,rank);
-  const nextRank=RANKS_ORDER[RANKS_ORDER.indexOf(rank)+1];
-  const all=allSpells();
-  const totalPct=Math.round(all.filter(s=>sp[s]).length/all.length*100);
-
-  const graduated=allGraduated[name]||false;
-  document.getElementById('pName').textContent=name;
-  const rkEl=document.getElementById('pRank');
-  if(graduated){rkEl.textContent='Graduado';rkEl.className='rank-badge rk-Graduado';}
-  else{rkEl.textContent=rank;rkEl.className='rank-badge rk-'+rank;}
-  document.getElementById('adminBadge').style.display=isAdmin?'inline':'none';
-
-  const profileCard=document.querySelector('#scProfile .card');
-  if(graduated)profileCard.classList.add('grad-card');
-  else profileCard.classList.remove('grad-card');
-
-  const gradBtn=document.getElementById('gradBtn');
-  if(isAdmin){
-    gradBtn.style.display='inline-flex';
-    gradBtn.textContent=graduated?'✕ Revocar graduación':'🎓 Graduar alumno';
-    gradBtn.className=graduated?'btn danger':'btn';
-  } else {gradBtn.style.display='none';}
-
-  const banner=document.getElementById('ascBanner');
-  if(graduated){
-    banner.innerHTML=`<div class="grad-banner"><div class="grad-icon">🎓</div><div class="big">Graduado/a de Medimagia</div><div class="grad-divider"></div><div class="sub">Ha completado su formación con distinción.</div></div>`;
-  } else if(ascending&&nextRank){
-    banner.innerHTML=`<div class="ascenso-banner"><div class="big">✦ Listo para ascender a ${nextRank}</div><div class="sub">Has alcanzado el ${ASCENSO_PCT}% en ${rank}. Contacta con un administrador.</div></div>`;
-  } else if(rank===RANKS_ORDER[RANKS_ORDER.length-1]&&getRkPct(sp,rank).pct>=ASCENSO_PCT){
-    banner.innerHTML=`<div class="ascenso-banner"><div class="big">✦ Rango máximo alcanzado</div><div class="sub">Has completado todos los hechizos Avanzados.</div></div>`;
-  } else {
-    const{pct,done,total}=getRkPct(sp,rank);
-    const need=Math.ceil(total*ASCENSO_PCT/100)-done;
-    banner.innerHTML=`<div class="no-ascenso-banner"><div class="big">Aún no puedes ascender</div><div class="sub">Necesitas ${need} hechizo${need!==1?'s':''} más en ${rank} para llegar al ${ASCENSO_PCT}%</div></div>`;
-  }
-
-  document.getElementById('pOvPct').textContent=totalPct+'%';
-  setTimeout(()=>{document.getElementById('pOvBar').style.width=totalPct+'%';},50);
-
-  let tip='';
-  for(const rk of RANKS_ORDER){const{pct}=getRkPct(sp,rk);if(pct<100){const miss=RANKS[rk].filter(s=>!sp[s]);tip=`Te faltan en <strong>${rk}</strong>: ${miss.join(', ')}.`;break;}}
-  document.getElementById('pTip').innerHTML=tip||'Todos los hechizos aprendidos.';
-
-  document.getElementById('pGrid').innerHTML=RANKS_ORDER.map(rk=>{
-    const{done,total,pct}=getRkPct(sp,rk);
-    const cls=pct>=ASCENSO_PCT?'ok':pct===0?'no':'mid';
-    const rows=RANKS[rk].map(s=>{
-      const on=sp[s];const key=s.replace(/[\s\.]/g,'_');
-      return `<div class="spell-row" onclick="toggleSpell('${safeStr(s)}')"><div class="spell-dot ${on?'on':'off'}" id="dot_${key}"></div><span class="spell-txt ${on?'':'off'}" id="txt_${key}">${s}</span></div>`;
-    }).join('');
-    return `<div class="rk-card"><div class="rk-card-head"><span class="rk-card-name">${rk}</span><span class="rk-pct c-${cls}" id="rkpct_${rk}">${done}/${total}</span></div><div class="mini-bar"><div class="mini-fill f-${cls}" id="rkbar_${rk}" style="width:${pct}%"></div></div><div class="spells-list">${rows}</div></div>`;
-  }).join('');
-}
-
-window.toggleSpell=function(s){
-  pendingChanges[s]=!pendingChanges[s];
-  const key=s.replace(/[\s\.]/g,'_');
-  const dot=document.getElementById('dot_'+key),txt=document.getElementById('txt_'+key);
-  if(dot)dot.className='spell-dot '+(pendingChanges[s]?'on':'off');
-  if(txt)txt.className='spell-txt '+(pendingChanges[s]?'':'off');
-  const rk=RANKS_ORDER.find(r=>RANKS[r].includes(s));
-  if(rk){
-    const{done,total,pct}=getRkPct(pendingChanges,rk);
-    const cls=pct>=ASCENSO_PCT?'ok':pct===0?'no':'mid';
-    const pEl=document.getElementById('rkpct_'+rk),bEl=document.getElementById('rkbar_'+rk);
-    if(pEl){pEl.textContent=done+'/'+total;pEl.className='rk-pct c-'+cls;}
-    if(bEl){bEl.style.width=pct+'%';bEl.className='mini-fill f-'+cls;}
-  }
-  const all=allSpells();
-  const tp=Math.round(all.filter(sp=>pendingChanges[sp]).length/all.length*100);
-  document.getElementById('pOvPct').textContent=tp+'%';
-  document.getElementById('pOvBar').style.width=tp+'%';
-  const rank=getCurrentRank(pendingChanges);
-  const rkEl=document.getElementById('pRank');
-  rkEl.textContent=rank;rkEl.className='rank-badge rk-'+rank;
-  const ascending=canAscend(pendingChanges,rank);
-  const nextRank=RANKS_ORDER[RANKS_ORDER.indexOf(rank)+1];
-  const banner=document.getElementById('ascBanner');
-  if(ascending&&nextRank){
-    banner.innerHTML=`<div class="ascenso-banner"><div class="big">✦ Listo para ascender a ${nextRank}</div><div class="sub">Has alcanzado el ${ASCENSO_PCT}% en ${rank}. Contacta con un administrador.</div></div>`;
-  } else if(rank===RANKS_ORDER[RANKS_ORDER.length-1]&&getRkPct(pendingChanges,rank).pct>=ASCENSO_PCT){
-    banner.innerHTML=`<div class="ascenso-banner"><div class="big">✦ Rango máximo alcanzado</div></div>`;
-  } else {
-    const{done:d2,total:t2}=getRkPct(pendingChanges,rank);
-    const need=Math.ceil(t2*ASCENSO_PCT/100)-d2;
-    banner.innerHTML=`<div class="no-ascenso-banner"><div class="big">Aún no puedes ascender</div><div class="sub">Necesitas ${need} hechizo${need!==1?'s':''} más en ${rank} para llegar al ${ASCENSO_PCT}%</div></div>`;
-  }
-};
-
-window.guardarCambios=async function(){
-  const btn=document.getElementById('saveBtn');
-  btn.disabled=true;btn.textContent='Guardando…';
-  try{
-    await saveStudent(currentStudent,pendingChanges);
-    document.getElementById('savedMsg').style.display='inline';
-    setTimeout(()=>document.getElementById('savedMsg').style.display='none',2500);
-    toast('Cambios guardados','success');
-  }catch(e){toast('Error al guardar. Comprueba tu conexión.','error');}
-  btn.disabled=false;btn.textContent='Guardar cambios';
-};
-
-// ---- ADMIN ----
-window.loginAdmin=function(){
-  if(document.getElementById('adminPwd').value===ADMIN_PWD){
-    isAdmin=true;show('scAdmin');renderList();renderAscensos();renderGraduados();
-  } else {document.getElementById('adminErr').style.display='block';}
-};
-
-window.showTab=function(id){
-  document.querySelectorAll('.admin-section').forEach(el=>el.className='admin-section');
-  document.querySelectorAll('.tab').forEach(el=>el.className='tab');
-  document.getElementById(id).className='admin-section show';
-  const idx={'tabList':0,'tabAscensos':1,'tabGrad':2,'tabAdd':3}[id];
-  document.querySelectorAll('.tab')[idx].className='tab active';
-  if(id==='tabAscensos')renderAscensos();
-  if(id==='tabList')renderList();
-  if(id==='tabGrad')renderGraduados();
-};
-
-function renderList(){
-  const q=norm(document.getElementById('adminSearch').value||'');
-  const names=Object.keys(allStudents).filter(n=>!q||norm(n).includes(q)).sort();
-  if(!names.length){document.getElementById('adminListWrap').innerHTML='<p class="empty-state">No se encontraron alumnos.</p>';return;}
-  const rows=names.map(n=>{
-    const sp=allStudents[n],grad=allGraduated[n]||false;
-    const rk=getCurrentRank(sp),asc=canAscend(sp,rk);
-    const nextRk=RANKS_ORDER[RANKS_ORDER.indexOf(rk)+1];
-    const all=allSpells(),pct=Math.round(all.filter(s=>sp[s]).length/all.length*100);
-    const safe=safeStr(n);
-    const rankCell=grad
-      ?`<span class="rank-badge rk-Graduado" style="font-size:.7rem">Graduado</span>`
-      :`<span class="rank-badge rk-${rk}" style="font-size:.7rem">${rk}</span>`;
-    const ascCell=grad
-      ?`<span class="asc-yes">🎓</span>`
-      :asc&&nextRk?`<span class="asc-yes">↑ ${nextRk}</span>`:'<span class="asc-no">—</span>';
-    return `<tr class="${grad?'grad-row':''}">
-      <td>${n}</td>
-      <td>${rankCell}</td>
-      <td>${pct}%</td>
-      <td>${ascCell}</td>
-      <td><div class="td-actions">
-        <button class="btn sm" onclick="adminEdit('${safe}')">Ver/Editar</button>
-        <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
-      </div></td>
-    </tr>`;
-  }).join('');
-  document.getElementById('adminListWrap').innerHTML=`<table class="student-table"><thead><tr><th>Nombre</th><th>Rango</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-function renderGraduados(){
-  const grads=Object.keys(allStudents).filter(n=>allGraduated[n]).sort();
-  if(!grads.length){document.getElementById('gradListWrap').innerHTML='<p class="empty-state">Todavía no hay ningún graduado.</p>';return;}
-  const cards=grads.map(n=>{
-    const sp=allStudents[n];
-    const all=allSpells(),pct=Math.round(all.filter(s=>sp[s]).length/all.length*100);
-    const safe=safeStr(n);
-    return `<div class="grad-card-item">
-      <span class="g-icon">🎓</span>
-      <div class="g-name">${n}</div>
-      <div class="g-rank">${pct}% completado</div>
-      <div style="margin-top:.7rem;display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap">
-        <button class="btn sm" onclick="adminEdit('${safe}')">Ver</button>
-        <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
-      </div>
-    </div>`;
-  }).join('');
-  document.getElementById('gradListWrap').innerHTML=`<div class="grad-grid">${cards}</div>`;
-}
-
-function renderAscensos(){
-  const ready=Object.keys(allStudents).filter(n=>{const sp=allStudents[n],rk=getCurrentRank(sp);return canAscend(sp,rk)&&RANKS_ORDER.indexOf(rk)<RANKS_ORDER.length-1;}).sort();
-  if(!ready.length){document.getElementById('ascTable').innerHTML='<p class="empty-state">Ningún alumno cumple el requisito ahora mismo.</p>';return;}
-  const rows=ready.map(n=>{
-    const sp=allStudents[n],rk=getCurrentRank(sp),nextRk=RANKS_ORDER[RANKS_ORDER.indexOf(rk)+1];
-    const{pct}=getRkPct(sp,rk);const safe=safeStr(n);
-    return `<tr><td>${n}</td><td><span class="rank-badge rk-${rk}" style="font-size:.7rem">${rk}</span></td><td>${pct}%</td><td><span class="asc-yes">→ ${nextRk}</span></td><td><button class="btn sm success" onclick="confirmAscend('${safe}','${nextRk}')">Ascender</button></td></tr>`;
-  }).join('');
-  document.getElementById('ascTable').innerHTML=`<table class="student-table"><thead><tr><th>Nombre</th><th>Rango actual</th><th>%</th><th>Nuevo rango</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-window.confirmAscend=async function(name,newRank){
-  const ok=await showModal(`Ascender a ${name}`,`¿Confirmas el ascenso de ${name} a ${newRank}? Se marcarán como aprendidos todos los hechizos de rangos anteriores.`,'Ascender','success');
-  if(!ok)return;
-  const idx=RANKS_ORDER.indexOf(newRank);
-  for(let i=0;i<idx;i++)RANKS[RANKS_ORDER[i]].forEach(s=>allStudents[name][s]=true);
-  await saveStudent(name,allStudents[name]);
-  toast(`${name} ha ascendido a ${newRank}`,'success');
-  renderAscensos();renderList();
-};
-
-window.adminEdit=function(name){openProfile(name);};
-
-window.adminDelete=async function(name){
-  const ok=await showModal('Eliminar alumno',`¿Seguro que quieres eliminar a ${name}? Esta acción no se puede deshacer.`,'Eliminar','danger');
-  if(!ok)return;
-  await deleteStudent(name);
-  toast(`${name} eliminado`);
-  renderList();renderAscensos();
-};
-
-// ---- GRADUATION ----
-window.toggleGraduation=async function(){
-  const name=currentStudent;
-  const newVal=!(allGraduated[name]||false);
-  const label=newVal?'Graduar':'Revocar graduación';
-  const ok=await showModal(
-    `${label}: ${name}`,
-    newVal
-      ?`¿Confirmas la graduación de ${name}? Aparecerá en la lista de graduados con un diploma especial.`
-      :`¿Revocar la graduación de ${name}? Volverá a su rango habitual.`,
-    label,
-    newVal?'success':'danger'
-  );
-  if(!ok)return;
-  await setGraduated(name,newVal);
-  toast(newVal?`${name} graduado/a 🎓`:`Graduación de ${name} revocada`,'success');
-  renderProfile();
-};
-
-// ---- CREATE FORM ----
-let selectedRank=null;
-let addSpells={};
-
-window.selectRankOpt=function(el){
-  document.querySelectorAll('.rank-opt').forEach(o=>o.className='rank-opt');
-  const rank=el.dataset.rank;
-  if(selectedRank===rank){selectedRank=null;addSpells={};document.getElementById('spellEditorWrap').style.display='none';return;}
-  el.className=`rank-opt sel-${rank}`;
-  selectedRank=rank;
-  buildAddSpells(rank);
-  buildSpellEditor();
-  document.getElementById('spellEditorWrap').style.display='block';
-};
-
-function buildAddSpells(rank){
-  addSpells={};
-  allSpells().forEach(s=>addSpells[s]=false);
-  const idx=RANKS_ORDER.indexOf(rank);
-  for(let i=0;i<idx;i++)RANKS[RANKS_ORDER[i]].forEach(s=>addSpells[s]=true);
-}
-
-function buildSpellEditor(){
-  document.getElementById('spellEditor').innerHTML=RANKS_ORDER.map(rk=>{
-    const rows=RANKS[rk].map(s=>{
-      const key='addchk_'+s.replace(/[\s\.]/g,'_');
-      return `<label class="spell-check-row"><input type="checkbox" id="${key}" ${addSpells[s]?'checked':''} onchange="toggleAddSpell('${safeStr(s)}',this.checked)"/>${s}</label>`;
-    }).join('');
-    return `<div class="spell-group-label">${rk}</div>${rows}`;
-  }).join('');
-}
-
-window.toggleAddSpell=function(s,val){addSpells[s]=val;};
-
-window.resetAddForm=function(){
-  document.getElementById('newName').value='';
-  document.getElementById('addErr').style.display='none';
-  document.getElementById('addOk').style.display='none';
-  document.querySelectorAll('.rank-opt').forEach(o=>o.className='rank-opt');
-  selectedRank=null;addSpells={};
-  document.getElementById('spellEditorWrap').style.display='none';
-};
-
-window.addAlumno=async function(){
-  const name=document.getElementById('newName').value.trim();
-  const errEl=document.getElementById('addErr'),okEl=document.getElementById('addOk');
-  errEl.style.display='none';okEl.style.display='none';
-  if(!name){errEl.textContent='Escribe un nombre.';errEl.style.display='block';return;}
-  if(allStudents[name]){errEl.textContent='Ya existe un alumno con ese nombre.';errEl.style.display='block';return;}
-  let spells;
-  if(selectedRank){spells={...addSpells};}
-  else{spells={};allSpells().forEach(s=>spells[s]=false);}
-  await saveStudent(name,spells);
-  okEl.style.display='block';
-  toast(`Alumno "${name}" creado`,'success');
-  setTimeout(()=>okEl.style.display='none',2500);
-  resetAddForm();
-  renderList();
-};
-
-// ---- INIT ----
-window.showAdminLogin=showAdminLogin;
-window.goSearch=goSearch;
-
-document.getElementById('loadingIndicator').style.display='block';
-document.querySelector('#scSearch .card').style.opacity='0.4';
-loadAllStudents().then(()=>{
-  document.getElementById('loadingIndicator').style.display='none';
-  document.querySelector('#scSearch .card').style.opacity='1';
-}).catch(()=>{
-  document.getElementById('loadingIndicator').innerHTML='<span style="color:#c0504a">Error al conectar con Firebase. Comprueba las reglas de Firestore.</span>';
-});
-</script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
