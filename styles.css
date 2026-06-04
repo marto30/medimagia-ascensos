@@ -417,6 +417,21 @@ input::placeholder { color: var(--text-ghost); }
   color: var(--red);
 }
 
+/* Summary bar above rank sections */
+.list-summary {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+  padding: .6rem .9rem;
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r-sm);
+  font-size: .8rem;
+}
+.list-summary-stat { display: flex; align-items: center; gap: .4rem; color: var(--text-muted); }
+.list-summary-stat strong { color: var(--text); font-size: 1rem; font-weight: 600; }
+.list-summary-stat.highlight strong { color: var(--gold-light); }
+.list-summary-divider { color: #2a2520; }
+
 /* Grouped rank sections in admin list */
 .rank-section { margin-bottom: 1.6rem; }
 .rank-section:last-child { margin-bottom: 0; }

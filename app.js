@@ -573,7 +573,28 @@ function renderList() {
     </div>`;
   }).join("");
 
-  document.getElementById("adminListWrap").innerHTML = html;
+  // Contar totales (sobre todos los alumnos, no solo los filtrados)
+  const totalAll  = Object.keys(allStudents).length;
+  const totalGrad = Object.values(allGraduated).filter(Boolean).length;
+  const totalActive = totalAll - totalGrad;
+
+  const summary = `<div class="list-summary">
+    <div class="list-summary-stat">
+      <strong>${totalActive}</strong>
+      alumno${totalActive !== 1 ? "s" : ""} sin graduar
+    </div>
+    <span class="list-summary-divider">·</span>
+    <div class="list-summary-stat highlight">
+      <strong>${totalGrad}</strong>
+      graduado${totalGrad !== 1 ? "s" : ""} del Colegio
+    </div>
+    <span class="list-summary-divider">·</span>
+    <div class="list-summary-stat">
+      <strong>${totalAll}</strong> en total
+    </div>
+  </div>`;
+
+  document.getElementById("adminListWrap").innerHTML = summary + html;
 }
 
 // =====================================================================
