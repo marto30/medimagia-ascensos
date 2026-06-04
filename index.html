@@ -560,7 +560,7 @@ window.guardarCambios=async function(){
 // ---- ADMIN ----
 window.loginAdmin=function(){
   if(document.getElementById('adminPwd').value===ADMIN_PWD){
-    isAdmin=true;show('scAdmin');renderList();renderAscensos();
+    isAdmin=true;show('scAdmin');renderList();renderAscensos();renderGraduados();
   } else {document.getElementById('adminErr').style.display='block';}
 };
 
@@ -580,22 +580,49 @@ function renderList(){
   const names=Object.keys(allStudents).filter(n=>!q||norm(n).includes(q)).sort();
   if(!names.length){document.getElementById('adminListWrap').innerHTML='<p class="empty-state">No se encontraron alumnos.</p>';return;}
   const rows=names.map(n=>{
-    const sp=allStudents[n],rk=getCurrentRank(sp),asc=canAscend(sp,rk);
+    const sp=allStudents[n],grad=allGraduated[n]||false;
+    const rk=getCurrentRank(sp),asc=canAscend(sp,rk);
     const nextRk=RANKS_ORDER[RANKS_ORDER.indexOf(rk)+1];
     const all=allSpells(),pct=Math.round(all.filter(s=>sp[s]).length/all.length*100);
     const safe=safeStr(n);
-    return `<tr>
+    const rankCell=grad
+      ?`<span class="rank-badge rk-Graduado" style="font-size:.7rem">Graduado</span>`
+      :`<span class="rank-badge rk-${rk}" style="font-size:.7rem">${rk}</span>`;
+    const ascCell=grad
+      ?`<span class="asc-yes">🎓</span>`
+      :asc&&nextRk?`<span class="asc-yes">↑ ${nextRk}</span>`:'<span class="asc-no">—</span>';
+    return `<tr class="${grad?'grad-row':''}">
       <td>${n}</td>
-      <td><span class="rank-badge rk-${rk}" style="font-size:.7rem">${rk}</span></td>
+      <td>${rankCell}</td>
       <td>${pct}%</td>
-      <td>${asc&&nextRk?`<span class="asc-yes">↑ ${nextRk}</span>`:'<span class="asc-no">—</span>'}</td>
+      <td>${ascCell}</td>
       <td><div class="td-actions">
         <button class="btn sm" onclick="adminEdit('${safe}')">Ver/Editar</button>
         <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
       </div></td>
     </tr>`;
   }).join('');
-  document.getElementById('adminListWrap').innerHTML=`<table class="student-table"><thead><tr><th>Nombre</th><th>Rango</th><th>Total</th><th>Ascenso</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('adminListWrap').innerHTML=`<table class="student-table"><thead><tr><th>Nombre</th><th>Rango</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderGraduados(){
+  const grads=Object.keys(allStudents).filter(n=>allGraduated[n]).sort();
+  if(!grads.length){document.getElementById('gradListWrap').innerHTML='<p class="empty-state">Todavía no hay ningún graduado.</p>';return;}
+  const cards=grads.map(n=>{
+    const sp=allStudents[n];
+    const all=allSpells(),pct=Math.round(all.filter(s=>sp[s]).length/all.length*100);
+    const safe=safeStr(n);
+    return `<div class="grad-card-item">
+      <span class="g-icon">🎓</span>
+      <div class="g-name">${n}</div>
+      <div class="g-rank">${pct}% completado</div>
+      <div style="margin-top:.7rem;display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap">
+        <button class="btn sm" onclick="adminEdit('${safe}')">Ver</button>
+        <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('gradListWrap').innerHTML=`<div class="grad-grid">${cards}</div>`;
 }
 
 function renderAscensos(){
@@ -627,6 +654,25 @@ window.adminDelete=async function(name){
   await deleteStudent(name);
   toast(`${name} eliminado`);
   renderList();renderAscensos();
+};
+
+// ---- GRADUATION ----
+window.toggleGraduation=async function(){
+  const name=currentStudent;
+  const newVal=!(allGraduated[name]||false);
+  const label=newVal?'Graduar':'Revocar graduación';
+  const ok=await showModal(
+    `${label}: ${name}`,
+    newVal
+      ?`¿Confirmas la graduación de ${name}? Aparecerá en la lista de graduados con un diploma especial.`
+      :`¿Revocar la graduación de ${name}? Volverá a su rango habitual.`,
+    label,
+    newVal?'success':'danger'
+  );
+  if(!ok)return;
+  await setGraduated(name,newVal);
+  toast(newVal?`${name} graduado/a 🎓`:`Graduación de ${name} revocada`,'success');
+  renderProfile();
 };
 
 // ---- CREATE FORM ----
