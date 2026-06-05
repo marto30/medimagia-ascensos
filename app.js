@@ -37,6 +37,16 @@ const BASE_DATA = {"Ymir Aleister":{"Bullapure":true,"Férula":true,"Osseus Repa
 // =====================================================================
 function norm(s) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim(); }
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function ipDocId(ip)   { return ip.replace(/\./g, "-"); }
+function uaSummary(ua) {
+  if (!ua) return "—";
+  if (/Edg\//.test(ua))           return "Edge";
+  if (/Chrome\//.test(ua))        return "Chrome";
+  if (/Firefox\//.test(ua))       return "Firefox";
+  if (/Safari\//.test(ua))        return "Safari";
+  if (/bot|crawl|spider/i.test(ua)) return "Bot";
+  return ua.substring(0, 35) + "…";
+}
 function allSpells() { return Object.values(RANKS).flat(); }
 function getRkPct(sp, rk) {
   const l = RANKS[rk];
@@ -111,6 +121,7 @@ let allStudents  = {};
 let allGraduated = {};
 let isAdmin      = false;
 let adminPwdHash = null;
+let visitorIP    = null;
 
 async function loadAdminConfig() {
   try {
@@ -169,7 +180,7 @@ let currentStudent = null;
 let pendingChanges = {};
 
 function show(id) {
-  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras"].forEach(s => {
+  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras","scBlocked"].forEach(s => {
     const el = document.getElementById(s);
     if (el) el.style.display = "none";
   });
@@ -484,12 +495,14 @@ window.showTab = function(id) {
   document.querySelectorAll(".admin-section").forEach(el => el.className = "admin-section");
   document.querySelectorAll(".tab").forEach(el => el.className = "tab");
   document.getElementById(id).className = "admin-section show";
-  const idx = { tabList: 0, tabAscensos: 1, tabActivity: 2, tabGrad: 3, tabAdd: 4, tabConfig: 5 }[id];
-  document.querySelectorAll(".tab")[idx].className = "tab active";
+  const idx = { tabList: 0, tabAscensos: 1, tabActivity: 2, tabGrad: 3, tabAdd: 4, tabSecurity: 5, tabConfig: 6 }[id];
+  document.querySelectorAll(".tab")[idx].className =
+    id === "tabSecurity" ? "tab tab-security active" : "tab active";
   if (id === "tabList")     renderList();
   if (id === "tabAscensos") renderAscensos();
   if (id === "tabActivity") renderPocaActividad();
   if (id === "tabGrad")     renderGraduados();
+  if (id === "tabSecurity") renderSecurityTab();
 };
 
 // =====================================================================
@@ -1145,12 +1158,138 @@ window.changePassword = async function() {
 };
 
 // =====================================================================
+//  SEGURIDAD — monitoreo de accesos y bloqueo por IP
+// =====================================================================
+async function initSecurity() {
+  try {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), 4000);
+    const res  = await fetch("https://api.ipify.org?format=json", { signal: ctrl.signal });
+    clearTimeout(tid);
+    const { ip } = await res.json();
+    visitorIP = ip;
+
+    const blockSnap = await getDoc(doc(db, "blocked_ips", ipDocId(ip)));
+    if (blockSnap.exists()) { show("scBlocked"); return; }
+
+    // Registrar visita (fire & forget)
+    addDoc(collection(db, "access_logs"), {
+      ip,
+      ts: new Date().toISOString(),
+      ua: navigator.userAgent.substring(0, 300)
+    }).catch(() => {});
+  } catch { /* fallo silencioso — la app sigue funcionando */ }
+}
+
+async function renderSecurityTab() {
+  const wrap = document.getElementById("securityWrap");
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando seguridad…</div>';
+  try {
+    const [logSnap, blockSnap] = await Promise.all([
+      getDocs(collection(db, "access_logs")),
+      getDocs(collection(db, "blocked_ips"))
+    ]);
+
+    const logs = [];
+    logSnap.forEach(d => logs.push({ id: d.id, ...d.data() }));
+    logs.sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
+    const recent = logs.slice(0, 100);
+
+    const blocked = {};
+    blockSnap.forEach(d => { blocked[d.data().ip] = d.data(); });
+
+    // — IPs bloqueadas —
+    const blockedList = Object.values(blocked);
+    const blockedHtml = !blockedList.length
+      ? '<p class="empty-state">No hay IPs bloqueadas.</p>'
+      : `<table class="student-table">
+          <thead><tr><th>IP</th><th>Bloqueada</th><th></th></tr></thead>
+          <tbody>${blockedList.map(b => `<tr class="blocked-row">
+            <td class="ip-cell">${b.ip}${b.ip === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
+            <td>${formatDate(b.blockedAt)}</td>
+            <td><button class="btn sm success" onclick="unblockIP('${b.ip}')">Desbloquear</button></td>
+          </tr>`).join("")}</tbody>
+        </table>`;
+
+    // — Registro de accesos —
+    const logsHtml = !recent.length
+      ? '<p class="empty-state">Sin registros de acceso aún.</p>'
+      : `<table class="student-table">
+          <thead><tr><th>IP</th><th>Fecha</th><th>Navegador</th><th></th></tr></thead>
+          <tbody>${recent.map(l => {
+            const isBlk = !!blocked[l.ip];
+            return `<tr class="${isBlk ? "blocked-row" : ""}">
+              <td class="ip-cell">${l.ip}
+                ${l.ip === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
+                ${isBlk ? '<span class="ip-blocked-badge">bloqueada</span>' : ""}
+              </td>
+              <td>${l.ts ? formatDate(l.ts) : "—"}</td>
+              <td class="ua-cell">${uaSummary(l.ua)}</td>
+              <td>${!isBlk
+                ? `<button class="btn sm danger" onclick="blockIP('${l.ip}')">Bloquear</button>`
+                : `<button class="btn sm success" onclick="unblockIP('${l.ip}')">Desbloquear</button>`}
+              </td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table>`;
+
+    wrap.innerHTML = `
+      <div class="sec-section">
+        <p class="sec-title">🚫 IPs bloqueadas <span class="sec-count">${blockedList.length}</span></p>
+        ${blockedHtml}
+      </div>
+      <div class="sec-section" style="margin-top:1.6rem">
+        <p class="sec-title">📋 Últimos ${recent.length} accesos
+          <button class="btn sm ghost" style="margin-left:.6rem" onclick="clearOldLogs()">Limpiar logs</button>
+        </p>
+        ${logsHtml}
+      </div>`;
+  } catch (e) {
+    wrap.innerHTML = `<p class="notice" style="color:var(--red)">Error al cargar datos: ${e.message}</p>`;
+  }
+}
+
+window.blockIP = async function(ip) {
+  const ok = await showModal(
+    "Bloquear IP",
+    `¿Bloquear acceso desde ${ip}? No podrá acceder a la web.`,
+    "Bloquear", "danger"
+  );
+  if (!ok) return;
+  await setDoc(doc(db, "blocked_ips", ipDocId(ip)), { ip, blockedAt: new Date().toISOString() });
+  toast(`IP ${ip} bloqueada`, "error");
+  renderSecurityTab();
+};
+
+window.unblockIP = async function(ip) {
+  await deleteDoc(doc(db, "blocked_ips", ipDocId(ip)));
+  toast(`IP ${ip} desbloqueada`, "success");
+  renderSecurityTab();
+};
+
+window.clearOldLogs = async function() {
+  const ok = await showModal(
+    "Limpiar registros",
+    "¿Eliminar todos los registros de acceso? Los bloqueos activos no se verán afectados.",
+    "Limpiar", "danger"
+  );
+  if (!ok) return;
+  const snap = await getDocs(collection(db, "access_logs"));
+  await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  toast("Registros eliminados", "success");
+  renderSecurityTab();
+};
+
+// =====================================================================
 //  INIT
 // =====================================================================
 const loadingEl  = document.getElementById("loadingIndicator");
 const searchCard = document.querySelector("#scSearch .card");
 loadingEl.style.display    = "block";
 searchCard.style.opacity   = "0.4";
+
+initSecurity(); // corre en paralelo: detecta IP, verifica bloqueo y registra visita
 
 Promise.all([loadAllStudents(), loadAdminConfig()])
   .then(() => {

@@ -17,6 +17,15 @@
     <p class="subtitle">Medimagia — Consulta y actualiza tu progreso</p>
   </div>
 
+  <!-- ── PANTALLA: BLOQUEADO ──────────────────────────────────── -->
+  <div id="scBlocked" style="display:none">
+    <div class="card blocked-card">
+      <div class="blocked-icon">🚫</div>
+      <p class="card-title" style="color:var(--red)">Acceso restringido</p>
+      <p class="blocked-msg">Tu acceso ha sido restringido por el administrador.<br>Si crees que es un error, contacta con él.</p>
+    </div>
+  </div>
+
   <!-- ── PANTALLA: BUSCAR ─────────────────────────────────────── -->
   <div id="scSearch">
 
@@ -160,6 +169,7 @@
       <button class="tab tab-warn" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="tab"         onclick="showTab('tabGrad')">Graduados</button>
       <button class="tab"         onclick="showTab('tabAdd')">Crear alumno</button>
+      <button class="tab tab-security" onclick="showTab('tabSecurity')">🛡 Seguridad</button>
       <button class="tab"         onclick="showTab('tabConfig')">Configuración</button>
     </div>
 
@@ -241,6 +251,13 @@
         </div>
         <p class="err"    id="addErr"></p>
         <p class="ok-msg" id="addOk">✓ Alumno creado correctamente</p>
+      </div>
+    </div>
+
+    <!-- Tab: seguridad -->
+    <div class="admin-section" id="tabSecurity">
+      <div id="securityWrap">
+        <div class="loading"><span class="spinner"></span>Cargando…</div>
       </div>
     </div>
 
