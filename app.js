@@ -245,11 +245,12 @@ window.buscar = function() {
 function renderBitCount(name) {
   const el = document.getElementById("pBitCount");
   if (!el) return;
-  if (!bitacorasLoaded) { el.innerHTML = ""; return; }
+  if (!bitacorasLoaded) {
+    el.innerHTML = `<div class="profile-bit-stat profile-bit-loading">📋 <span>cargando…</span></div>`;
+    return;
+  }
   const cnt = allBitacoras.filter(b => b.attendants && b.attendants.includes(name)).length;
-  el.innerHTML = cnt > 0
-    ? `<div class="profile-bit-stat">📋 <strong>${cnt}</strong> bitácora${cnt !== 1 ? "s" : ""} como médico</div>`
-    : "";
+  el.innerHTML = `<div class="profile-bit-stat">📋 <strong>${cnt}</strong> bitácora${cnt !== 1 ? "s" : ""} como médico</div>`;
 }
 
 function openProfile(name) {
@@ -260,7 +261,13 @@ function openProfile(name) {
   document.getElementById("profileBackBtn").textContent =
     isAdmin ? "← Volver al panel" : "← Volver";
   if (!bitacorasLoaded) {
-    loadBitacoras().then(() => { bitacorasLoaded = true; renderBitCount(name); }).catch(() => {});
+    renderBitCount(name);
+    loadBitacoras()
+      .then(() => { bitacorasLoaded = true; renderBitCount(name); })
+      .catch(() => {
+        const el = document.getElementById("pBitCount");
+        if (el) el.innerHTML = "";
+      });
   }
 }
 

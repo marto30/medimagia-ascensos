@@ -408,6 +408,7 @@ input::placeholder { color: var(--text-ghost); }
   font-size: .8rem; color: var(--text-muted);
 }
 .profile-bit-stat strong { color: var(--gold-light); font-size: .9rem; }
+.profile-bit-loading { opacity: .45; border-style: dashed; }
 
 /* Sortable column headers */
 .th-sort {
