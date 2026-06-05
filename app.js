@@ -168,9 +168,12 @@ let currentStudent = null;
 let pendingChanges = {};
 
 function show(id) {
-  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras"]
-    .forEach(s => document.getElementById(s).style.display = "none");
-  document.getElementById(id).style.display = "block";
+  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras"].forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.style.display = "none";
+  });
+  const target = document.getElementById(id);
+  if (target) target.style.display = "block";
 }
 
 function goSearch() {
@@ -769,20 +772,34 @@ let bitacorasFrom   = "search";
 let bitacorasLoaded = false;
 
 window.showBitacoras = async function(from = "search") {
-  bitacorasFrom = from;
-  show("scBitacoras");
+  try {
+    bitacorasFrom = from;
+    show("scBitacoras");
 
-  // Construir la UI estática del formulario solo la primera vez
-  if (!bitacorasLoaded) {
-    document.getElementById("bitacoraListWrap").innerHTML =
-      '<div class="loading"><span class="spinner"></span>Cargando…</div>';
-    document.getElementById("attendantsList").innerHTML = buildAttendantsList();
-    document.getElementById("spellInserter").innerHTML  = buildSpellInserter();
-    await loadBitacoras();
-    bitacorasLoaded = true;
+    if (!bitacorasLoaded) {
+      document.getElementById("bitacoraListWrap").innerHTML =
+        '<div class="loading"><span class="spinner"></span>Cargando bitácoras…</div>';
+      document.getElementById("attendantsList").innerHTML = buildAttendantsList();
+      document.getElementById("spellInserter").innerHTML  = buildSpellInserter();
+      try {
+        await loadBitacoras();
+        bitacorasLoaded = true;
+      } catch (e) {
+        console.error("Error cargando bitácoras:", e);
+        document.getElementById("bitacoraListWrap").innerHTML =
+          `<p class="notice" style="color:var(--red)">
+            No se pudieron cargar las bitácoras.<br>
+            <small>Comprueba las reglas de Firestore: la colección <em>bitacoras</em> necesita permisos de lectura.</small>
+          </p>`;
+        return;
+      }
+    }
+
+    renderBitacoraList();
+  } catch (e) {
+    console.error("showBitacoras error:", e);
+    toast("Error al abrir bitácoras. Revisa la consola.", "error");
   }
-
-  renderBitacoraList();
 };
 
 window.backFromBitacoras = function() {
