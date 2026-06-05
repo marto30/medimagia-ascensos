@@ -65,19 +65,89 @@ function canAscend(sp, rank) {
   if (idx >= RANKS_ORDER.length - 1) return false;
   return getRkPct(sp, rank).pct >= ASCENSO_PCT;
 }
-function safeStr(n) { return n.replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
-function docId(name)  { return name.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_]/g,"X"); }
+function safeStr(n)  { return n.replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
+function docId(name) { return name.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_]/g,"X"); }
+// Escapa texto para inserción segura en innerHTML
+function escHtml(v)  {
+  return String(v ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+// Escapa para uso simultáneo en atributo HTML + literal JS dentro de onclick="fn('...')"
+function safeAttr(n) {
+  return String(n ?? "")
+    .replace(/\\/g,"\\\\").replace(/'/g,"\\'")
+    .replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
 
 // =====================================================================
 //  SHA-256  (Web Crypto API — sin dependencias)
 // =====================================================================
-const HASH_SALT = "medimagia_v1_";
+const HASH_SALT    = "medimagia_v1_";
+const IP_HASH_SALT = "medimagia_ip_v2_";
 async function sha256(str) {
   const buf = await crypto.subtle.digest("SHA-256",
     new TextEncoder().encode(HASH_SALT + str));
   return Array.from(new Uint8Array(buf))
     .map(b => b.toString(16).padStart(2,"0")).join("");
 }
+async function hashIP(ip) {
+  const buf = await crypto.subtle.digest("SHA-256",
+    new TextEncoder().encode(IP_HASH_SALT + ip));
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+// =====================================================================
+//  SEGURIDAD — HTTPS · Rate limit · Session timeout
+// =====================================================================
+// Forzar HTTPS (excepto localhost)
+if (location.protocol !== "https:" && !["localhost","127.0.0.1"].includes(location.hostname)) {
+  location.replace("https:" + location.href.slice(location.protocol.length));
+}
+
+// Rate limiting para login (5 intentos, bloqueo 15 min)
+const _LOCK_KEY  = "mm_ll";
+const _LOCK_MAX  = 5;
+const _LOCK_MS   = 15 * 60 * 1000;
+function loginAllowed() {
+  try {
+    const d = JSON.parse(localStorage.getItem(_LOCK_KEY) || "{}");
+    if (!d.since || Date.now() - d.since > _LOCK_MS) return true;
+    return (d.count || 0) < _LOCK_MAX;
+  } catch { return true; }
+}
+function loginLockRemaining() {
+  try {
+    const d = JSON.parse(localStorage.getItem(_LOCK_KEY) || "{}");
+    if (!d.since || Date.now() - d.since > _LOCK_MS) return 0;
+    return (d.count || 0) >= _LOCK_MAX ? Math.ceil((_LOCK_MS - (Date.now() - d.since)) / 60000) : 0;
+  } catch { return 0; }
+}
+function recordFailedLogin() {
+  try {
+    const d = JSON.parse(localStorage.getItem(_LOCK_KEY) || "{}");
+    const since = d.since && Date.now() - d.since <= _LOCK_MS ? d.since : Date.now();
+    localStorage.setItem(_LOCK_KEY, JSON.stringify({ count: (d.count || 0) + 1, since }));
+  } catch {}
+}
+function clearLoginLock() {
+  try { localStorage.removeItem(_LOCK_KEY); } catch {}
+}
+
+// Session timeout: cierre automático por inactividad (30 min)
+const _SESSION_MS = 30 * 60 * 1000;
+let _sessionTimer = null;
+function resetSessionTimer() {
+  if (!isAdmin) return;
+  clearTimeout(_sessionTimer);
+  _sessionTimer = setTimeout(() => {
+    cerrarSesion();
+    toast("Sesión cerrada por inactividad", "error");
+  }, _SESSION_MS);
+}
+["click","keydown","touchstart"].forEach(ev =>
+  document.addEventListener(ev, resetSessionTimer, { passive: true }));
 
 // =====================================================================
 //  TOAST
@@ -213,6 +283,7 @@ window.backFromProfile = function() {
 
 window.cerrarSesion = function() {
   isAdmin = false; isSuperAdmin = false;
+  clearTimeout(_sessionTimer); _sessionTimer = null;
   const secBtn = document.getElementById("tabSecurityBtn");
   if (secBtn) secBtn.style.display = "none";
   goSearch();
@@ -232,7 +303,7 @@ function renderSuggestions() {
   const m = Object.keys(allStudents).filter(n => norm(n).includes(q)).slice(0, 6);
   if (!m.length) { sugsEl.className = "sug"; return; }
   sugsEl.innerHTML = m.map(n =>
-    `<div class="sug-item" onclick="selectName('${safeStr(n)}')">${n}</div>`
+    `<div class="sug-item" onclick="selectName('${safeAttr(n)}')">${escHtml(n)}</div>`
   ).join("");
   sugsEl.className = "sug show";
 }
@@ -382,7 +453,7 @@ function renderProfile() {
     const rows = RANKS[rk].map(s => {
       const on  = sp[s];
       const key = s.replace(/[\s.]/g, "_");
-      return `<div class="spell-row" onclick="toggleSpell('${safeStr(s)}')">
+      return `<div class="spell-row" onclick="toggleSpell('${safeAttr(s)}')">
         <div class="spell-dot ${on ? "on" : "off"}" id="dot_${key}"></div>
         <span class="spell-txt ${on ? "" : "off"}" id="txt_${key}">${s}</span>
       </div>`;
@@ -485,6 +556,13 @@ function applyAdminRole() {
 }
 
 window.loginAdmin = async function() {
+  const remaining = loginLockRemaining();
+  if (remaining > 0) {
+    document.getElementById("adminErr").textContent =
+      `Demasiados intentos. Espera ${remaining} minuto${remaining !== 1 ? "s" : ""}.`;
+    document.getElementById("adminErr").style.display = "block";
+    return;
+  }
   const btn = document.querySelector("#scAdminLogin .btn");
   if (btn) { btn.disabled = true; btn.textContent = "Verificando…"; }
   const hash = await sha256(document.getElementById("adminPwd").value);
@@ -494,14 +572,23 @@ window.loginAdmin = async function() {
   } else if (hash === adminPwdHash) {
     isAdmin = true; isSuperAdmin = false;
   } else {
-    document.getElementById("adminErr").style.display = "block";
+    recordFailedLogin();
+    const left = loginLockRemaining();
+    const errEl = document.getElementById("adminErr");
+    errEl.textContent = left > 0
+      ? `Contraseña incorrecta. Cuenta bloqueada ${left} min.`
+      : "Contraseña incorrecta.";
+    errEl.style.display = "block";
     if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
     return;
   }
 
+  clearLoginLock();
+  document.getElementById("adminPwd").value = "";
   applyAdminRole();
   show("scAdmin");
   renderList(); renderAscensos(); renderGraduados();
+  resetSessionTimer();
   if (!bitacorasLoaded) {
     loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
   }
@@ -595,7 +682,7 @@ function buildStudentRow(n) {
   const asc    = canAscend(sp, rk);
   const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
   const pct    = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
-  const safe   = safeStr(n);
+  const safe   = safeAttr(n);
   const statusCell = grad
     ? `<span class="asc-yes">🎓 Graduado</span>`
     : asc && nextRk ? `<span class="asc-yes">↑ ${nextRk}</span>` : `<span class="asc-no">—</span>`;
@@ -616,7 +703,7 @@ function buildStudentRow(n) {
   }
 
   return `<tr class="${grad ? "grad-row" : ""}">
-    <td>${n}</td>
+    <td>${escHtml(n)}</td>
     <td>${pct}%</td>
     <td>${statusCell}</td>
     <td style="text-align:center">${thisCell}</td>
@@ -729,13 +816,13 @@ function renderAscensos() {
     const sp = allStudents[n]; const rk = getCurrentRank(sp);
     const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
     const { pct } = getRkPct(sp, rk);
-    const safe = safeStr(n);
+    const safe = safeAttr(n);
     return `<tr>
-      <td>${n}</td>
-      <td><span class="rank-badge rk-${rk}" style="font-size:.7rem">${rk}</span></td>
+      <td>${escHtml(n)}</td>
+      <td><span class="rank-badge rk-${rk}" style="font-size:.7rem">${escHtml(rk)}</span></td>
       <td>${pct}%</td>
-      <td><span class="asc-yes">→ ${nextRk}</span></td>
-      <td><button class="btn sm success" onclick="confirmAscend('${safe}','${nextRk}')">Ascender</button></td>
+      <td><span class="asc-yes">→ ${escHtml(nextRk)}</span></td>
+      <td><button class="btn sm success" onclick="confirmAscend('${safe}','${safeAttr(nextRk)}')">Ascender</button></td>
     </tr>`;
   }).join("");
 
@@ -774,10 +861,10 @@ function renderGraduados() {
     const sp  = allStudents[n];
     const all = allSpells();
     const pct = Math.round(all.filter(s => sp[s]).length / all.length * 100);
-    const safe = safeStr(n);
+    const safe = safeAttr(n);
     return `<div class="grad-card-item">
       <span class="g-icon">🎓</span>
-      <div class="g-name">${n}</div>
+      <div class="g-name">${escHtml(n)}</div>
       <div class="g-rank">${pct}% completado</div>
       <div class="g-actions">
         <button class="btn sm" onclick="adminEdit('${safe}')">Ver</button>
@@ -827,11 +914,11 @@ function renderPocaActividad() {
   }
 
   const rows = students.map(s => {
-    const safe  = safeStr(s.name);
+    const safe  = safeAttr(s.name);
     const rkCls = `rk-${s.rank}`;
     return `<tr>
-      <td>${s.name}</td>
-      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${s.rank}</span></td>
+      <td>${escHtml(s.name)}</td>
+      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(s.rank)}</span></td>
       <td style="text-align:center"><span class="bit-count-badge bit-count-warn">${s.cl}</span></td>
       <td style="text-align:center"><span class="bit-count-badge${s.ct < 3 ? " bit-count-warn" : ""}">${s.ct}</span></td>
       <td><button class="btn sm" onclick="adminEdit('${safe}')">Ver</button></td>
@@ -901,7 +988,7 @@ function buildSpellEditor() {
       const key = "addchk_" + s.replace(/[\s.]/g, "_");
       return `<label class="spell-check-row">
         <input type="checkbox" id="${key}" ${addSpells[s] ? "checked" : ""}
-               onchange="toggleAddSpell('${safeStr(s)}', this.checked)"/>
+               onchange="toggleAddSpell('${safeAttr(s)}', this.checked)"/>
         ${s}
       </label>`;
     }).join("")
@@ -1002,7 +1089,7 @@ function buildSpellInserter() {
       <span class="si-rank">${rk}</span>
       <div class="si-spells">
         ${RANKS[rk].map(s =>
-          `<button class="si-btn" type="button" onclick="insertSpell('${safeStr(s)}')">${s}</button>`
+          `<button class="si-btn" type="button" onclick="insertSpell('${safeAttr(s)}')">${escHtml(s)}</button>`
         ).join("")}
       </div>
     </div>`
@@ -1030,7 +1117,7 @@ function buildAttendantsList(filterQ = "") {
   if (!names.length) return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
   return names.map(n =>
     `<label class="attendant-item">
-      <input type="checkbox" class="att-chk" value="${safeStr(n)}"/> ${n}
+      <input type="checkbox" class="att-chk" value="${escHtml(n)}"/> ${escHtml(n)}
     </label>`
   ).join("");
 }
@@ -1099,23 +1186,23 @@ function renderBitacoraList() {
     <div class="bitacora-card">
       <div class="bitacora-top">
         <div>
-          <div class="bitacora-patient">${b.patient}</div>
+          <div class="bitacora-patient">${escHtml(b.patient)}</div>
           <div class="bitacora-date">${formatDate(b.createdAt)}</div>
         </div>
         ${isAdmin ? `<button class="btn sm danger" onclick="deleteBitacora('${b.id}')">Eliminar</button>` : ""}
       </div>
       <div class="bitacora-field">
         <span class="bitacora-label">Diagnóstico</span>
-        <span class="bitacora-value">${b.diagnosis}</span>
+        <span class="bitacora-value">${escHtml(b.diagnosis)}</span>
       </div>
       <div class="bitacora-field">
         <span class="bitacora-label">Procedimiento</span>
-        <span class="bitacora-value bitacora-proc">${b.procedure}</span>
+        <span class="bitacora-value bitacora-proc">${escHtml(b.procedure)}</span>
       </div>
       <div class="bitacora-field">
         <span class="bitacora-label">Atendido por</span>
-        <div class="bitacora-attendants">${b.attendants.map(a =>
-          `<span class="att-badge">${a}</span>`).join("")}</div>
+        <div class="bitacora-attendants">${(b.attendants || []).map(a =>
+          `<span class="att-badge">${escHtml(a)}</span>`).join("")}</div>
       </div>
     </div>`).join("");
 }
@@ -1212,18 +1299,20 @@ async function initSecurity() {
     const res  = await fetch("https://api.ipify.org?format=json", { signal: ctrl.signal });
     clearTimeout(tid);
     const { ip } = await res.json();
-    visitorIP = ip;
+    // Nunca almacenamos la IP real — solo su hash irreversible
+    const ipHash = await hashIP(ip);
+    visitorIP = ipHash; // guardamos el hash, no la IP
 
-    const blockSnap = await getDoc(doc(db, "blocked_ips", ipDocId(ip)));
+    const blockSnap = await getDoc(doc(db, "blocked_ips", ipHash));
     if (blockSnap.exists()) { show("scBlocked"); return; }
 
-    // Registrar visita (fire & forget)
+    // Registrar visita: solo hash + timestamp + navegador resumido (fire & forget)
     addDoc(collection(db, "access_logs"), {
-      ip,
+      ip: ipHash,
       ts: new Date().toISOString(),
-      ua: navigator.userAgent.substring(0, 300)
+      ua: uaSummary(navigator.userAgent) // nunca el UA completo
     }).catch(() => {});
-  } catch { /* fallo silencioso — la app sigue funcionando */ }
+  } catch { /* fallo silencioso */ }
 }
 
 async function renderSecurityTab() {
@@ -1244,14 +1333,15 @@ async function renderSecurityTab() {
     const blocked = {};
     blockSnap.forEach(d => { blocked[d.data().ip] = d.data(); });
 
+    // Los hashes de IP son hex seguros — no necesitan escapeHtml
     // — IPs bloqueadas —
     const blockedList = Object.values(blocked);
     const blockedHtml = !blockedList.length
       ? '<p class="empty-state">No hay IPs bloqueadas.</p>'
       : `<table class="student-table">
-          <thead><tr><th>IP</th><th>Bloqueada</th><th></th></tr></thead>
+          <thead><tr><th>Hash IP</th><th>Bloqueada</th><th></th></tr></thead>
           <tbody>${blockedList.map(b => `<tr class="blocked-row">
-            <td class="ip-cell">${b.ip}${b.ip === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
+            <td class="ip-cell">${b.ip.substring(0,16)}…${b.ip === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
             <td>${formatDate(b.blockedAt)}</td>
             <td><button class="btn sm success" onclick="unblockIP('${b.ip}')">Desbloquear</button></td>
           </tr>`).join("")}</tbody>
@@ -1261,16 +1351,16 @@ async function renderSecurityTab() {
     const logsHtml = !recent.length
       ? '<p class="empty-state">Sin registros de acceso aún.</p>'
       : `<table class="student-table">
-          <thead><tr><th>IP</th><th>Fecha</th><th>Navegador</th><th></th></tr></thead>
+          <thead><tr><th>Hash IP</th><th>Fecha</th><th>Navegador</th><th></th></tr></thead>
           <tbody>${recent.map(l => {
             const isBlk = !!blocked[l.ip];
             return `<tr class="${isBlk ? "blocked-row" : ""}">
-              <td class="ip-cell">${l.ip}
+              <td class="ip-cell">${escHtml(l.ip).substring(0,16)}…
                 ${l.ip === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
                 ${isBlk ? '<span class="ip-blocked-badge">bloqueada</span>' : ""}
               </td>
               <td>${l.ts ? formatDate(l.ts) : "—"}</td>
-              <td class="ua-cell">${uaSummary(l.ua)}</td>
+              <td class="ua-cell">${escHtml(l.ua || "—")}</td>
               <td>${!isBlk
                 ? `<button class="btn sm danger" onclick="blockIP('${l.ip}')">Bloquear</button>`
                 : `<button class="btn sm success" onclick="unblockIP('${l.ip}')">Desbloquear</button>`}
