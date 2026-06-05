@@ -385,6 +385,30 @@ input::placeholder { color: var(--text-ghost); }
 .asc-no  { color: #3a3530; font-size: .78rem; }
 .td-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
 
+/* Bitácoras count badge in admin list */
+.bit-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.5rem; height: 1.5rem; padding: 0 .35rem;
+  background: rgba(212,175,55,.12);
+  border: 1px solid rgba(212,175,55,.3);
+  border-radius: 999px;
+  color: var(--gold-light);
+  font-size: .75rem; font-weight: 600;
+}
+.bit-count-zero { color: #2a2520; font-size: .78rem; }
+
+/* Bitácoras stat in student profile */
+.profile-bit-stat {
+  display: inline-flex; align-items: center; gap: .35rem;
+  margin: .6rem 0 .2rem;
+  padding: .3rem .75rem;
+  background: rgba(212,175,55,.07);
+  border: 1px solid rgba(212,175,55,.2);
+  border-radius: 999px;
+  font-size: .8rem; color: var(--text-muted);
+}
+.profile-bit-stat strong { color: var(--gold-light); font-size: .9rem; }
+
 /* Sortable column headers */
 .th-sort {
   cursor: pointer; user-select: none;

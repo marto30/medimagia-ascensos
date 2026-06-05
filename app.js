@@ -242,6 +242,16 @@ window.buscar = function() {
 // =====================================================================
 //  PROFILE
 // =====================================================================
+function renderBitCount(name) {
+  const el = document.getElementById("pBitCount");
+  if (!el) return;
+  if (!bitacorasLoaded) { el.innerHTML = ""; return; }
+  const cnt = allBitacoras.filter(b => b.attendants && b.attendants.includes(name)).length;
+  el.innerHTML = cnt > 0
+    ? `<div class="profile-bit-stat">📋 <strong>${cnt}</strong> bitácora${cnt !== 1 ? "s" : ""} como médico</div>`
+    : "";
+}
+
 function openProfile(name) {
   currentStudent = name;
   pendingChanges = JSON.parse(JSON.stringify(allStudents[name]));
@@ -249,6 +259,9 @@ function openProfile(name) {
   show("scProfile");
   document.getElementById("profileBackBtn").textContent =
     isAdmin ? "← Volver al panel" : "← Volver";
+  if (!bitacorasLoaded) {
+    loadBitacoras().then(() => { bitacorasLoaded = true; renderBitCount(name); }).catch(() => {});
+  }
 }
 
 function renderProfile() {
@@ -310,6 +323,7 @@ function renderProfile() {
 
   document.getElementById("pOvPct").textContent = totalPct + "%";
   setTimeout(() => { document.getElementById("pOvBar").style.width = totalPct + "%"; }, 50);
+  renderBitCount(name);
 
   let tip = "";
   for (const rk of RANKS_ORDER) {
@@ -430,6 +444,9 @@ window.loginAdmin = async function() {
     isAdmin = true;
     show("scAdmin");
     renderList(); renderAscensos(); renderGraduados();
+    if (!bitacorasLoaded) {
+      loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
+    }
   } else {
     document.getElementById("adminErr").style.display = "block";
   }
@@ -461,9 +478,10 @@ function sortValue(n) {
   const rk   = getCurrentRank(sp);
   const pct  = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
   switch (listSort.key) {
-    case "pct":    return pct;
-    case "status": return canAscend(sp, rk) ? 1 : 0;
-    default:       return norm(n);
+    case "pct":      return pct;
+    case "status":   return canAscend(sp, rk) ? 1 : 0;
+    case "bitacoras": return allBitacoras.filter(b => b.attendants && b.attendants.includes(n)).length;
+    default:         return norm(n);
   }
 }
 
@@ -497,23 +515,28 @@ window.quickGraduate = async function(name) {
 };
 
 function buildStudentRow(n) {
-  const sp     = allStudents[n];
-  const grad   = allGraduated[n] || false;
-  const rk     = getCurrentRank(sp);
-  const asc    = canAscend(sp, rk);
-  const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
-  const pct    = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
-  const safe   = safeStr(n);
+  const sp       = allStudents[n];
+  const grad     = allGraduated[n] || false;
+  const rk       = getCurrentRank(sp);
+  const asc      = canAscend(sp, rk);
+  const nextRk   = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
+  const pct      = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
+  const safe     = safeStr(n);
+  const bitCount = allBitacoras.filter(b => b.attendants && b.attendants.includes(n)).length;
   const statusCell = grad
     ? `<span class="asc-yes">🎓 Graduado</span>`
     : asc && nextRk ? `<span class="asc-yes">↑ ${nextRk}</span>` : `<span class="asc-no">—</span>`;
   const gradBtnCls   = `btn btn-grad sm${grad ? " is-grad" : ""}`;
   const gradBtnTitle = grad ? "Revocar graduación" : "Graduar del Colegio";
   const gradBtnLabel = grad ? "🎓 Grad." : "🎓";
+  const bitCell = bitCount > 0
+    ? `<span class="bit-count-badge">${bitCount}</span>`
+    : `<span class="bit-count-zero">—</span>`;
   return `<tr class="${grad ? "grad-row" : ""}">
     <td>${n}</td>
     <td>${pct}%</td>
     <td>${statusCell}</td>
+    <td style="text-align:center">${bitCell}</td>
     <td><div class="td-actions">
       <button class="${gradBtnCls}" title="${gradBtnTitle}"
               onclick="quickGraduate('${safe}')">${gradBtnLabel}</button>
@@ -529,6 +552,7 @@ function buildRankTable(members) {
       <th class="th-sort" onclick="sortList('name')">Nombre ${sortArrow("name")}</th>
       <th class="th-sort" onclick="sortList('pct')">Total % ${sortArrow("pct")}</th>
       <th class="th-sort" onclick="sortList('status')">Estado ${sortArrow("status")}</th>
+      <th class="th-sort" onclick="sortList('bitacoras')" title="Bitácoras en las que ha participado">📋 ${sortArrow("bitacoras")}</th>
       <th></th>
     </tr></thead>
     <tbody>${members.map(buildStudentRow).join("")}</tbody>
