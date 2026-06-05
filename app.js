@@ -119,16 +119,19 @@ document.getElementById("confirmModal")
 // =====================================================================
 let allStudents  = {};
 let allGraduated = {};
-let isAdmin      = false;
-let adminPwdHash = null;
-let visitorIP    = null;
+let isAdmin        = false;
+let isSuperAdmin   = false;
+let adminPwdHash   = null;
+let superAdminHash = null;
+let visitorIP      = null;
 
 async function loadAdminConfig() {
   try {
     const ref  = doc(db, "config", "admin");
     const snap = await getDoc(ref);
     if (snap.exists()) {
-      adminPwdHash = snap.data().passwordHash;
+      adminPwdHash   = snap.data().passwordHash;
+      superAdminHash = snap.data().superPasswordHash || null;
     } else {
       adminPwdHash = await sha256(DEFAULT_PWD);
       await setDoc(ref, { passwordHash: adminPwdHash });
@@ -209,9 +212,11 @@ window.backFromProfile = function() {
 };
 
 window.cerrarSesion = function() {
-  isAdmin = false;
+  isAdmin = false; isSuperAdmin = false;
+  const secBtn = document.getElementById("tabSecurityBtn");
+  if (secBtn) secBtn.style.display = "none";
   goSearch();
-  toast("Sesión de administrador cerrada");
+  toast("Sesión cerrada");
 };
 
 // =====================================================================
@@ -471,19 +476,34 @@ window.toggleGraduation = async function() {
 // =====================================================================
 //  ADMIN — LOGIN
 // =====================================================================
+function applyAdminRole() {
+  const secBtn = document.getElementById("tabSecurityBtn");
+  if (secBtn) secBtn.style.display = isSuperAdmin ? "" : "none";
+  // Sección de config: admin normal ve "Establecer superadmin", superadmin no
+  const superSection = document.getElementById("superAdminPwdSection");
+  if (superSection) superSection.style.display = isSuperAdmin ? "none" : "block";
+}
+
 window.loginAdmin = async function() {
   const btn = document.querySelector("#scAdminLogin .btn");
   if (btn) { btn.disabled = true; btn.textContent = "Verificando…"; }
   const hash = await sha256(document.getElementById("adminPwd").value);
-  if (hash === adminPwdHash) {
-    isAdmin = true;
-    show("scAdmin");
-    renderList(); renderAscensos(); renderGraduados();
-    if (!bitacorasLoaded) {
-      loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
-    }
+
+  if (superAdminHash && hash === superAdminHash) {
+    isAdmin = true; isSuperAdmin = true;
+  } else if (hash === adminPwdHash) {
+    isAdmin = true; isSuperAdmin = false;
   } else {
     document.getElementById("adminErr").style.display = "block";
+    if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
+    return;
+  }
+
+  applyAdminRole();
+  show("scAdmin");
+  renderList(); renderAscensos(); renderGraduados();
+  if (!bitacorasLoaded) {
+    loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
   }
   if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
 };
@@ -502,7 +522,7 @@ window.showTab = function(id) {
   if (id === "tabAscensos") renderAscensos();
   if (id === "tabActivity") renderPocaActividad();
   if (id === "tabGrad")     renderGraduados();
-  if (id === "tabSecurity") renderSecurityTab();
+  if (id === "tabSecurity") { if (isSuperAdmin) renderSecurityTab(); }
 };
 
 // =====================================================================
@@ -1128,7 +1148,8 @@ window.changePassword = async function() {
   errEl.style.display = "none"; okEl.style.display = "none";
 
   const currentHash = await sha256(current);
-  if (currentHash !== adminPwdHash) {
+  const activeHash  = isSuperAdmin ? superAdminHash : adminPwdHash;
+  if (currentHash !== activeHash) {
     errEl.textContent = "La contraseña actual es incorrecta.";
     errEl.style.display = "block"; return;
   }
@@ -1143,8 +1164,9 @@ window.changePassword = async function() {
 
   btn.disabled = true; btn.textContent = "Guardando…";
   const newHash = await sha256(newPwd);
-  await setDoc(doc(db, "config", "admin"), { passwordHash: newHash }, { merge: true });
-  adminPwdHash = newHash;
+  const field   = isSuperAdmin ? "superPasswordHash" : "passwordHash";
+  await setDoc(doc(db, "config", "admin"), { [field]: newHash }, { merge: true });
+  if (isSuperAdmin) superAdminHash = newHash; else adminPwdHash = newHash;
 
   document.getElementById("pwdCurrent").value = "";
   document.getElementById("pwdNew").value     = "";
@@ -1155,6 +1177,29 @@ window.changePassword = async function() {
   setTimeout(() => okEl.style.display = "none", 2500);
   toast("Contraseña actualizada correctamente", "success");
   btn.disabled = false; btn.textContent = "Guardar nueva contraseña";
+};
+
+window.setSuperAdminPwd = async function() {
+  const newPwd  = document.getElementById("pwdSuperNew").value;
+  const confirm = document.getElementById("pwdSuperConfirm").value;
+  const errEl   = document.getElementById("pwdSuperErr");
+  const okEl    = document.getElementById("pwdSuperOk");
+  errEl.style.display = "none"; okEl.style.display = "none";
+
+  if (newPwd.length < 8) {
+    errEl.textContent = "Mínimo 8 caracteres."; errEl.style.display = "block"; return;
+  }
+  if (newPwd !== confirm) {
+    errEl.textContent = "Las contraseñas no coinciden."; errEl.style.display = "block"; return;
+  }
+  const hash = await sha256(newPwd);
+  await setDoc(doc(db, "config", "admin"), { superPasswordHash: hash }, { merge: true });
+  superAdminHash = hash;
+  document.getElementById("pwdSuperNew").value     = "";
+  document.getElementById("pwdSuperConfirm").value = "";
+  okEl.style.display = "block";
+  setTimeout(() => okEl.style.display = "none", 2500);
+  toast("Contraseña de superadmin guardada", "success");
 };
 
 // =====================================================================

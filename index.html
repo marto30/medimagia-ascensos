@@ -169,7 +169,7 @@
       <button class="tab tab-warn" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="tab"         onclick="showTab('tabGrad')">Graduados</button>
       <button class="tab"         onclick="showTab('tabAdd')">Crear alumno</button>
-      <button class="tab tab-security" onclick="showTab('tabSecurity')">🛡 Seguridad</button>
+      <button class="tab tab-security" id="tabSecurityBtn" onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
       <button class="tab"         onclick="showTab('tabConfig')">Configuración</button>
     </div>
 
@@ -294,6 +294,33 @@
         </div>
 
         <div class="divider"></div>
+
+        <!-- Solo visible al admin normal, no al superadmin -->
+        <div id="superAdminPwdSection" style="display:none">
+          <p class="card-title" style="margin-top:.2rem">Contraseña de superadmin</p>
+          <p class="pwd-hint" style="margin-bottom:.8rem">
+            El superadmin tiene acceso al panel de seguridad (monitoreo de IPs).
+            Solo tú como admin puedes establecer o cambiar esta contraseña.
+          </p>
+          <div class="pwd-form">
+            <div class="field">
+              <label for="pwdSuperNew">Nueva contraseña de superadmin</label>
+              <input type="password" id="pwdSuperNew" placeholder="Mínimo 8 caracteres"/>
+            </div>
+            <div class="field">
+              <label for="pwdSuperConfirm">Confirmar contraseña</label>
+              <input type="password" id="pwdSuperConfirm" placeholder="Repite la contraseña"/>
+            </div>
+            <div class="btn-row">
+              <button class="btn success" onclick="setSuperAdminPwd()">
+                Guardar contraseña de superadmin
+              </button>
+            </div>
+            <p class="err"    id="pwdSuperErr"></p>
+            <p class="ok-msg" id="pwdSuperOk">✓ Contraseña de superadmin guardada</p>
+          </div>
+          <div class="divider"></div>
+        </div>
 
         <p class="card-title" style="margin-top:.2rem">Sesión</p>
         <button class="btn danger" onclick="cerrarSesion()">
