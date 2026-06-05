@@ -810,6 +810,7 @@ window.showBitacoras = async function(from = "search") {
     if (!bitacorasLoaded) {
       document.getElementById("bitacoraListWrap").innerHTML =
         '<div class="loading"><span class="spinner"></span>Cargando bitácoras…</div>';
+      document.getElementById("bitDate").value = todayValue();
       document.getElementById("attendantsList").innerHTML = buildAttendantsList();
       document.getElementById("spellInserter").innerHTML  = buildSpellInserter();
       try {
@@ -892,9 +893,12 @@ window.filterAttendants = function() {
   document.getElementById("attendantsList").innerHTML = buildAttendantsList(q);
 };
 
+function todayValue() { return new Date().toISOString().split("T")[0]; }
+
 window.resetBitacoraForm = function() {
   ["bitPatient","bitDiag","bitProc","attendantSearch"].forEach(id =>
     document.getElementById(id).value = "");
+  document.getElementById("bitDate").value = todayValue();
   document.getElementById("bitErr").style.display = "none";
   document.getElementById("bitOk").style.display  = "none";
   document.getElementById("attendantsList").innerHTML = buildAttendantsList();
@@ -914,7 +918,9 @@ window.saveBitacoraEntry = async function() {
   if (!procedure)         { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length) { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
 
-  const entry = { patient, diagnosis, procedure, attendants, createdAt: new Date().toISOString() };
+  const dateVal = document.getElementById("bitDate").value;
+  const createdAt = dateVal ? dateVal + "T12:00:00.000Z" : new Date().toISOString();
+  const entry = { patient, diagnosis, procedure, attendants, createdAt };
   const ref = await addDoc(collection(db, "bitacoras"), entry);
   allBitacoras.unshift({ id: ref.id, ...entry });
   toast("Bitácora guardada", "success");
