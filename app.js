@@ -152,8 +152,7 @@ async function saveStudent(name, spells) {
 
 async function setGraduated(name, val) {
   allGraduated[name] = val;
-  await setDoc(doc(db, "alumnos", docId(name)),
-    { name, spells: allStudents[name], graduated: val });
+  await setDoc(doc(db, "alumnos", docId(name)), { graduated: val }, { merge: true });
 }
 
 async function deleteStudent(name) {
@@ -169,7 +168,7 @@ let currentStudent = null;
 let pendingChanges = {};
 
 function show(id) {
-  ["scSearch","scProfile","scAdminLogin","scAdmin"]
+  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras"]
     .forEach(s => document.getElementById(s).style.display = "none");
   document.getElementById(id).style.display = "block";
 }
@@ -441,12 +440,11 @@ window.showTab = function(id) {
   document.querySelectorAll(".admin-section").forEach(el => el.className = "admin-section");
   document.querySelectorAll(".tab").forEach(el => el.className = "tab");
   document.getElementById(id).className = "admin-section show";
-  const idx = { tabList: 0, tabAscensos: 1, tabGrad: 2, tabAdd: 3, tabBitacora: 4, tabConfig: 5 }[id];
+  const idx = { tabList: 0, tabAscensos: 1, tabGrad: 2, tabAdd: 3, tabConfig: 4 }[id];
   document.querySelectorAll(".tab")[idx].className = "tab active";
   if (id === "tabList")     renderList();
   if (id === "tabAscensos") renderAscensos();
   if (id === "tabGrad")     renderGraduados();
-  if (id === "tabBitacora") renderBitacoras();
 };
 
 // =====================================================================
@@ -764,27 +762,81 @@ window.addAlumno = async function() {
 };
 
 // =====================================================================
-//  ADMIN — BITÁCORAS
+//  BITÁCORAS (pantalla pública)
 // =====================================================================
-let allBitacoras = [];
+let allBitacoras    = [];
+let bitacorasFrom   = "search";
+let bitacorasLoaded = false;
+
+window.showBitacoras = async function(from = "search") {
+  bitacorasFrom = from;
+  show("scBitacoras");
+
+  // Construir la UI estática del formulario solo la primera vez
+  if (!bitacorasLoaded) {
+    document.getElementById("bitacoraListWrap").innerHTML =
+      '<div class="loading"><span class="spinner"></span>Cargando…</div>';
+    document.getElementById("attendantsList").innerHTML = buildAttendantsList();
+    document.getElementById("spellInserter").innerHTML  = buildSpellInserter();
+    await loadBitacoras();
+    bitacorasLoaded = true;
+  }
+
+  renderBitacoraList();
+};
+
+window.backFromBitacoras = function() {
+  if (bitacorasFrom === "admin") show("scAdmin");
+  else goSearch();
+};
 
 async function loadBitacoras() {
   const snap = await getDocs(collection(db, "bitacoras"));
   allBitacoras = [];
   snap.forEach(d => allBitacoras.push({ id: d.id, ...d.data() }));
   allBitacoras.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  // Las mutaciones locales (add/delete) actualizan allBitacoras en memoria,
+  // por lo que no hace falta volver a leer de Firestore.
 }
 
+// ── Insertor de hechizos ──────────────────────────────────────────────
+function buildSpellInserter() {
+  const groups = RANKS_ORDER.map(rk =>
+    `<div class="si-group">
+      <span class="si-rank">${rk}</span>
+      <div class="si-spells">
+        ${RANKS[rk].map(s =>
+          `<button class="si-btn" type="button" onclick="insertSpell('${safeStr(s)}')">${s}</button>`
+        ).join("")}
+      </div>
+    </div>`
+  ).join("");
+  return `<div class="si-label">Insertar hechizo:</div>${groups}`;
+}
+
+window.insertSpell = function(spell) {
+  const ta  = document.getElementById("bitProc");
+  const pos = ta.selectionStart;
+  const pre = ta.value.substring(0, pos);
+  const suf = ta.value.substring(ta.selectionEnd);
+  const sep = pre && !pre.endsWith(" ") && !pre.endsWith("\n") ? " " : "";
+  ta.value  = pre + sep + spell + suf;
+  ta.focus();
+  const cur = pos + sep.length + spell.length;
+  ta.selectionStart = ta.selectionEnd = cur;
+};
+
+// ── Lista de asistentes (de la BD) ───────────────────────────────────
 function buildAttendantsList(filterQ = "") {
   const names = Object.keys(allStudents)
     .filter(n => !filterQ || norm(n).includes(norm(filterQ)))
     .sort();
-  return names.map(n => {
-    const safe = safeStr(n);
-    return `<label class="attendant-item">
-      <input type="checkbox" class="att-chk" value="${safe}"/> ${n}
-    </label>`;
-  }).join("");
+  if (!names.length) return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
+  return names.map(n =>
+    `<label class="attendant-item">
+      <input type="checkbox" class="att-chk" value="${safeStr(n)}"/> ${n}
+    </label>`
+  ).join("");
 }
 
 window.filterAttendants = function() {
@@ -793,10 +845,8 @@ window.filterAttendants = function() {
 };
 
 window.resetBitacoraForm = function() {
-  document.getElementById("bitPatient").value  = "";
-  document.getElementById("bitDiag").value     = "";
-  document.getElementById("bitProc").value     = "";
-  document.getElementById("attendantSearch").value = "";
+  ["bitPatient","bitDiag","bitProc","attendantSearch"].forEach(id =>
+    document.getElementById(id).value = "");
   document.getElementById("bitErr").style.display = "none";
   document.getElementById("bitOk").style.display  = "none";
   document.getElementById("attendantsList").innerHTML = buildAttendantsList();
@@ -874,15 +924,6 @@ function renderBitacoraList() {
     </div>`).join("");
 }
 
-async function renderBitacoras() {
-  const listWrap = document.getElementById("bitacoraListWrap");
-  listWrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando…</div>';
-  await loadBitacoras();
-  // Inicializar el formulario de asistentes
-  document.getElementById("attendantsList").innerHTML = buildAttendantsList();
-  renderBitacoraList();
-}
-
 // =====================================================================
 //  ADMIN — CONFIGURACIÓN / CAMBIAR CONTRASEÑA
 // =====================================================================
@@ -926,7 +967,7 @@ window.changePassword = async function() {
 
   btn.disabled = true; btn.textContent = "Guardando…";
   const newHash = await sha256(newPwd);
-  await setDoc(doc(db, "config", "admin"), { passwordHash: newHash });
+  await setDoc(doc(db, "config", "admin"), { passwordHash: newHash }, { merge: true });
   adminPwdHash = newHash;
 
   document.getElementById("pwdCurrent").value = "";
