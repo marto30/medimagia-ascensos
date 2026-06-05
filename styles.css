@@ -544,6 +544,65 @@ input::placeholder { color: var(--text-ghost); }
 }
 .pwd-hint { font-size: .74rem; color: var(--text-dim); margin-top: .35rem; }
 
+/* === BITÁCORAS === */
+textarea {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border-sub);
+  border-radius: var(--r-sm); color: var(--text); font-size: .88rem;
+  padding: .6rem .8rem; font-family: inherit; line-height: 1.5;
+  transition: border-color var(--t);
+}
+textarea:focus { outline: none; border-color: var(--gold-dim); }
+
+.attendant-search {
+  margin-bottom: .5rem;
+}
+.attendants-list {
+  max-height: 180px; overflow-y: auto;
+  border: 1px solid var(--border-sub); border-radius: var(--r-sm);
+  padding: .4rem .5rem;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .15rem;
+}
+.attendant-item {
+  display: flex; align-items: center; gap: .45rem;
+  padding: .3rem .4rem; border-radius: var(--r-sm);
+  cursor: pointer; font-size: .82rem; color: var(--text-muted);
+  transition: background var(--t), color var(--t);
+}
+.attendant-item:hover { background: rgba(255,255,255,.03); color: var(--text); }
+.attendant-item input[type="checkbox"] {
+  accent-color: var(--gold); width: 13px; height: 13px; cursor: pointer; flex-shrink: 0;
+}
+
+.bitacora-card {
+  background: var(--bg-card); border: 1px solid var(--border-sub);
+  border-radius: var(--r); padding: 1rem 1.1rem;
+  margin-bottom: .85rem; transition: border-color var(--t);
+}
+.bitacora-card:hover { border-color: var(--border); }
+.bitacora-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: .8rem;
+}
+.bitacora-patient {
+  font-size: 1rem; font-weight: 600; color: var(--text); letter-spacing: .01em;
+}
+.bitacora-date { font-size: .74rem; color: var(--text-dim); margin-top: .15rem; }
+.bitacora-field { margin-bottom: .6rem; }
+.bitacora-field:last-child { margin-bottom: 0; }
+.bitacora-label {
+  display: block; font-size: .72rem; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: .25rem;
+}
+.bitacora-value { font-size: .84rem; color: var(--text-muted); line-height: 1.55; }
+.bitacora-proc { display: block; white-space: pre-wrap; }
+.bitacora-attendants { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .2rem; }
+.att-badge {
+  background: var(--gold-faint); border: 1px solid var(--gold-dim);
+  border-radius: 99px; padding: .18rem .65rem;
+  font-size: .76rem; color: var(--gold); white-space: nowrap;
+}
+
 /* === DIVIDER === */
 .divider { height: 1px; background: var(--border-sub); margin: 1.4rem 0; }
 

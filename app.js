@@ -1,5 +1,5 @@
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, getDocs, collection, deleteDoc }
+import { getFirestore, doc, getDoc, setDoc, getDocs, collection, deleteDoc, addDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =====================================================================
@@ -441,11 +441,12 @@ window.showTab = function(id) {
   document.querySelectorAll(".admin-section").forEach(el => el.className = "admin-section");
   document.querySelectorAll(".tab").forEach(el => el.className = "tab");
   document.getElementById(id).className = "admin-section show";
-  const idx = { tabList: 0, tabAscensos: 1, tabGrad: 2, tabAdd: 3, tabConfig: 4 }[id];
+  const idx = { tabList: 0, tabAscensos: 1, tabGrad: 2, tabAdd: 3, tabBitacora: 4, tabConfig: 5 }[id];
   document.querySelectorAll(".tab")[idx].className = "tab active";
   if (id === "tabList")     renderList();
   if (id === "tabAscensos") renderAscensos();
   if (id === "tabGrad")     renderGraduados();
+  if (id === "tabBitacora") renderBitacoras();
 };
 
 // =====================================================================
@@ -761,6 +762,126 @@ window.addAlumno = async function() {
   resetAddForm();
   renderList();
 };
+
+// =====================================================================
+//  ADMIN — BITÁCORAS
+// =====================================================================
+let allBitacoras = [];
+
+async function loadBitacoras() {
+  const snap = await getDocs(collection(db, "bitacoras"));
+  allBitacoras = [];
+  snap.forEach(d => allBitacoras.push({ id: d.id, ...d.data() }));
+  allBitacoras.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+function buildAttendantsList(filterQ = "") {
+  const names = Object.keys(allStudents)
+    .filter(n => !filterQ || norm(n).includes(norm(filterQ)))
+    .sort();
+  return names.map(n => {
+    const safe = safeStr(n);
+    return `<label class="attendant-item">
+      <input type="checkbox" class="att-chk" value="${safe}"/> ${n}
+    </label>`;
+  }).join("");
+}
+
+window.filterAttendants = function() {
+  const q = document.getElementById("attendantSearch").value;
+  document.getElementById("attendantsList").innerHTML = buildAttendantsList(q);
+};
+
+window.resetBitacoraForm = function() {
+  document.getElementById("bitPatient").value  = "";
+  document.getElementById("bitDiag").value     = "";
+  document.getElementById("bitProc").value     = "";
+  document.getElementById("attendantSearch").value = "";
+  document.getElementById("bitErr").style.display = "none";
+  document.getElementById("bitOk").style.display  = "none";
+  document.getElementById("attendantsList").innerHTML = buildAttendantsList();
+};
+
+window.saveBitacoraEntry = async function() {
+  const patient    = document.getElementById("bitPatient").value.trim();
+  const diagnosis  = document.getElementById("bitDiag").value.trim();
+  const procedure  = document.getElementById("bitProc").value.trim();
+  const attendants = [...document.querySelectorAll(".att-chk:checked")].map(c => c.value);
+  const errEl = document.getElementById("bitErr");
+  const okEl  = document.getElementById("bitOk");
+  errEl.style.display = "none"; okEl.style.display = "none";
+
+  if (!patient)           { errEl.textContent = "El nombre del paciente es obligatorio."; errEl.style.display = "block"; return; }
+  if (!diagnosis)         { errEl.textContent = "El diagnóstico es obligatorio.";          errEl.style.display = "block"; return; }
+  if (!procedure)         { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
+  if (!attendants.length) { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
+
+  const entry = { patient, diagnosis, procedure, attendants, createdAt: new Date().toISOString() };
+  const ref = await addDoc(collection(db, "bitacoras"), entry);
+  allBitacoras.unshift({ id: ref.id, ...entry });
+  toast("Bitácora guardada", "success");
+  okEl.style.display = "block";
+  setTimeout(() => okEl.style.display = "none", 2500);
+  resetBitacoraForm();
+  renderBitacoraList();
+};
+
+window.deleteBitacora = async function(id) {
+  const ok = await showModal("Eliminar bitácora",
+    "¿Seguro que quieres eliminar esta bitácora? No se puede deshacer.",
+    "Eliminar", "danger");
+  if (!ok) return;
+  await deleteDoc(doc(db, "bitacoras", id));
+  allBitacoras = allBitacoras.filter(b => b.id !== id);
+  toast("Bitácora eliminada");
+  renderBitacoraList();
+};
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" }) +
+    " · " + d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+}
+
+function renderBitacoraList() {
+  const wrap = document.getElementById("bitacoraListWrap");
+  if (!allBitacoras.length) {
+    wrap.innerHTML = '<p class="empty-state">Todavía no hay ninguna bitácora registrada.</p>';
+    return;
+  }
+  wrap.innerHTML = allBitacoras.map(b => `
+    <div class="bitacora-card">
+      <div class="bitacora-top">
+        <div>
+          <div class="bitacora-patient">${b.patient}</div>
+          <div class="bitacora-date">${formatDate(b.createdAt)}</div>
+        </div>
+        ${isAdmin ? `<button class="btn sm danger" onclick="deleteBitacora('${b.id}')">Eliminar</button>` : ""}
+      </div>
+      <div class="bitacora-field">
+        <span class="bitacora-label">Diagnóstico</span>
+        <span class="bitacora-value">${b.diagnosis}</span>
+      </div>
+      <div class="bitacora-field">
+        <span class="bitacora-label">Procedimiento</span>
+        <span class="bitacora-value bitacora-proc">${b.procedure}</span>
+      </div>
+      <div class="bitacora-field">
+        <span class="bitacora-label">Atendido por</span>
+        <div class="bitacora-attendants">${b.attendants.map(a =>
+          `<span class="att-badge">${a}</span>`).join("")}</div>
+      </div>
+    </div>`).join("");
+}
+
+async function renderBitacoras() {
+  const listWrap = document.getElementById("bitacoraListWrap");
+  listWrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando…</div>';
+  await loadBitacoras();
+  // Inicializar el formulario de asistentes
+  document.getElementById("attendantsList").innerHTML = buildAttendantsList();
+  renderBitacoraList();
+}
 
 // =====================================================================
 //  ADMIN — CONFIGURACIÓN / CAMBIAR CONTRASEÑA

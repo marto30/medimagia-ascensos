@@ -97,6 +97,7 @@
       <button class="tab"         onclick="showTab('tabAscensos')">Ascensos</button>
       <button class="tab"         onclick="showTab('tabGrad')">Graduados</button>
       <button class="tab"         onclick="showTab('tabAdd')">Crear alumno</button>
+      <button class="tab"         onclick="showTab('tabBitacora')">Bitácoras</button>
       <button class="tab"         onclick="showTab('tabConfig')">Configuración</button>
     </div>
 
@@ -169,6 +170,50 @@
         <p class="err"    id="addErr"></p>
         <p class="ok-msg" id="addOk">✓ Alumno creado correctamente</p>
       </div>
+    </div>
+
+    <!-- Tab: bitácoras -->
+    <div class="admin-section" id="tabBitacora">
+
+      <!-- Formulario nueva bitácora -->
+      <div class="card" style="margin-bottom:1.4rem">
+        <p class="card-title">Nueva bitácora</p>
+
+        <div class="field">
+          <label for="bitPatient">Nombre del paciente</label>
+          <input type="text" id="bitPatient" placeholder="Nombre completo del paciente"/>
+        </div>
+
+        <div class="field">
+          <label for="bitDiag">Diagnóstico</label>
+          <input type="text" id="bitDiag" placeholder="Ej: Fractura en el brazo derecho"/>
+        </div>
+
+        <div class="field">
+          <label for="bitProc">Procedimiento</label>
+          <textarea id="bitProc" rows="4"
+            placeholder="Describe los hechizos y pasos realizados…"></textarea>
+        </div>
+
+        <div class="field">
+          <label>¿Quién le atendió?
+            <span style="font-size:.74rem;color:#4a4540">(puede ser más de uno)</span>
+          </label>
+          <input type="text" id="attendantSearch" class="attendant-search"
+                 placeholder="Buscar medimago…" oninput="filterAttendants()"/>
+          <div class="attendants-list" id="attendantsList"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn success" onclick="saveBitacoraEntry()">Guardar bitácora</button>
+          <button class="btn ghost"   onclick="resetBitacoraForm()">Limpiar</button>
+        </div>
+        <p class="err"    id="bitErr"></p>
+        <p class="ok-msg" id="bitOk">✓ Bitácora guardada</p>
+      </div>
+
+      <!-- Lista de bitácoras guardadas -->
+      <div id="bitacoraListWrap"></div>
     </div>
 
     <!-- Tab: configuración -->
