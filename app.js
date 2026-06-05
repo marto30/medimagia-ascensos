@@ -36,6 +36,7 @@ const BASE_DATA = {"Ymir Aleister":{"Bullapure":true,"Férula":true,"Osseus Repa
 //  HELPERS
 // =====================================================================
 function norm(s) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim(); }
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function allSpells() { return Object.values(RANKS).flat(); }
 function getRkPct(sp, rk) {
   const l = RANKS[rk];
@@ -246,11 +247,27 @@ function renderBitCount(name) {
   const el = document.getElementById("pBitCount");
   if (!el) return;
   if (!bitacorasLoaded) {
-    el.innerHTML = `<div class="profile-bit-stat profile-bit-loading">📋 <span>cargando…</span></div>`;
+    el.innerHTML = `<div class="profile-bit-stats"><div class="profile-bit-stat profile-bit-loading">📋 <span>cargando…</span></div></div>`;
     return;
   }
-  const cnt = allBitacoras.filter(b => b.attendants && b.attendants.includes(name)).length;
-  el.innerHTML = `<div class="profile-bit-stat">📋 <strong>${cnt}</strong> bitácora${cnt !== 1 ? "s" : ""} como médico</div>`;
+  const now = new Date();
+  const ty = now.getFullYear(), tm = now.getMonth();
+  const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
+  const ct    = bitCntMonth(name, ty, tm);
+  const cl    = bitCntMonth(name, ly, lm);
+  const total = allBitacoras.filter(b => b.attendants && b.attendants.includes(name)).length;
+  const mThis = capitalize(new Date(ty, tm, 1).toLocaleDateString("es-ES", { month: "long" }));
+  const mLast = capitalize(new Date(ly, lm, 1).toLocaleDateString("es-ES", { month: "long" }));
+  const pill  = (label, n, warn) =>
+    `<div class="profile-bit-stat${warn ? " bit-warn" : ""}">` +
+    `<span class="bit-label">${label}</span><strong>${n}</strong>` +
+    (warn ? `<span class="bit-alert">⚠</span>` : "") +
+    `</div>`;
+  el.innerHTML = `<div class="profile-bit-stats">
+    ${pill(mThis, ct, ct < 3)}
+    ${pill(mLast, cl, cl < 3)}
+    ${pill("Total", total, false)}
+  </div>`;
 }
 
 function openProfile(name) {
@@ -467,10 +484,11 @@ window.showTab = function(id) {
   document.querySelectorAll(".admin-section").forEach(el => el.className = "admin-section");
   document.querySelectorAll(".tab").forEach(el => el.className = "tab");
   document.getElementById(id).className = "admin-section show";
-  const idx = { tabList: 0, tabAscensos: 1, tabGrad: 2, tabAdd: 3, tabConfig: 4 }[id];
+  const idx = { tabList: 0, tabAscensos: 1, tabActivity: 2, tabGrad: 3, tabAdd: 4, tabConfig: 5 }[id];
   document.querySelectorAll(".tab")[idx].className = "tab active";
   if (id === "tabList")     renderList();
   if (id === "tabAscensos") renderAscensos();
+  if (id === "tabActivity") renderPocaActividad();
   if (id === "tabGrad")     renderGraduados();
 };
 
@@ -479,16 +497,32 @@ window.showTab = function(id) {
 // =====================================================================
 let listSort = { key: "name", dir: 1 };
 
+function bitCntMonth(name, y, m) {
+  return allBitacoras.filter(b => {
+    if (!b.attendants || !b.attendants.includes(name) || !b.createdAt) return false;
+    const d = new Date(b.createdAt);
+    return d.getFullYear() === y && d.getMonth() === m;
+  }).length;
+}
+
 function sortValue(n) {
-  const sp   = allStudents[n];
-  const grad = allGraduated[n] || false;
-  const rk   = getCurrentRank(sp);
-  const pct  = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
+  const sp  = allStudents[n];
+  const rk  = getCurrentRank(sp);
+  const pct = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
+  if (listSort.key === "thisMonth") {
+    const now = new Date();
+    return bitCntMonth(n, now.getFullYear(), now.getMonth());
+  }
+  if (listSort.key === "lastMonth") {
+    const now = new Date();
+    const ly = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const lm = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+    return bitCntMonth(n, ly, lm);
+  }
   switch (listSort.key) {
-    case "pct":      return pct;
-    case "status":   return canAscend(sp, rk) ? 1 : 0;
-    case "bitacoras": return allBitacoras.filter(b => b.attendants && b.attendants.includes(n)).length;
-    default:         return norm(n);
+    case "pct":    return pct;
+    case "status": return canAscend(sp, rk) ? 1 : 0;
+    default:       return norm(n);
   }
 }
 
@@ -522,28 +556,38 @@ window.quickGraduate = async function(name) {
 };
 
 function buildStudentRow(n) {
-  const sp       = allStudents[n];
-  const grad     = allGraduated[n] || false;
-  const rk       = getCurrentRank(sp);
-  const asc      = canAscend(sp, rk);
-  const nextRk   = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
-  const pct      = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
-  const safe     = safeStr(n);
-  const bitCount = allBitacoras.filter(b => b.attendants && b.attendants.includes(n)).length;
+  const sp     = allStudents[n];
+  const grad   = allGraduated[n] || false;
+  const rk     = getCurrentRank(sp);
+  const asc    = canAscend(sp, rk);
+  const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
+  const pct    = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
+  const safe   = safeStr(n);
   const statusCell = grad
     ? `<span class="asc-yes">🎓 Graduado</span>`
     : asc && nextRk ? `<span class="asc-yes">↑ ${nextRk}</span>` : `<span class="asc-no">—</span>`;
   const gradBtnCls   = `btn btn-grad sm${grad ? " is-grad" : ""}`;
   const gradBtnTitle = grad ? "Revocar graduación" : "Graduar del Colegio";
   const gradBtnLabel = grad ? "🎓 Grad." : "🎓";
-  const bitCell = bitCount > 0
-    ? `<span class="bit-count-badge">${bitCount}</span>`
-    : `<span class="bit-count-zero">—</span>`;
+
+  let thisCell, lastCell;
+  if (!bitacorasLoaded) {
+    thisCell = lastCell = `<span class="bit-count-zero">—</span>`;
+  } else {
+    const now = new Date();
+    const ty = now.getFullYear(), tm = now.getMonth();
+    const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
+    const ct = bitCntMonth(n, ty, tm), cl = bitCntMonth(n, ly, lm);
+    thisCell = `<span class="bit-count-badge${ct < 3 ? " bit-count-warn" : ""}">${ct}</span>`;
+    lastCell = `<span class="bit-count-badge${cl < 3 ? " bit-count-warn" : ""}">${cl}</span>`;
+  }
+
   return `<tr class="${grad ? "grad-row" : ""}">
     <td>${n}</td>
     <td>${pct}%</td>
     <td>${statusCell}</td>
-    <td style="text-align:center">${bitCell}</td>
+    <td style="text-align:center">${thisCell}</td>
+    <td style="text-align:center">${lastCell}</td>
     <td><div class="td-actions">
       <button class="${gradBtnCls}" title="${gradBtnTitle}"
               onclick="quickGraduate('${safe}')">${gradBtnLabel}</button>
@@ -554,12 +598,18 @@ function buildStudentRow(n) {
 }
 
 function buildRankTable(members) {
+  const now = new Date();
+  const ty = now.getFullYear(), tm = now.getMonth();
+  const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
+  const mThis = capitalize(new Date(ty, tm, 1).toLocaleDateString("es-ES", { month: "short" }));
+  const mLast = capitalize(new Date(ly, lm, 1).toLocaleDateString("es-ES", { month: "short" }));
   return `<table class="student-table">
     <thead><tr>
       <th class="th-sort" onclick="sortList('name')">Nombre ${sortArrow("name")}</th>
       <th class="th-sort" onclick="sortList('pct')">Total % ${sortArrow("pct")}</th>
       <th class="th-sort" onclick="sortList('status')">Estado ${sortArrow("status")}</th>
-      <th class="th-sort" onclick="sortList('bitacoras')" title="Bitácoras en las que ha participado">📋 ${sortArrow("bitacoras")}</th>
+      <th class="th-sort" onclick="sortList('thisMonth')" title="Bitácoras este mes">📋 ${mThis} ${sortArrow("thisMonth")}</th>
+      <th class="th-sort" onclick="sortList('lastMonth')" title="Bitácoras el mes pasado">📋 ${mLast} ${sortArrow("lastMonth")}</th>
       <th></th>
     </tr></thead>
     <tbody>${members.map(buildStudentRow).join("")}</tbody>
@@ -704,6 +754,71 @@ function renderGraduados() {
   }).join("");
   document.getElementById("gradListWrap").innerHTML =
     `<div class="grad-grid">${cards}</div>`;
+}
+
+// =====================================================================
+//  ADMIN — POCA ACTIVIDAD
+// =====================================================================
+function renderPocaActividad() {
+  const wrap = document.getElementById("activityWrap");
+  if (!wrap) return;
+
+  if (!bitacorasLoaded) {
+    wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando bitácoras…</div>';
+    loadBitacoras()
+      .then(() => { bitacorasLoaded = true; renderPocaActividad(); renderList(); })
+      .catch(() => {
+        wrap.innerHTML = '<p class="notice" style="color:var(--red)">Error al cargar bitácoras.</p>';
+      });
+    return;
+  }
+
+  const now = new Date();
+  const ty = now.getFullYear(), tm = now.getMonth();
+  const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
+  const mThisName = capitalize(new Date(ty, tm, 1).toLocaleDateString("es-ES", { month: "long" }));
+  const mLastName = capitalize(new Date(ly, lm, 1).toLocaleDateString("es-ES", { month: "long" }));
+
+  const students = Object.keys(allStudents).map(n => ({
+    name: n,
+    rank: getCurrentRank(allStudents[n]),
+    ct: bitCntMonth(n, ty, tm),
+    cl: bitCntMonth(n, ly, lm)
+  }))
+  .filter(s => s.cl < 3)
+  .sort((a, b) => a.cl - b.cl || norm(a.name).localeCompare(norm(b.name)));
+
+  if (!students.length) {
+    wrap.innerHTML = '<p class="empty-state">✓ Todos los medimagos tienen 3 o más bitácoras el mes pasado.</p>';
+    return;
+  }
+
+  const rows = students.map(s => {
+    const safe  = safeStr(s.name);
+    const rkCls = `rk-${s.rank}`;
+    return `<tr>
+      <td>${s.name}</td>
+      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${s.rank}</span></td>
+      <td style="text-align:center"><span class="bit-count-badge bit-count-warn">${s.cl}</span></td>
+      <td style="text-align:center"><span class="bit-count-badge${s.ct < 3 ? " bit-count-warn" : ""}">${s.ct}</span></td>
+      <td><button class="btn sm" onclick="adminEdit('${safe}')">Ver</button></td>
+    </tr>`;
+  }).join("");
+
+  wrap.innerHTML = `
+    <div class="activity-notice">
+      <strong>${students.length}</strong> medimago${students.length !== 1 ? "s" : ""}
+      con menos de 3 bitácoras en ${mLastName}.
+    </div>
+    <table class="student-table">
+      <thead><tr>
+        <th>Nombre</th><th>Rango</th>
+        <th>📋 ${mLastName} (pasado)</th>
+        <th>📋 ${mThisName} (actual)</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 // =====================================================================

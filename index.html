@@ -162,6 +162,7 @@
     <div class="admin-tabs">
       <button class="tab active"  onclick="showTab('tabList')">Alumnos</button>
       <button class="tab"         onclick="showTab('tabAscensos')">Ascensos</button>
+      <button class="tab tab-warn" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="tab"         onclick="showTab('tabGrad')">Graduados</button>
       <button class="tab"         onclick="showTab('tabAdd')">Crear alumno</button>
       <button class="tab"         onclick="showTab('tabConfig')">Configuración</button>
@@ -184,6 +185,16 @@
         Alumnos que superan el <strong>67 %</strong> en su rango y pueden ascender.
       </p>
       <div id="ascTable">
+        <div class="loading"><span class="spinner"></span>Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Tab: poca actividad -->
+    <div class="admin-section" id="tabActivity">
+      <p class="notice">
+        Medimagos con <strong>menos de 3 bitácoras</strong> el mes pasado.
+      </p>
+      <div id="activityWrap">
         <div class="loading"><span class="spinner"></span>Cargando…</div>
       </div>
     </div>
