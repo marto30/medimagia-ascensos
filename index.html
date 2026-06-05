@@ -19,25 +19,41 @@
 
   <!-- ── PANTALLA: BUSCAR ─────────────────────────────────────── -->
   <div id="scSearch">
-    <div class="card">
-      <p class="card-title">Buscar personaje</p>
-      <div class="field">
-        <label for="nameInput">Nombre del personaje</label>
+
+    <!-- Búsqueda principal -->
+    <div class="card home-search-card">
+      <div class="home-search-icon">🔮</div>
+      <p class="card-title" style="text-align:center;margin-bottom:1rem">
+        Consulta tu progreso
+      </p>
+      <div class="field" style="margin-bottom:.8rem">
         <input type="text" id="nameInput"
-               placeholder="Ej: Ymir Aleister" autocomplete="off"/>
+               placeholder="Escribe el nombre de tu personaje…"
+               autocomplete="off" style="font-size:.95rem;padding:.75rem 1rem"/>
         <div class="sug" id="sugs"></div>
         <p class="err" id="searchErr">Personaje no encontrado. Comprueba el nombre.</p>
       </div>
-      <button class="btn full" onclick="buscar()">Consultar progreso</button>
+      <button class="btn full home-search-btn" onclick="buscar()">
+        Ver progreso →
+      </button>
     </div>
 
     <div id="loadingIndicator" class="loading" style="display:none">
       <span class="spinner"></span>Conectando con la base de datos…
     </div>
 
-    <div class="admin-link">
-      <button onclick="showBitacoras('search')">📋 Bitácoras</button>
-      <button onclick="showAdminLogin()">⚙ Administrador</button>
+    <!-- Navegación secundaria -->
+    <div class="home-nav">
+      <button class="home-nav-card" onclick="showBitacoras('search')">
+        <span class="home-nav-icon">📋</span>
+        <span class="home-nav-title">Bitácoras</span>
+        <span class="home-nav-sub">Registro médico de consultas</span>
+      </button>
+      <button class="home-nav-card home-nav-admin" onclick="showAdminLogin()">
+        <span class="home-nav-icon">⚙</span>
+        <span class="home-nav-title">Administrador</span>
+        <span class="home-nav-sub">Gestionar alumnos y ascensos</span>
+      </button>
     </div>
   </div>
 

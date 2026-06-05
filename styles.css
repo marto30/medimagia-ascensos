@@ -687,17 +687,43 @@ textarea:focus { outline: none; border-color: var(--gold-dim); }
   text-align: center; margin-top: 3rem;
   font-size: .7rem; color: #2a2520; font-style: italic;
 }
-.admin-link {
-  display: flex; justify-content: center; gap: 1.4rem;
-  margin-top: 1.2rem;
+/* === HOME SCREEN === */
+.home-search-card { text-align: center; padding: 2rem 1.6rem 1.6rem; }
+.home-search-icon { font-size: 2.2rem; margin-bottom: .6rem; }
+.home-search-btn  { margin-top: .4rem; font-size: .95rem; padding: .75rem 1.4rem; letter-spacing: .03em; }
+
+.home-nav {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: .75rem; margin-top: .75rem;
 }
-.admin-link button {
-  background: none; border: none; color: #2a2520;
-  font-size: .75rem; cursor: pointer;
-  font-family: Georgia, serif; font-style: italic;
-  transition: color var(--t);
+.home-nav-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .35rem; padding: 1.3rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r); cursor: pointer;
+  font-family: inherit; text-align: center;
+  transition: background var(--t), border-color var(--t), transform var(--t);
 }
-.admin-link button:hover { color: #4a4540; }
+.home-nav-card:hover {
+  background: rgba(255,255,255,.065);
+  border-color: rgba(255,255,255,.14);
+  transform: translateY(-2px);
+}
+.home-nav-icon  { font-size: 1.7rem; line-height: 1; }
+.home-nav-title { font-size: .92rem; font-weight: 600; color: var(--text); }
+.home-nav-sub   { font-size: .72rem; color: var(--text-dim); }
+
+.home-nav-admin {
+  border-color: rgba(212,175,55,.28);
+  background: rgba(212,175,55,.04);
+}
+.home-nav-admin:hover {
+  background: rgba(212,175,55,.09);
+  border-color: rgba(212,175,55,.5);
+}
+.home-nav-admin .home-nav-title { color: var(--gold); }
+.home-nav-admin .home-nav-sub   { color: rgba(212,175,55,.55); }
 
 .admin-footer-btns {
   display: flex; align-items: center; gap: .8rem;
