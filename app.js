@@ -18,10 +18,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
-initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider("6Lc7iBAtAAAAAPghU7B3TTHHpBYAviWbClylmO60"),
-  isTokenAutoRefreshEnabled: true
-});
+try {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider("6Lc7iBAtAAAAAPghU7B3TTHHpBYAviWbClylmO60"),
+    isTokenAutoRefreshEnabled: true
+  });
+} catch (e) { console.warn("App Check init skipped:", e.message); }
 
 // =====================================================================
 //  CONSTANTS

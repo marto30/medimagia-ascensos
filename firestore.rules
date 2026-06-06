@@ -4,24 +4,19 @@ service cloud.firestore {
 
     // ══ FUNCIONES DE VALIDACIÓN ═══════════════════════════════════════════
 
-    // Alumno: solo campos conocidos, tipos correctos, tamaños limitados
+    // Alumno: validación por campo (sin hasOnly para compatibilidad con datos existentes)
     function validAlumno(data) {
-      return data.keys().hasOnly([
-               'name', 'spells', 'graduated', 'username', 'studentPasswordHash', 'currentRank'
-             ])
-          && (!('currentRank' in data)
-              || data.currentRank in ['Aprendiz','Principiante','Intermedio','Avanzado'])
-          && (!('name' in data)
-              || (data.name is string
-                  && data.name.size() >= 1
-                  && data.name.size() <= 100))
+      return (!('name' in data)
+              || (data.name is string && data.name.size() >= 1 && data.name.size() <= 100))
           && (!('spells' in data)    || data.spells is map)
           && (!('graduated' in data) || data.graduated is bool)
           && (!('username' in data)
               || (data.username is string && data.username.size() <= 60))
           && (!('studentPasswordHash' in data)
               || (data.studentPasswordHash is string
-                  && data.studentPasswordHash.size() == 64));
+                  && data.studentPasswordHash.size() == 64))
+          && (!('currentRank' in data)
+              || data.currentRank in ['Aprendiz','Principiante','Intermedio','Avanzado']);
     }
 
     // Hash SHA-256: exactamente 64 caracteres hexadecimales
