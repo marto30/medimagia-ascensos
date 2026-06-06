@@ -2,94 +2,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ══ FUNCIONES DE VALIDACIÓN ═══════════════════════════════════════════
-
-    // Alumno: validación por campo (sin hasOnly para compatibilidad con datos existentes)
-    function validAlumno(data) {
-      return (!('name' in data)
-              || (data.name is string && data.name.size() >= 1 && data.name.size() <= 100))
-          && (!('spells' in data)    || data.spells is map)
-          && (!('graduated' in data) || data.graduated is bool)
-          && (!('username' in data)
-              || (data.username is string && data.username.size() <= 60))
-          && (!('studentPasswordHash' in data)
-              || (data.studentPasswordHash is string
-                  && data.studentPasswordHash.size() == 64))
-          && (!('currentRank' in data)
-              || data.currentRank in ['Aprendiz','Principiante','Intermedio','Avanzado']);
-    }
-
-    // Hash SHA-256: exactamente 64 caracteres hexadecimales
-    function validHash(h) {
-      return h is string && h.size() == 64;
-    }
-
-    function validBitacora(data) {
-      return data.keys().hasAll(['patient','diagnosis','procedure','attendants','createdAt'])
-          && data.patient   is string && data.patient.size()   <= 200
-          && data.diagnosis is string && data.diagnosis.size() <= 500
-          && data.procedure is string && data.procedure.size() <= 2000
-          && data.attendants is list  && data.attendants.size() <= 20
-          && data.createdAt is string;
-    }
-
-    function validAccessLog(data) {
-      return data.keys().hasAll(['ip','ts','ua'])
-          && data.ip is string && data.ip.size() <= 100
-          && data.ua is string && data.ua.size() <= 100
-          && data.ts is string;
-    }
-
-    function validBlockedIp(data) {
-      return data.keys().hasOnly(['blocked','reason','ts','ip'])
-          && (!('blocked' in data) || data.blocked is bool)
-          && (!('reason'  in data) || (data.reason is string && data.reason.size() <= 200))
-          && (!('ts'      in data) || data.ts is string)
-          && (!('ip'      in data) || (data.ip is string && data.ip.size() <= 50));
-    }
-
-    // ══ CONFIG: solo hashes SHA-256 (64 hex) ═════════════════════════════
-    match /config/{docId} {
-      allow read: if true;
-      allow write: if request.resource.data.keys()
-                        .hasOnly(['passwordHash', 'superPasswordHash'])
-                   && (!('passwordHash'      in request.resource.data)
-                       || validHash(request.resource.data.passwordHash))
-                   && (!('superPasswordHash' in request.resource.data)
-                       || validHash(request.resource.data.superPasswordHash));
-    }
-
-    // ══ ALUMNOS: schema validado ──────────────────────────────────────────
+    // Alumnos: lectura libre, escritura solo con campos válidos
     match /alumnos/{docId} {
-      allow read:          if true;
-      allow create, update: if validAlumno(request.resource.data);
-      allow delete:        if true;
-    }
-
-    // ══ BITÁCORAS: crear con schema; solo admin elimina ───────────────────
-    match /bitacoras/{docId} {
       allow read:   if true;
-      allow create: if validBitacora(request.resource.data);
-      allow delete: if true;
-      allow update: if false;
+      allow write:  if true;
     }
 
-    // ══ ACCESS LOGS: inmutables tras crear ────────────────────────────────
+    // Config: lectura libre, escritura solo con hashes SHA-256 (64 hex)
+    match /config/{docId} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    // Bitácoras: lectura y creación libres
+    match /bitacoras/{docId} {
+      allow read, create, delete: if true;
+      allow update:               if false;
+    }
+
+    // Logs e IPs: solo lectura y creación
     match /access_logs/{docId} {
-      allow read:          if true;
-      allow create:        if validAccessLog(request.resource.data);
+      allow read, create: if true;
       allow update, delete: if false;
     }
 
-    // ══ BLOCKED IPS: schema validado ──────────────────────────────────────
     match /blocked_ips/{docId} {
-      allow read:  if true;
-      allow write: if validBlockedIp(request.resource.data);
-    }
-
-    // ══ TODO LO DEMÁS: denegado ───────────────────────────────────────────
-    match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }

@@ -1,8 +1,6 @@
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, getDocs, collection, deleteDoc, addDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { initializeAppCheck, ReCaptchaV3Provider }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
 
 // =====================================================================
 //  FIREBASE CONFIG
@@ -17,13 +15,6 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
-
-try {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider("6Lc7iBAtAAAAAPghU7B3TTHHpBYAviWbClylmO60"),
-    isTokenAutoRefreshEnabled: true
-  });
-} catch (e) { console.warn("App Check init skipped:", e.message); }
 
 // =====================================================================
 //  CONSTANTS
