@@ -634,6 +634,13 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
 .attendant-item input[type="checkbox"] {
   accent-color: var(--gold); width: 13px; height: 13px; cursor: pointer; flex-shrink: 0;
 }
+.attendant-item-me {
+  background: rgba(201,162,39,.07); border-radius: var(--r-xs);
+  margin-bottom: .18rem; color: var(--text);
+}
+.attendant-item-me:hover { background: rgba(201,162,39,.12); }
+.attendant-item-me input[type="checkbox"] { cursor: default; opacity: .7; }
+.att-you { font-size: .72rem; color: var(--gold); margin-left: .2rem; }
 .bitacora-card {
   background: var(--bg-card);
   border: 1px solid var(--border-sub);

@@ -70,12 +70,7 @@
     </div>
 
     <!-- Navegación secundaria -->
-    <div class="home-nav">
-      <button class="home-nav-card" onclick="showBitacoras('search')">
-        <span class="home-nav-icon">📋</span>
-        <span class="home-nav-title">Bitácoras</span>
-        <span class="home-nav-sub">Registro médico de consultas</span>
-      </button>
+    <div class="home-nav" style="grid-template-columns:1fr">
       <button class="home-nav-card home-nav-admin" onclick="showAdminLogin()">
         <span class="home-nav-icon">⚙</span>
         <span class="home-nav-title">Administrador</span>
@@ -160,7 +155,10 @@
         <span class="saved-msg" id="savedMsg">✓ Guardado</span>
       </div>
     </div>
-    <button class="btn ghost full" onclick="showDirectory('profile')" style="margin-top:.4rem">👥 Ver todos los medimagos</button>
+    <div style="display:flex;gap:.6rem;margin-top:.5rem">
+      <button class="btn ghost" style="flex:1;justify-content:center" onclick="showDirectory('profile')">👥 Directorio</button>
+      <button class="btn ghost" style="flex:1;justify-content:center" onclick="showBitacoras('profile')">📋 Bitácoras</button>
+    </div>
     <button class="back-btn" id="profileBackBtn" onclick="backFromProfile()">← Volver</button>
   </div>
 

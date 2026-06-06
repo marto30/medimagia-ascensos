@@ -949,7 +949,7 @@ window.showDirectory = function(from) {
 
 window.backFromDirectory = function() {
   if (directoryFrom === "admin") show("scAdmin");
-  else if (loggedInStudent) show("scProfile");
+  else if (loggedInStudent) { renderProfile(); show("scProfile"); }
   else goSearch();
 };
 
@@ -1300,6 +1300,7 @@ let bitacorasFrom   = "search";
 let bitacorasLoaded = false;
 
 window.showBitacoras = async function(from = "search") {
+  if (!isAdmin && !loggedInStudent) { goSearch(); return; }
   try {
     bitacorasFrom = from;
     show("scBitacoras");
@@ -1332,6 +1333,7 @@ window.showBitacoras = async function(from = "search") {
 
 window.backFromBitacoras = function() {
   if (bitacorasFrom === "admin") show("scAdmin");
+  else if (loggedInStudent) show("scProfile");
   else goSearch();
 };
 
@@ -1373,15 +1375,25 @@ window.insertSpell = function(spell) {
 
 // ── Lista de asistentes (de la BD) ───────────────────────────────────
 function buildAttendantsList(filterQ = "") {
-  const names = Object.keys(allStudents)
-    .filter(n => !filterQ || norm(n).includes(norm(filterQ)))
-    .sort();
-  if (!names.length) return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
-  return names.map(n =>
+  const names = Object.keys(allStudents).sort();
+  let pinnedHtml = "";
+  if (loggedInStudent && allStudents[loggedInStudent]) {
+    pinnedHtml = `<label class="attendant-item attendant-item-me">
+      <input type="checkbox" class="att-chk" value="${escHtml(loggedInStudent)}" checked disabled/>
+      ${escHtml(loggedInStudent)} <span class="att-you">• tú</span>
+    </label>`;
+  }
+  const others = names.filter(n =>
+    n !== loggedInStudent && (!filterQ || norm(n).includes(norm(filterQ)))
+  );
+  if (!others.length && !pinnedHtml)
+    return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
+  const othersHtml = others.map(n =>
     `<label class="attendant-item">
       <input type="checkbox" class="att-chk" value="${escHtml(n)}"/> ${escHtml(n)}
     </label>`
   ).join("");
+  return pinnedHtml + othersHtml;
 }
 
 window.filterAttendants = function() {
@@ -1402,6 +1414,7 @@ window.saveBitacoraEntry = async function() {
   const diagnosis  = document.getElementById("bitDiag").value.trim();
   const procedure  = document.getElementById("bitProc").value.trim();
   const attendants = [...document.querySelectorAll(".att-chk:checked")].map(c => c.value);
+  if (loggedInStudent && !attendants.includes(loggedInStudent)) attendants.push(loggedInStudent);
   const errEl = document.getElementById("bitErr");
   const okEl  = document.getElementById("bitOk");
   errEl.style.display = "none"; okEl.style.display = "none";
