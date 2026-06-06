@@ -1,6 +1,8 @@
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, getDocs, collection, deleteDoc, addDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeAppCheck, ReCaptchaV3Provider }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
 
 // =====================================================================
 //  FIREBASE CONFIG
@@ -16,17 +18,21 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
+initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider("6Lc7iBAtAAAAAPghU7B3TTHHpBYAviWbClylmO60"),
+  isTokenAutoRefreshEnabled: true
+});
+
 // =====================================================================
 //  CONSTANTS
 // =====================================================================
-const DEFAULT_PWD   = "Medimagia2024";   // contraseña por defecto (primera vez)
-const ASCENSO_PCT   = 67;
+const ASCENSO_MISSING = 3; // hechizos que pueden faltar para ser elegible al ascenso
 const RANKS_ORDER   = ["Aprendiz","Principiante","Intermedio","Avanzado"];
 const RANKS = {
-  Aprendiz:     ["Bullapure","Férula","Osseus Reparo","Tergeo"],
-  Principiante: ["Examino","Vitae Expulso","Leniter","Sommnium","Anapneo","Anesthetica","Brackium Emendo"],
-  Intermedio:   ["Vitalis","Tranquillitas","Melis Sanitas","Tergiverso","Vulnera Curatio","Ennervate","Invenio Cardium"],
-  Avanzado:     ["Restitutio Mobilitas","Medimend","Mind Recupero","Solatio","Finite Incantatem","Confractus","Amicientes","Reparifarge","Panacea","Zanarem","Suturae","Revitalizare"]
+  Aprendiz:     ["Bullapure","Férula","Osseus Reparo","Tergeo","Examino","Vitae Expulso","Leniter","Sommnium"],
+  Principiante: ["Anapneo","Anesthetica","Brackium Emendo","Vitalis","Tranquillitas","Melis Sanitas","Tergiverso"],
+  Intermedio:   ["Vulnera Curatio","Ennervate","Invenio Cardium","Restitutio Mobilitas","Medimend","Mind Recupero","Solatio"],
+  Avanzado:     ["Finite Incantatem","Confractus","Amicientes","Reparifarge","Panacea","Zanarem","Suturae","Revitalizare"]
 };
 
 // Datos iniciales — se suben a Firestore solo si la colección está vacía
@@ -53,17 +59,20 @@ function getRkPct(sp, rk) {
   const d = l.filter(s => sp[s]).length;
   return { done: d, total: l.length, pct: Math.round(d / l.length * 100) };
 }
-function getCurrentRank(sp) {
+function calcRankLegacy(sp) {
   for (let i = RANKS_ORDER.length - 1; i >= 0; i--) {
-    if (getRkPct(sp, RANKS_ORDER[i]).pct >= ASCENSO_PCT)
+    if (getRkPct(sp, RANKS_ORDER[i]).pct >= 67)
       return RANKS_ORDER[Math.min(i + 1, RANKS_ORDER.length - 1)];
   }
   return RANKS_ORDER[0];
 }
+function getStudentRank(name) {
+  return allRanks[name] || RANKS_ORDER[0];
+}
 function canAscend(sp, rank) {
   const idx = RANKS_ORDER.indexOf(rank);
   if (idx >= RANKS_ORDER.length - 1) return false;
-  return getRkPct(sp, rank).pct >= ASCENSO_PCT;
+  return RANKS[rank].filter(s => !sp[s]).length <= ASCENSO_MISSING;
 }
 function safeStr(n)  { return n.replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
 function docId(name) { return name.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_]/g,"X"); }
@@ -83,25 +92,23 @@ function safeAttr(n) {
 // =====================================================================
 //  SHA-256  (Web Crypto API — sin dependencias)
 // =====================================================================
-const HASH_SALT         = "medimagia_v1_";
-const IP_HASH_SALT      = "medimagia_ip_v2_";
-const STUDENT_HASH_SALT = "medimagia_student_v1_";
+function _s(a,b,c){ return atob(a)+atob(b)+atob(c); }
 
 async function sha256(str) {
   const buf = await crypto.subtle.digest("SHA-256",
-    new TextEncoder().encode(HASH_SALT + str));
+    new TextEncoder().encode(_s("bWVkaW1hZ2lh","X3Yx","Xw==") + str));
   return Array.from(new Uint8Array(buf))
     .map(b => b.toString(16).padStart(2,"0")).join("");
 }
 async function hashIP(ip) {
   const buf = await crypto.subtle.digest("SHA-256",
-    new TextEncoder().encode(IP_HASH_SALT + ip));
+    new TextEncoder().encode(_s("bWVkaW1hZ2lh","X2lwX3Yy","Xw==") + ip));
   return Array.from(new Uint8Array(buf))
     .map(b => b.toString(16).padStart(2,"0")).join("");
 }
 async function hashStudentPwd(pwd) {
   const buf = await crypto.subtle.digest("SHA-256",
-    new TextEncoder().encode(STUDENT_HASH_SALT + pwd));
+    new TextEncoder().encode(_s("bWVkaW1hZ2lh","X3N0dWRlbnRf","djFf") + pwd));
   return Array.from(new Uint8Array(buf))
     .map(b => b.toString(16).padStart(2,"0")).join("");
 }
@@ -209,6 +216,7 @@ document.getElementById("confirmModal")
 // =====================================================================
 let allStudents    = {};
 let allGraduated   = {};
+let allRanks       = {};   // name → stored rank (manual, set by admin)
 let allCredentials = {};   // name → { username, passwordHash }
 let usernameIndex  = {};   // lowercase_username → name
 let isAdmin        = false;
@@ -223,31 +231,30 @@ async function loadAdminConfig() {
     const ref  = doc(db, "config", "admin");
     const snap = await getDoc(ref);
     if (snap.exists()) {
-      adminPwdHash   = snap.data().passwordHash;
+      adminPwdHash   = snap.data().passwordHash || null;
       superAdminHash = snap.data().superPasswordHash || null;
-    } else {
-      adminPwdHash = await sha256(DEFAULT_PWD);
-      await setDoc(ref, { passwordHash: adminPwdHash });
     }
   } catch {
-    adminPwdHash = await sha256(DEFAULT_PWD);
+    adminPwdHash = null;
   }
 }
 
 async function loadAllStudents() {
   const snap = await getDocs(collection(db, "alumnos"));
-  allStudents = {}; allGraduated = {}; allCredentials = {}; usernameIndex = {};
+  allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {};
   if (snap.empty) {
     for (const [name, spells] of Object.entries(BASE_DATA)) {
       await setDoc(doc(db, "alumnos", docId(name)), { name, spells, graduated: false });
       allStudents[name]  = spells;
       allGraduated[name] = false;
+      allRanks[name]     = calcRankLegacy(spells);
     }
   } else {
     snap.forEach(d => {
       const data = d.data();
       allStudents[data.name]  = data.spells;
       allGraduated[data.name] = data.graduated || false;
+      allRanks[data.name]     = data.currentRank || calcRankLegacy(data.spells);
       if (data.username) {
         allCredentials[data.name] = {
           username:     data.username,
@@ -274,6 +281,7 @@ async function deleteStudent(name) {
   await deleteDoc(doc(db, "alumnos", docId(name)));
   delete allStudents[name];
   delete allGraduated[name];
+  delete allRanks[name];
   if (allCredentials[name]) {
     delete usernameIndex[(allCredentials[name].username || "").toLowerCase()];
     delete allCredentials[name];
@@ -287,7 +295,7 @@ let currentStudent = null;
 let pendingChanges = {};
 
 function show(id) {
-  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras","scBlocked"].forEach(s => {
+  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras","scBlocked","scDirectory"].forEach(s => {
     const el = document.getElementById(s);
     if (el) el.style.display = "none";
   });
@@ -408,7 +416,7 @@ function renderProfile() {
   const sp   = pendingChanges;
   const name = currentStudent;
   const grad = allGraduated[name] || false;
-  const rank = getCurrentRank(sp);
+  const rank = getStudentRank(name);
   const ascending = canAscend(sp, rank);
   const nextRank  = RANKS_ORDER[RANKS_ORDER.indexOf(rank) + 1];
   const all = allSpells();
@@ -445,19 +453,19 @@ function renderProfile() {
   } else if (ascending && nextRank) {
     banner.innerHTML = `<div class="ascenso-banner">
       <div class="big">✦ Listo para ascender a ${nextRank}</div>
-      <div class="sub">Has alcanzado el ${ASCENSO_PCT}% en ${rank}. Contacta con un administrador.</div>
+      <div class="sub">Notifica a un administrador para que confirme el ascenso.</div>
     </div>`;
-  } else if (rank === RANKS_ORDER[RANKS_ORDER.length - 1] && getRkPct(sp, rank).pct >= ASCENSO_PCT) {
+  } else if (rank === RANKS_ORDER[RANKS_ORDER.length - 1] && RANKS[rank].filter(s => !sp[s]).length === 0) {
     banner.innerHTML = `<div class="ascenso-banner">
-      <div class="big">✦ Rango máximo alcanzado</div>
-      <div class="sub">Has completado todos los hechizos Avanzados.</div>
+      <div class="big">✦ Dominio completo alcanzado</div>
+      <div class="sub">Has aprendido todos los hechizos del rango Avanzado.</div>
     </div>`;
   } else {
-    const { done, total } = getRkPct(sp, rank);
-    const need = Math.ceil(total * ASCENSO_PCT / 100) - done;
+    const missing = RANKS[rank].filter(s => !sp[s]).length;
+    const need    = Math.max(0, missing - ASCENSO_MISSING);
     banner.innerHTML = `<div class="no-ascenso-banner">
       <div class="big">Aún no puedes ascender</div>
-      <div class="sub">Necesitas ${need} hechizo${need !== 1 ? "s" : ""} más en ${rank} para llegar al ${ASCENSO_PCT}%</div>
+      <div class="sub">Te faltan ${need} hechizo${need !== 1 ? "s" : ""} más en ${rank} (se permiten hasta ${ASCENSO_MISSING} sin aprender).</div>
     </div>`;
   }
 
@@ -478,7 +486,8 @@ function renderProfile() {
 
   document.getElementById("pGrid").innerHTML = RANKS_ORDER.map(rk => {
     const { done, total, pct } = getRkPct(sp, rk);
-    const cls = pct >= ASCENSO_PCT ? "ok" : pct === 0 ? "no" : "mid";
+    const rkMissing = RANKS[rk].filter(s => !sp[s]).length;
+    const cls = rkMissing <= ASCENSO_MISSING ? "ok" : done === 0 ? "no" : "mid";
     const rows = RANKS[rk].map(s => {
       const on  = sp[s];
       const key = s.replace(/[\s.]/g, "_");
@@ -509,7 +518,8 @@ window.toggleSpell = function(s) {
   const rk = RANKS_ORDER.find(r => RANKS[r].includes(s));
   if (rk) {
     const { done, total, pct } = getRkPct(pendingChanges, rk);
-    const cls = pct >= ASCENSO_PCT ? "ok" : pct === 0 ? "no" : "mid";
+    const rkMiss = total - done;
+    const cls = rkMiss <= ASCENSO_MISSING ? "ok" : done === 0 ? "no" : "mid";
     const pEl = document.getElementById("rkpct_" + rk);
     const bEl = document.getElementById("rkbar_"  + rk);
     if (pEl) { pEl.textContent = `${done}/${total}`; pEl.className = "rk-pct c-" + cls; }
@@ -521,21 +531,18 @@ window.toggleSpell = function(s) {
   document.getElementById("pOvPct").textContent = tp + "%";
   document.getElementById("pOvBar").style.width  = tp + "%";
 
-  const rank = getCurrentRank(pendingChanges);
-  const rkEl = document.getElementById("pRank");
-  rkEl.textContent = rank; rkEl.className = "rank-badge rk-" + rank;
-
+  const rank = getStudentRank(currentStudent);
   const ascending = canAscend(pendingChanges, rank);
   const nextRank  = RANKS_ORDER[RANKS_ORDER.indexOf(rank) + 1];
   const banner    = document.getElementById("ascBanner");
   if (ascending && nextRank) {
-    banner.innerHTML = `<div class="ascenso-banner"><div class="big">✦ Listo para ascender a ${nextRank}</div><div class="sub">Has alcanzado el ${ASCENSO_PCT}% en ${rank}.</div></div>`;
-  } else if (rank === RANKS_ORDER[RANKS_ORDER.length - 1] && getRkPct(pendingChanges, rank).pct >= ASCENSO_PCT) {
-    banner.innerHTML = `<div class="ascenso-banner"><div class="big">✦ Rango máximo alcanzado</div></div>`;
+    banner.innerHTML = `<div class="ascenso-banner"><div class="big">✦ Listo para ascender a ${nextRank}</div><div class="sub">Notifica a un administrador para que confirme el ascenso.</div></div>`;
+  } else if (rank === RANKS_ORDER[RANKS_ORDER.length - 1] && RANKS[rank].filter(s => !pendingChanges[s]).length === 0) {
+    banner.innerHTML = `<div class="ascenso-banner"><div class="big">✦ Dominio completo alcanzado</div></div>`;
   } else {
-    const { done: d2, total: t2 } = getRkPct(pendingChanges, rank);
-    const need = Math.ceil(t2 * ASCENSO_PCT / 100) - d2;
-    banner.innerHTML = `<div class="no-ascenso-banner"><div class="big">Aún no puedes ascender</div><div class="sub">Necesitas ${need} hechizo${need !== 1 ? "s" : ""} más en ${rank}.</div></div>`;
+    const missing = RANKS[rank].filter(s => !pendingChanges[s]).length;
+    const need    = Math.max(0, missing - ASCENSO_MISSING);
+    banner.innerHTML = `<div class="no-ascenso-banner"><div class="big">Aún no puedes ascender</div><div class="sub">Te faltan ${need} hechizo${need !== 1 ? "s" : ""} más en ${rank}.</div></div>`;
   }
 };
 
@@ -631,14 +638,15 @@ window.showTab = function(id) {
   document.querySelectorAll(".admin-section").forEach(el => el.className = "admin-section");
   document.querySelectorAll(".tab").forEach(el => el.className = "tab");
   document.getElementById(id).className = "admin-section show";
-  const idx = { tabList: 0, tabAscensos: 1, tabActivity: 2, tabGrad: 3, tabAdd: 4, tabSecurity: 5, tabConfig: 6 }[id];
+  const idx = { tabList: 0, tabAscensos: 1, tabDirectory: 2, tabActivity: 3, tabGrad: 4, tabAdd: 5, tabSecurity: 6, tabConfig: 7 }[id];
   document.querySelectorAll(".tab")[idx].className =
     id === "tabSecurity" ? "tab tab-security active" : "tab active";
-  if (id === "tabList")     renderList();
-  if (id === "tabAscensos") renderAscensos();
-  if (id === "tabActivity") renderPocaActividad();
-  if (id === "tabGrad")     renderGraduados();
-  if (id === "tabSecurity") { if (isSuperAdmin) renderSecurityTab(); }
+  if (id === "tabList")      renderList();
+  if (id === "tabAscensos")  renderAscensos();
+  if (id === "tabDirectory") renderDirectoryIn("adminDirectoryContent");
+  if (id === "tabActivity")  renderPocaActividad();
+  if (id === "tabGrad")      renderGraduados();
+  if (id === "tabSecurity")  { if (isSuperAdmin) renderSecurityTab(); }
 };
 
 // =====================================================================
@@ -656,7 +664,7 @@ function bitCntMonth(name, y, m) {
 
 function sortValue(n) {
   const sp  = allStudents[n];
-  const rk  = getCurrentRank(sp);
+  const rk  = getStudentRank(n);
   const pct = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
   if (listSort.key === "thisMonth") {
     const now = new Date();
@@ -670,7 +678,7 @@ function sortValue(n) {
   }
   switch (listSort.key) {
     case "pct":    return pct;
-    case "status": return canAscend(sp, rk) ? 1 : 0;
+    case "status": return (!allGraduated[n] && canAscend(sp, rk)) ? 1 : 0;
     default:       return norm(n);
   }
 }
@@ -707,14 +715,14 @@ window.quickGraduate = async function(name) {
 function buildStudentRow(n) {
   const sp     = allStudents[n];
   const grad   = allGraduated[n] || false;
-  const rk     = getCurrentRank(sp);
+  const rk     = getStudentRank(n);
   const asc    = canAscend(sp, rk);
   const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
   const pct    = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
   const safe   = safeAttr(n);
   const statusCell = grad
     ? `<span class="asc-yes">🎓 Graduado</span>`
-    : asc && nextRk ? `<span class="asc-yes">↑ ${nextRk}</span>` : `<span class="asc-no">—</span>`;
+    : asc && nextRk ? `<span class="asc-yes">⬆ Apto</span>` : `<span class="asc-no">—</span>`;
   const gradBtnCls   = `btn btn-grad sm${grad ? " is-grad" : ""}`;
   const gradBtnTitle = grad ? "Revocar graduación" : "Graduar del Colegio";
   const gradBtnLabel = grad ? "🎓 Grad." : "🎓";
@@ -740,9 +748,10 @@ function buildStudentRow(n) {
     <td><div class="td-actions">
       <button class="${gradBtnCls}" title="${gradBtnTitle}"
               onclick="quickGraduate('${safe}')">${gradBtnLabel}</button>
+      ${asc && nextRk && !grad ? `<button class="btn sm success" title="Ascender a ${nextRk}" onclick="adminAscend('${safe}')">⬆ ${nextRk}</button>` : ""}
       <button class="btn sm" onclick="adminEdit('${safe}')">Ver/Editar</button>
       <button class="btn sm cred-btn" title="Gestionar credenciales de acceso"
-              onclick="showCredentials('${safe}')">🔑</button>
+              onclick="showCredentials('${safe}')">🔑 <span class="cred-dot ${allCredentials[n] ? 'on' : 'off'}"></span></button>
       <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
     </div></td>
   </tr>`;
@@ -780,7 +789,7 @@ function renderList() {
   // Agrupar por rango — graduados se quedan en su rango
   const groups = {};
   for (const rk of RANKS_ORDER) groups[rk] = [];
-  for (const n of allNames) groups[getCurrentRank(allStudents[n])].push(n);
+  for (const n of allNames) groups[getStudentRank(n)].push(n);
 
   // Ordenar dentro de cada grupo con el sort activo
   const sorter = (a, b) => {
@@ -829,13 +838,80 @@ function renderList() {
 }
 
 // =====================================================================
+//  DIRECTORIO DE MEDIMAGOS
+// =====================================================================
+let directoryFrom = null;
+
+function renderDirectoryIn(containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const names = Object.keys(allStudents).sort((a, b) => a.localeCompare(b, "es"));
+  if (!names.length) { wrap.innerHTML = '<p class="empty-state">No hay medimagos registrados.</p>'; return; }
+
+  const groups = {};
+  for (const rk of RANKS_ORDER) groups[rk] = [];
+  groups["Graduado"] = [];
+  for (const n of names) {
+    if (allGraduated[n]) groups["Graduado"].push(n);
+    else groups[getStudentRank(n)].push(n);
+  }
+
+  const total = names.length;
+  const grads = groups["Graduado"].length;
+  let html = `<div class="dir-stats">
+    <div class="dir-stat"><strong>${total}</strong> medimagos</div>
+    ${grads ? `<div class="dir-stat highlight"><strong>${grads}</strong> graduados</div>` : ""}
+  </div>`;
+
+  for (const rk of [...RANKS_ORDER, "Graduado"]) {
+    const members = groups[rk];
+    if (!members.length) continue;
+    const badgeCls = rk === "Graduado" ? "rk-Graduado" : `rk-${rk}`;
+    const label    = rk === "Graduado" ? "🎓 Graduado" : rk;
+    const rows = members.map(n => {
+      const sp  = allStudents[n];
+      const pct = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
+      const initials = n.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+      return `<div class="dir-member">
+        <div class="dir-avatar">${initials}</div>
+        <span class="dir-name">${escHtml(n)}</span>
+        <span class="dir-pct">${pct}%</span>
+        ${allGraduated[n] ? '<span class="dir-grad-icon">🎓</span>' : ""}
+      </div>`;
+    }).join("");
+    html += `<div class="dir-group">
+      <div class="dir-group-header">
+        <span class="rank-badge ${badgeCls}" style="font-size:.69rem">${label}</span>
+        <span class="dir-count">${members.length}</span>
+      </div>
+      <div class="dir-members">${rows}</div>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+window.showDirectory = function(from) {
+  directoryFrom = from || "profile";
+  renderDirectoryIn("directoryContent");
+  show("scDirectory");
+  const btn = document.getElementById("dirBackBtn");
+  if (btn) btn.textContent = from === "admin" ? "← Volver al panel" : "← Volver a mi perfil";
+};
+
+window.backFromDirectory = function() {
+  if (directoryFrom === "admin") show("scAdmin");
+  else if (loggedInStudent) show("scProfile");
+  else goSearch();
+};
+
+// =====================================================================
 //  ADMIN — ASCENSOS
 // =====================================================================
 function renderAscensos() {
   const ready = Object.keys(allStudents)
     .filter(n => {
-      const sp = allStudents[n]; const rk = getCurrentRank(sp);
-      return canAscend(sp, rk) && RANKS_ORDER.indexOf(rk) < RANKS_ORDER.length - 1;
+      const rk = getStudentRank(n);
+      return !allGraduated[n] && canAscend(allStudents[n], rk);
     }).sort();
 
   if (!ready.length) {
@@ -844,37 +920,41 @@ function renderAscensos() {
     return;
   }
   const rows = ready.map(n => {
-    const sp = allStudents[n]; const rk = getCurrentRank(sp);
+    const sp   = allStudents[n];
+    const rk   = getStudentRank(n);
     const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
-    const { pct } = getRkPct(sp, rk);
+    const missing = RANKS[rk].filter(s => !sp[s]).length;
+    const total   = RANKS[rk].length;
     const safe = safeAttr(n);
     return `<tr>
       <td>${escHtml(n)}</td>
       <td><span class="rank-badge rk-${rk}" style="font-size:.7rem">${escHtml(rk)}</span></td>
-      <td>${pct}%</td>
+      <td>${missing === 0 ? "<span class='asc-yes'>Completo</span>" : `Faltan ${missing}/${total}`}</td>
       <td><span class="asc-yes">→ ${escHtml(nextRk)}</span></td>
-      <td><button class="btn sm success" onclick="confirmAscend('${safe}','${safeAttr(nextRk)}')">Ascender</button></td>
+      <td><button class="btn sm success" onclick="adminAscend('${safe}')">⬆ Ascender</button></td>
     </tr>`;
   }).join("");
 
   document.getElementById("ascTable").innerHTML =
     `<table class="student-table">
-      <thead><tr><th>Nombre</th><th>Rango actual</th><th>%</th><th>Nuevo rango</th><th></th></tr></thead>
+      <thead><tr><th>Nombre</th><th>Rango actual</th><th>Hechizos</th><th>Nuevo rango</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
 
-window.confirmAscend = async function(name, newRank) {
+window.adminAscend = async function(name) {
+  const rk      = getStudentRank(name);
+  const nextRank = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
+  if (!nextRank) return;
   const ok = await showModal(
     `Ascender a ${name}`,
-    `¿Confirmas el ascenso de ${name} a ${newRank}? Se marcarán como aprendidos todos los hechizos de rangos anteriores.`,
+    `¿Confirmas el ascenso de ${escHtml(name)} de ${rk} a ${nextRank}?`,
     "Ascender", "success"
   );
   if (!ok) return;
-  const idx = RANKS_ORDER.indexOf(newRank);
-  for (let i = 0; i < idx; i++) RANKS[RANKS_ORDER[i]].forEach(s => allStudents[name][s] = true);
-  await saveStudent(name, allStudents[name]);
-  toast(`${name} ha ascendido a ${newRank}`, "success");
+  await setDoc(doc(db, "alumnos", docId(name)), { currentRank: nextRank }, { merge: true });
+  allRanks[name] = nextRank;
+  toast(`${name} ha ascendido a ${nextRank}`, "success");
   renderAscensos(); renderList();
 };
 
@@ -932,7 +1012,7 @@ function renderPocaActividad() {
 
   const students = Object.keys(allStudents).map(n => ({
     name: n,
-    rank: getCurrentRank(allStudents[n]),
+    rank: getStudentRank(n),
     ct: bitCntMonth(n, ty, tm),
     cl: bitCntMonth(n, ly, lm)
   }))
@@ -991,6 +1071,19 @@ window.adminDelete = async function(name) {
 // =====================================================================
 //  ADMIN — CREDENCIALES DE ALUMNOS
 // =====================================================================
+//  COPY TO CLIPBOARD
+// =====================================================================
+window.copyToClipboard = function(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = "✓ Copiado";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("copied"); }, 2000);
+  }).catch(() => {
+    toast("No se pudo copiar al portapapeles", "error");
+  });
+};
+
+// =====================================================================
 let currentCredStudent = null;
 
 window.showCredentials = function(name) {
@@ -1000,14 +1093,25 @@ window.showCredentials = function(name) {
   const body   = document.getElementById("credModalBody");
   const genBtn = document.getElementById("credModalGenBtn");
 
-  title.textContent = `Credenciales — ${name}`;
+  title.textContent    = `Credenciales — ${name}`;
   genBtn.style.display = "inline-flex";
   genBtn.textContent   = cred ? "Regenerar contraseña" : "Generar credenciales";
 
-  body.innerHTML = cred
-    ? `<p><strong>Usuario:</strong> <code class="cred-val-inline">${escHtml(cred.username)}</code></p>
-       <p class="cred-note">La contraseña no es recuperable. Solo puedes generar una nueva.</p>`
-    : `<p class="cred-note">Este alumno aún no tiene credenciales de acceso.</p>`;
+  if (cred) {
+    body.innerHTML = `
+      <p class="cred-note">Este alumno ya tiene acceso al sistema.</p>
+      <div class="cred-row">
+        <span class="cred-label">Usuario</span>
+        <code class="cred-val">${escHtml(cred.username)}</code>
+        <button class="cred-copy-btn" onclick="copyToClipboard(this,'${safeAttr(cred.username)}')">Copiar</button>
+      </div>
+      <p class="cred-note" style="margin-top:.7rem;font-size:.8rem">
+        La contraseña no se puede recuperar. Puedes generar una nueva contraseña y comunicársela al alumno.
+      </p>`;
+  } else {
+    body.innerHTML = `<p class="cred-note">Este alumno aún no tiene credenciales de acceso.<br>
+      Pulsa <em>Generar credenciales</em> para crear su usuario y contraseña.</p>`;
+  }
 
   document.getElementById("credModal").classList.add("show");
 };
@@ -1051,14 +1155,16 @@ window.doGenerateCredentials = async function() {
     <p class="cred-warn">⚠ Guarda esta contraseña ahora. No podrás verla de nuevo.</p>
     <div class="cred-row">
       <span class="cred-label">Usuario</span>
-      <code class="cred-val">${escHtml(username)}</code>
+      <code class="cred-val" id="credValUser">${escHtml(username)}</code>
+      <button class="cred-copy-btn" onclick="copyToClipboard(this,'${safeAttr(username)}')">Copiar</button>
     </div>
     <div class="cred-row">
       <span class="cred-label">Contraseña</span>
-      <code class="cred-val">${escHtml(password)}</code>
+      <code class="cred-val" id="credValPwd">${escHtml(password)}</code>
+      <button class="cred-copy-btn" onclick="copyToClipboard(this,'${safeAttr(password)}')">Copiar</button>
     </div>`;
   genBtn.style.display = "none";
-  toast("Credenciales generadas", "success");
+  toast("Credenciales generadas — guarda la contraseña", "success");
 };
 
 document.getElementById("credModal")

@@ -8,12 +8,16 @@
         content="default-src 'self';
                  script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com;
                  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://api64.ipify.org;
-                 style-src 'self' 'unsafe-inline';
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;
                  img-src 'self' data:;
                  object-src 'none';
                  base-uri 'self';
                  form-action 'self';">
-  <title>Registro de Ascensos — Medimagia</title>
+  <title>Medimagia — Registro de Ascensos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -156,7 +160,19 @@
         <span class="saved-msg" id="savedMsg">✓ Guardado</span>
       </div>
     </div>
+    <button class="btn ghost full" onclick="showDirectory('profile')" style="margin-top:.4rem">👥 Ver todos los medimagos</button>
     <button class="back-btn" id="profileBackBtn" onclick="backFromProfile()">← Volver</button>
+  </div>
+
+  <!-- ── PANTALLA: DIRECTORIO ─────────────────────────────────── -->
+  <div id="scDirectory" style="display:none">
+    <div class="card">
+      <p class="card-title">👥 Directorio de Medimagos</p>
+      <div id="directoryContent">
+        <div class="loading"><span class="spinner"></span>Cargando…</div>
+      </div>
+    </div>
+    <button class="back-btn" id="dirBackBtn" onclick="backFromDirectory()">← Volver</button>
   </div>
 
   <!-- ── PANTALLA: LOGIN ADMIN ────────────────────────────────── -->
@@ -182,6 +198,7 @@
     <div class="admin-tabs">
       <button class="tab active"  onclick="showTab('tabList')">Alumnos</button>
       <button class="tab"         onclick="showTab('tabAscensos')">Ascensos</button>
+      <button class="tab"         onclick="showTab('tabDirectory')">👥 Directorio</button>
       <button class="tab tab-warn" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="tab"         onclick="showTab('tabGrad')">Graduados</button>
       <button class="tab"         onclick="showTab('tabAdd')">Crear alumno</button>
@@ -203,9 +220,16 @@
     <!-- Tab: ascensos pendientes -->
     <div class="admin-section" id="tabAscensos">
       <p class="notice">
-        Alumnos que superan el <strong>67 %</strong> en su rango y pueden ascender.
+        Alumnos a los que les faltan <strong>3 o menos hechizos</strong> de su rango actual. El ascenso es <strong>manual</strong> — confírmalo pulsando el botón.
       </p>
       <div id="ascTable">
+        <div class="loading"><span class="spinner"></span>Cargando…</div>
+      </div>
+    </div>
+
+    <!-- Tab: directorio público -->
+    <div class="admin-section" id="tabDirectory">
+      <div id="adminDirectoryContent">
         <div class="loading"><span class="spinner"></span>Cargando…</div>
       </div>
     </div>
