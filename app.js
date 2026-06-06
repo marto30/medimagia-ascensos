@@ -59,13 +59,16 @@ function getRkPct(sp, rk) {
   const d = l.filter(s => sp[s]).length;
   return { done: d, total: l.length, pct: Math.round(d / l.length * 100) };
 }
-function calcRankLegacy(sp) {
-  for (let i = RANKS_ORDER.length - 1; i >= 0; i--) {
-    if (getRkPct(sp, RANKS_ORDER[i]).pct >= 67)
-      return RANKS_ORDER[Math.min(i + 1, RANKS_ORDER.length - 1)];
+function calcCorrectRank(sp) {
+  let rank = RANKS_ORDER[0];
+  for (let i = 0; i < RANKS_ORDER.length - 1; i++) {
+    const missing = RANKS[RANKS_ORDER[i]].filter(s => !sp[s]).length;
+    if (missing <= ASCENSO_MISSING) rank = RANKS_ORDER[i + 1];
+    else break;
   }
-  return RANKS_ORDER[0];
+  return rank;
 }
+function calcRankLegacy(sp) { return calcCorrectRank(sp); }
 function getStudentRank(name) {
   return allRanks[name] || RANKS_ORDER[0];
 }
@@ -836,6 +839,52 @@ function renderList() {
 
   document.getElementById("adminListWrap").innerHTML = summary + html;
 }
+
+// =====================================================================
+//  MIGRACIÓN DE RANGOS
+// =====================================================================
+window.migrateAllRanks = async function() {
+  const names = Object.keys(allStudents);
+  if (!names.length) { toast("No hay alumnos cargados.", "error"); return; }
+
+  const btn = document.querySelector('[onclick="migrateAllRanks()"]');
+  if (btn) { btn.disabled = true; btn.textContent = "Calculando…"; }
+
+  let corrected = 0, unchanged = 0;
+  const changes = [];
+
+  for (const name of names) {
+    const correct  = calcCorrectRank(allStudents[name]);
+    const current  = allRanks[name] || RANKS_ORDER[0];
+    if (correct !== current) {
+      await setDoc(doc(db, "alumnos", docId(name)), { currentRank: correct }, { merge: true });
+      changes.push(`${name}: ${current} → ${correct}`);
+      allRanks[name] = correct;
+      corrected++;
+    } else {
+      unchanged++;
+    }
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = "⚙ Recalcular y corregir todos los rangos"; }
+
+  const okEl = document.getElementById("migrateOk");
+  if (okEl) {
+    okEl.style.display = "block";
+    okEl.textContent   = corrected
+      ? `✓ Corregidos ${corrected} alumno${corrected !== 1 ? "s" : ""}, ${unchanged} sin cambios.`
+      : `✓ Todos los rangos ya eran correctos (${unchanged} alumnos revisados).`;
+    setTimeout(() => { okEl.style.display = "none"; }, 6000);
+  }
+
+  if (corrected) {
+    console.info("Rangos corregidos:", changes);
+    renderList(); renderAscensos();
+    toast(`Corregidos ${corrected} rangos`, "success");
+  } else {
+    toast("Todos los rangos son correctos", "success");
+  }
+};
 
 // =====================================================================
 //  DIRECTORIO DE MEDIMAGOS

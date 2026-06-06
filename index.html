@@ -362,6 +362,20 @@
           <div class="divider"></div>
         </div>
 
+        <div class="divider"></div>
+
+        <p class="card-title" style="margin-top:.2rem">Herramientas de mantenimiento</p>
+        <p class="pwd-hint" style="margin-bottom:.9rem">
+          Recalcula el rango de cada alumno según sus hechizos actuales y la regla de ≤3 faltantes.
+          Corrige automáticamente a quien no alcance el mínimo para su rango asignado.
+        </p>
+        <div class="btn-row">
+          <button class="btn" onclick="migrateAllRanks()">⚙ Recalcular y corregir todos los rangos</button>
+        </div>
+        <p class="ok-msg" id="migrateOk"></p>
+
+        <div class="divider"></div>
+
         <p class="card-title" style="margin-top:.2rem">Sesión</p>
         <button class="btn danger" onclick="cerrarSesion()">
           Cerrar sesión de administrador
