@@ -1708,7 +1708,9 @@ Promise.all([loadAllStudents(), loadAdminConfig()])
     loadingEl.style.display  = "none";
     searchCard.style.opacity = "1";
   })
-  .catch(() => {
+  .catch(err => {
+    const code = err?.code || err?.message || String(err);
+    console.error("Firebase init error:", err);
     loadingEl.innerHTML =
-      '<span style="color:var(--red)">Error al conectar con Firebase. Comprueba las reglas de Firestore.</span>';
+      `<span style="color:var(--red)">Error al conectar con Firebase.<br><small style="opacity:.7">${escHtml(code)}</small><br><small>Abre la consola (F12) para ver más detalles.</small></span>`;
   });
