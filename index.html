@@ -36,22 +36,28 @@
     </div>
   </div>
 
-  <!-- ── PANTALLA: BUSCAR ─────────────────────────────────────── -->
+  <!-- ── PANTALLA: BUSCAR / LOGIN ─────────────────────────────── -->
   <div id="scSearch">
 
-    <!-- Búsqueda principal -->
+    <!-- Login de alumno -->
     <div class="card home-search-card">
       <span class="home-search-icon">⚕</span>
-      <p class="card-title">Consulta tu progreso</p>
-      <div class="field" style="margin-bottom:.8rem">
-        <input type="text" id="nameInput"
-               placeholder="Escribe el nombre de tu personaje…"
-               autocomplete="off"/>
-        <div class="sug" id="sugs"></div>
-        <p class="err" id="searchErr">Personaje no encontrado. Comprueba el nombre.</p>
+      <p class="card-title">Accede a tu perfil</p>
+      <div class="field">
+        <label for="loginUser">Usuario</label>
+        <input type="text" id="loginUser" placeholder="tu.usuario"
+               autocomplete="username"
+               onkeydown="if(event.key==='Enter')studentLogin()"/>
       </div>
-      <button class="btn full home-search-btn" onclick="buscar()">
-        Ver progreso →
+      <div class="field" style="margin-bottom:.8rem">
+        <label for="loginPwd">Contraseña</label>
+        <input type="password" id="loginPwd" placeholder="••••••••••"
+               autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')studentLogin()"/>
+        <p class="err" id="loginErr">Usuario o contraseña incorrectos.</p>
+      </div>
+      <button class="btn full home-search-btn" onclick="studentLogin()">
+        Entrar →
       </button>
     </div>
 
@@ -347,6 +353,18 @@
 
   <!-- TOASTS -->
   <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- MODAL DE CREDENCIALES -->
+  <div class="modal-overlay" id="credModal">
+    <div class="modal">
+      <div class="modal-title" id="credModalTitle">Credenciales de acceso</div>
+      <div class="modal-body" id="credModalBody" style="text-align:left;padding-top:.4rem"></div>
+      <div class="modal-actions">
+        <button class="btn ghost sm" onclick="closeCredModal()">Cerrar</button>
+        <button class="btn sm success" id="credModalGenBtn" onclick="doGenerateCredentials()">Generar credenciales</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL DE CONFIRMACIÓN -->
   <div class="modal-overlay" id="confirmModal">

@@ -862,3 +862,34 @@ textarea:focus { outline: none; border-color: var(--gold-dim); }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .empty-state { color: #4a4540; font-size: .88rem; font-style: italic; padding: 1rem 0; }
+
+/* === Student credentials modal === */
+.btn.cred-btn { background: rgba(212,175,55,.12); color: var(--gold); border-color: rgba(212,175,55,.3); }
+.btn.cred-btn:hover { background: rgba(212,175,55,.22); }
+
+.cred-warn {
+  color: var(--red); font-size: .84rem; font-weight: 600;
+  margin: 0 0 .9rem; padding: .5rem .7rem;
+  background: var(--red-dim); border-radius: var(--r-sm);
+}
+.cred-note { color: var(--text-muted); font-size: .85rem; margin: .2rem 0 .6rem; }
+.cred-row {
+  display: flex; align-items: center; gap: .8rem;
+  margin-bottom: .5rem;
+}
+.cred-label {
+  font-size: .78rem; color: var(--text-muted);
+  min-width: 72px; text-transform: uppercase; letter-spacing: .04em;
+}
+.cred-val {
+  background: rgba(0,0,0,.5); color: #e8e0d0;
+  padding: .28rem .7rem; border-radius: 5px;
+  font-family: 'Courier New', monospace; font-size: .92rem;
+  letter-spacing: .08em; user-select: all;
+  border: 1px solid rgba(255,255,255,.1);
+}
+.cred-val-inline {
+  background: rgba(0,0,0,.35); color: var(--gold);
+  padding: .15rem .5rem; border-radius: 4px;
+  font-family: 'Courier New', monospace; font-size: .88rem;
+}

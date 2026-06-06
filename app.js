@@ -83,8 +83,10 @@ function safeAttr(n) {
 // =====================================================================
 //  SHA-256  (Web Crypto API — sin dependencias)
 // =====================================================================
-const HASH_SALT    = "medimagia_v1_";
-const IP_HASH_SALT = "medimagia_ip_v2_";
+const HASH_SALT         = "medimagia_v1_";
+const IP_HASH_SALT      = "medimagia_ip_v2_";
+const STUDENT_HASH_SALT = "medimagia_student_v1_";
+
 async function sha256(str) {
   const buf = await crypto.subtle.digest("SHA-256",
     new TextEncoder().encode(HASH_SALT + str));
@@ -96,6 +98,24 @@ async function hashIP(ip) {
     new TextEncoder().encode(IP_HASH_SALT + ip));
   return Array.from(new Uint8Array(buf))
     .map(b => b.toString(16).padStart(2,"0")).join("");
+}
+async function hashStudentPwd(pwd) {
+  const buf = await crypto.subtle.digest("SHA-256",
+    new TextEncoder().encode(STUDENT_HASH_SALT + pwd));
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2,"0")).join("");
+}
+function generatePassword() {
+  const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const arr   = new Uint8Array(12);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, b => chars[b % chars.length]).join("");
+}
+function makeUsername(name) {
+  return name.trim().toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9 ]/g, "")
+    .trim().replace(/\s+/g, ".");
 }
 
 // =====================================================================
@@ -187,10 +207,13 @@ document.getElementById("confirmModal")
 // =====================================================================
 //  FIREBASE — alumnos
 // =====================================================================
-let allStudents  = {};
-let allGraduated = {};
+let allStudents    = {};
+let allGraduated   = {};
+let allCredentials = {};   // name → { username, passwordHash }
+let usernameIndex  = {};   // lowercase_username → name
 let isAdmin        = false;
 let isSuperAdmin   = false;
+let loggedInStudent = null;
 let adminPwdHash   = null;
 let superAdminHash = null;
 let visitorIP      = null;
@@ -213,7 +236,7 @@ async function loadAdminConfig() {
 
 async function loadAllStudents() {
   const snap = await getDocs(collection(db, "alumnos"));
-  allStudents = {}; allGraduated = {};
+  allStudents = {}; allGraduated = {}; allCredentials = {}; usernameIndex = {};
   if (snap.empty) {
     for (const [name, spells] of Object.entries(BASE_DATA)) {
       await setDoc(doc(db, "alumnos", docId(name)), { name, spells, graduated: false });
@@ -225,13 +248,20 @@ async function loadAllStudents() {
       const data = d.data();
       allStudents[data.name]  = data.spells;
       allGraduated[data.name] = data.graduated || false;
+      if (data.username) {
+        allCredentials[data.name] = {
+          username:     data.username,
+          passwordHash: data.studentPasswordHash || null
+        };
+        usernameIndex[data.username.toLowerCase()] = data.name;
+      }
     });
   }
 }
 
 async function saveStudent(name, spells) {
   await setDoc(doc(db, "alumnos", docId(name)),
-    { name, spells, graduated: allGraduated[name] || false });
+    { name, spells, graduated: allGraduated[name] || false }, { merge: true });
   allStudents[name] = spells;
 }
 
@@ -244,6 +274,10 @@ async function deleteStudent(name) {
   await deleteDoc(doc(db, "alumnos", docId(name)));
   delete allStudents[name];
   delete allGraduated[name];
+  if (allCredentials[name]) {
+    delete usernameIndex[(allCredentials[name].username || "").toLowerCase()];
+    delete allCredentials[name];
+  }
 }
 
 // =====================================================================
@@ -262,10 +296,15 @@ function show(id) {
 }
 
 function goSearch() {
+  loggedInStudent = null;
   show("scSearch");
-  document.getElementById("nameInput").value = "";
+  const uEl = document.getElementById("loginUser");
+  const pEl = document.getElementById("loginPwd");
+  const eEl = document.getElementById("loginErr");
+  if (uEl) uEl.value = "";
+  if (pEl) pEl.value = "";
+  if (eEl) eEl.style.display = "none";
   pendingChanges = {}; isAdmin = false;
-  renderSuggestions();
 }
 window.goSearch = goSearch;
 
@@ -278,7 +317,7 @@ window.showAdminLogin = showAdminLogin;
 
 window.backFromProfile = function() {
   if (isAdmin) { show("scAdmin"); renderList(); renderAscensos(); }
-  else goSearch();
+  else { loggedInStudent = null; goSearch(); }
 };
 
 window.cerrarSesion = function() {
@@ -291,40 +330,30 @@ window.cerrarSesion = function() {
 };
 
 // =====================================================================
-//  SEARCH
+//  STUDENT LOGIN
 // =====================================================================
-const nameInput = document.getElementById("nameInput");
-const sugsEl    = document.getElementById("sugs");
+window.studentLogin = async function() {
+  const uEl = document.getElementById("loginUser");
+  const pEl = document.getElementById("loginPwd");
+  const eEl = document.getElementById("loginErr");
+  const user = (uEl.value || "").trim().toLowerCase();
+  const pwd  = pEl.value;
 
-function renderSuggestions() {
-  const q = norm(nameInput.value);
-  document.getElementById("searchErr").style.display = "none";
-  if (q.length < 2) { sugsEl.className = "sug"; return; }
-  const m = Object.keys(allStudents).filter(n => norm(n).includes(q)).slice(0, 6);
-  if (!m.length) { sugsEl.className = "sug"; return; }
-  sugsEl.innerHTML = m.map(n =>
-    `<div class="sug-item" onclick="selectName('${safeAttr(n)}')">${escHtml(n)}</div>`
-  ).join("");
-  sugsEl.className = "sug show";
-}
+  eEl.style.display = "none";
+  if (!user || !pwd) { eEl.style.display = "block"; return; }
 
-nameInput.addEventListener("input", renderSuggestions);
-nameInput.addEventListener("keydown", e => { if (e.key === "Enter") buscar(); });
-document.addEventListener("click", e => {
-  if (!e.target.closest("#scSearch")) sugsEl.className = "sug";
-});
+  const name = usernameIndex[user];
+  if (!name || !allCredentials[name] || !allCredentials[name].passwordHash) {
+    eEl.style.display = "block"; return;
+  }
+  const hash = await hashStudentPwd(pwd);
+  if (hash !== allCredentials[name].passwordHash) {
+    eEl.style.display = "block"; return;
+  }
 
-window.selectName = function(n) {
-  nameInput.value = n; sugsEl.className = "sug"; buscar();
-};
-
-window.buscar = function() {
-  const q = norm(nameInput.value);
-  const found =
-    Object.keys(allStudents).find(n => norm(n) === q) ||
-    Object.keys(allStudents).find(n => norm(n).includes(q));
-  if (!found) { document.getElementById("searchErr").style.display = "block"; return; }
-  openProfile(found);
+  pEl.value = "";
+  loggedInStudent = name;
+  openProfile(name);
 };
 
 // =====================================================================
@@ -363,7 +392,7 @@ function openProfile(name) {
   renderProfile();
   show("scProfile");
   document.getElementById("profileBackBtn").textContent =
-    isAdmin ? "← Volver al panel" : "← Volver";
+    isAdmin ? "← Volver al panel" : "← Cerrar sesión";
   if (!bitacorasLoaded) {
     renderBitCount(name);
     loadBitacoras()
@@ -712,6 +741,8 @@ function buildStudentRow(n) {
       <button class="${gradBtnCls}" title="${gradBtnTitle}"
               onclick="quickGraduate('${safe}')">${gradBtnLabel}</button>
       <button class="btn sm" onclick="adminEdit('${safe}')">Ver/Editar</button>
+      <button class="btn sm cred-btn" title="Gestionar credenciales de acceso"
+              onclick="showCredentials('${safe}')">🔑</button>
       <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
     </div></td>
   </tr>`;
@@ -956,6 +987,82 @@ window.adminDelete = async function(name) {
   toast(`${name} eliminado`);
   renderList(); renderAscensos(); renderGraduados();
 };
+
+// =====================================================================
+//  ADMIN — CREDENCIALES DE ALUMNOS
+// =====================================================================
+let currentCredStudent = null;
+
+window.showCredentials = function(name) {
+  currentCredStudent = name;
+  const cred   = allCredentials[name];
+  const title  = document.getElementById("credModalTitle");
+  const body   = document.getElementById("credModalBody");
+  const genBtn = document.getElementById("credModalGenBtn");
+
+  title.textContent = `Credenciales — ${name}`;
+  genBtn.style.display = "inline-flex";
+  genBtn.textContent   = cred ? "Regenerar contraseña" : "Generar credenciales";
+
+  body.innerHTML = cred
+    ? `<p><strong>Usuario:</strong> <code class="cred-val-inline">${escHtml(cred.username)}</code></p>
+       <p class="cred-note">La contraseña no es recuperable. Solo puedes generar una nueva.</p>`
+    : `<p class="cred-note">Este alumno aún no tiene credenciales de acceso.</p>`;
+
+  document.getElementById("credModal").classList.add("show");
+};
+
+window.closeCredModal = function() {
+  document.getElementById("credModal").classList.remove("show");
+  currentCredStudent = null;
+};
+
+window.doGenerateCredentials = async function() {
+  const name = currentCredStudent;
+  if (!name) return;
+
+  const existing = allCredentials[name];
+  let username   = existing ? existing.username : makeUsername(name);
+
+  if (!existing) {
+    let suffix = 0;
+    const base = username;
+    while (usernameIndex[username] && usernameIndex[username] !== name) {
+      suffix++;
+      username = base + suffix;
+    }
+  }
+
+  const password     = generatePassword();
+  const passwordHash = await hashStudentPwd(password);
+
+  await setDoc(doc(db, "alumnos", docId(name)),
+    { username, studentPasswordHash: passwordHash }, { merge: true });
+
+  if (existing && existing.username !== username) {
+    delete usernameIndex[(existing.username || "").toLowerCase()];
+  }
+  allCredentials[name]            = { username, passwordHash };
+  usernameIndex[username.toLowerCase()] = name;
+
+  const body   = document.getElementById("credModalBody");
+  const genBtn = document.getElementById("credModalGenBtn");
+  body.innerHTML = `
+    <p class="cred-warn">⚠ Guarda esta contraseña ahora. No podrás verla de nuevo.</p>
+    <div class="cred-row">
+      <span class="cred-label">Usuario</span>
+      <code class="cred-val">${escHtml(username)}</code>
+    </div>
+    <div class="cred-row">
+      <span class="cred-label">Contraseña</span>
+      <code class="cred-val">${escHtml(password)}</code>
+    </div>`;
+  genBtn.style.display = "none";
+  toast("Credenciales generadas", "success");
+};
+
+document.getElementById("credModal")
+  .addEventListener("click", e => { if (e.target === e.currentTarget) closeCredModal(); });
 
 // =====================================================================
 //  ADMIN — CREAR ALUMNO
