@@ -249,7 +249,7 @@ async function loadAllStudents() {
   allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {};
   if (snap.empty) {
     for (const [name, spells] of Object.entries(BASE_DATA)) {
-      await setDoc(doc(db, "alumnos", docId(name)), { name, spells, graduated: false });
+      await setDoc(doc(db, "alumnos", docId(name)), { name, spells, graduated: false }, { merge: true });
       allStudents[name]  = spells;
       allGraduated[name] = false;
       allRanks[name]     = calcRankLegacy(spells);
@@ -1191,8 +1191,14 @@ window.doGenerateCredentials = async function() {
   const password     = generatePassword();
   const passwordHash = await hashStudentPwd(password);
 
-  await setDoc(doc(db, "alumnos", docId(name)),
-    { username, studentPasswordHash: passwordHash }, { merge: true });
+  try {
+    await setDoc(doc(db, "alumnos", docId(name)),
+      { username, studentPasswordHash: passwordHash }, { merge: true });
+  } catch (err) {
+    console.error("Error guardando credenciales:", err);
+    toast(`Error al guardar en la base de datos: ${err?.code || err?.message || "desconocido"}`, "error");
+    return;
+  }
 
   if (existing && existing.username !== username) {
     delete usernameIndex[(existing.username || "").toLowerCase()];
@@ -1215,7 +1221,7 @@ window.doGenerateCredentials = async function() {
       <button class="cred-copy-btn" onclick="copyToClipboard(this,'${safeAttr(password)}')">Copiar</button>
     </div>`;
   genBtn.style.display = "none";
-  toast("Credenciales generadas — guarda la contraseña", "success");
+  toast("✓ Credenciales guardadas en la base de datos", "success");
 };
 
 document.getElementById("credModal")
