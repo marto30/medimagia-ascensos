@@ -19,7 +19,7 @@ const db  = getFirestore(app);
 // =====================================================================
 //  CONSTANTS
 // =====================================================================
-const ASCENSO_MISSING = 3; // hechizos que pueden faltar para ser elegible al ascenso
+const ASCENSO_MISSING = 2; // hechizos que pueden faltar para ser elegible al ascenso
 const RANKS_ORDER   = ["Aprendiz","Principiante","Intermedio","Avanzado"];
 const RANKS = {
   Aprendiz:     ["Bullapure","Férula","Osseus Reparo","Tergeo","Examino","Vitae Expulso","Leniter","Sommnium"],
