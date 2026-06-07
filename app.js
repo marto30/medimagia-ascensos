@@ -221,6 +221,7 @@ let allStudents    = {};
 let allGraduated   = {};
 let allRanks       = {};   // name → stored rank (manual, set by admin)
 let allCredentials = {};   // name → { username, passwordHash }
+let allInfractions = {};   // name → [{ reason, date }]
 let usernameIndex  = {};   // lowercase_username → name
 let isAdmin        = false;
 let isSuperAdmin   = false;
@@ -384,20 +385,22 @@ window.saveRanksChanges = async function() {
 
 async function loadAllStudents() {
   const snap = await getDocs(collection(db, "alumnos"));
-  allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {};
+  allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {};
   if (snap.empty) {
     for (const [name, spells] of Object.entries(BASE_DATA)) {
       await setDoc(doc(db, "alumnos", docId(name)), { name, spells, graduated: false }, { merge: true });
-      allStudents[name]  = spells;
-      allGraduated[name] = false;
-      allRanks[name]     = calcRankLegacy(spells);
+      allStudents[name]    = spells;
+      allGraduated[name]   = false;
+      allRanks[name]       = calcRankLegacy(spells);
+      allInfractions[name] = [];
     }
   } else {
     snap.forEach(d => {
       const data = d.data();
-      allStudents[data.name]  = data.spells;
-      allGraduated[data.name] = data.graduated || false;
-      allRanks[data.name]     = data.currentRank || calcRankLegacy(data.spells);
+      allStudents[data.name]    = data.spells;
+      allGraduated[data.name]   = data.graduated || false;
+      allRanks[data.name]       = data.currentRank || calcRankLegacy(data.spells);
+      allInfractions[data.name] = Array.isArray(data.infractions) ? data.infractions : [];
       if (data.username) {
         allCredentials[data.name] = {
           username:     data.username,
@@ -425,6 +428,7 @@ async function deleteStudent(name) {
   delete allStudents[name];
   delete allGraduated[name];
   delete allRanks[name];
+  delete allInfractions[name];
   if (allCredentials[name]) {
     delete usernameIndex[(allCredentials[name].username || "").toLowerCase()];
     delete allCredentials[name];
@@ -571,6 +575,8 @@ function renderProfile() {
   else       { rkEl.textContent = rank;        rkEl.className = "rank-badge " + rankClass("rk", rank); }
 
   document.getElementById("adminBadge").style.display = isAdmin ? "inline" : "none";
+  renderRankEditor(name, grad ? "Graduado" : rank);
+  renderInfractions(name);
 
   const profileCard = document.querySelector("#scProfile .card");
   profileCard.classList.toggle("grad-card", grad);
@@ -649,6 +655,134 @@ function renderProfile() {
     </div>`;
   }).join("");
 }
+
+// =====================================================================
+//  ADMIN — CAMBIO MANUAL DE RANGO
+// =====================================================================
+function renderRankEditor(name, displayRank) {
+  const wrap = document.getElementById("pRankEdit");
+  if (!wrap) return;
+  if (!isAdmin || allGraduated[name]) { wrap.innerHTML = ""; return; }
+  const current = allRanks[name] || RANKS_ORDER[0];
+  const opts = RANKS_ORDER.map(rk =>
+    `<option value="${safeAttr(rk)}" ${rk === current ? "selected" : ""}>${escHtml(rk)}</option>`
+  ).join("");
+  wrap.innerHTML = `
+    <div class="rank-manual-edit">
+      <label for="manualRankSelect">Cambiar rango manualmente</label>
+      <div class="rank-manual-row">
+        <select id="manualRankSelect">${opts}</select>
+        <button class="btn sm" onclick="applyManualRank()">Aplicar</button>
+      </div>
+    </div>`;
+}
+
+window.applyManualRank = async function() {
+  const sel  = document.getElementById("manualRankSelect");
+  const name = currentStudent;
+  if (!sel || !name) return;
+  const newRank = sel.value;
+  const oldRank = allRanks[name] || RANKS_ORDER[0];
+  if (!RANKS_ORDER.includes(newRank) || newRank === oldRank) return;
+
+  const dir = RANKS_ORDER.indexOf(newRank) > RANKS_ORDER.indexOf(oldRank) ? "subir" : "bajar";
+  const ok = await showModal(
+    "Cambiar rango manualmente",
+    `¿${dir === "subir" ? "Subir" : "Bajar"} a ${name} de "${oldRank}" a "${newRank}"? Esto sobrescribe el cálculo automático según hechizos aprendidos.`,
+    dir === "subir" ? "Subir" : "Bajar", dir === "subir" ? "success" : "danger"
+  );
+  if (!ok) { sel.value = oldRank; return; }
+
+  try {
+    await setDoc(doc(db, "alumnos", docId(name)), { currentRank: newRank }, { merge: true });
+  } catch (err) {
+    toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
+    sel.value = oldRank;
+    return;
+  }
+  allRanks[name] = newRank;
+  renderProfile();
+  toast(`Rango de ${name} cambiado a ${newRank}`, "success");
+};
+
+// =====================================================================
+//  ADMIN — INFRACCIONES
+// =====================================================================
+function renderInfractions(name) {
+  const wrap = document.getElementById("pInfractions");
+  if (!wrap) return;
+  const list = allInfractions[name] || [];
+  const rows = list.length
+    ? list.map((inf, i) => `<div class="infraction-row">
+        <div class="infraction-main">
+          <span class="infraction-date">${formatDate(inf.date)}</span>
+          <span class="infraction-reason">${escHtml(inf.reason)}</span>
+        </div>
+        ${isAdmin ? `<button class="btn sm danger" onclick="removeInfraction(${i})" title="Eliminar">×</button>` : ""}
+      </div>`).join("")
+    : '<p class="empty-state">Sin infracciones registradas.</p>';
+
+  wrap.innerHTML = `
+    <div class="divider"></div>
+    <p class="card-title" style="font-size:.92rem">⚠ Infracciones${list.length ? ` <span class="sec-count">${list.length}</span>` : ""}</p>
+    <div class="infractions-list">${rows}</div>
+    ${isAdmin ? `
+      <div class="rank-add-spell" style="margin-top:.6rem">
+        <input type="text" id="infractionReason" placeholder="Motivo de la infracción"
+               onkeydown="if(event.key==='Enter')addInfraction()"/>
+        <button type="button" class="btn sm danger" onclick="addInfraction()">+ Añadir infracción</button>
+      </div>
+      <p class="err" id="infractionErr"></p>` : ""}
+  `;
+}
+
+window.addInfraction = async function() {
+  const input = document.getElementById("infractionReason");
+  const errEl = document.getElementById("infractionErr");
+  const name  = currentStudent;
+  if (!input || !name) return;
+  errEl.style.display = "none";
+  const reason = input.value.trim();
+  if (!reason) {
+    errEl.textContent = "Escribe el motivo de la infracción.";
+    errEl.style.display = "block";
+    return;
+  }
+  const entry = { reason, date: new Date().toISOString() };
+  const list  = [...(allInfractions[name] || []), entry];
+  try {
+    await setDoc(doc(db, "alumnos", docId(name)), { infractions: list }, { merge: true });
+  } catch (err) {
+    errEl.textContent = `Error al guardar: ${err?.code || err?.message || "desconocido"}`;
+    errEl.style.display = "block";
+    return;
+  }
+  allInfractions[name] = list;
+  input.value = "";
+  renderInfractions(name);
+  toast("Infracción registrada", "success");
+};
+
+window.removeInfraction = async function(idx) {
+  const name = currentStudent;
+  if (!name) return;
+  const ok = await showModal(
+    "Eliminar infracción",
+    "¿Eliminar esta infracción del historial del alumno? Esta acción no se puede deshacer.",
+    "Eliminar", "danger"
+  );
+  if (!ok) return;
+  const list = (allInfractions[name] || []).filter((_, i) => i !== idx);
+  try {
+    await setDoc(doc(db, "alumnos", docId(name)), { infractions: list }, { merge: true });
+  } catch (err) {
+    toast(`Error al eliminar: ${err?.code || err?.message || "desconocido"}`, "error");
+    return;
+  }
+  allInfractions[name] = list;
+  renderInfractions(name);
+  toast("Infracción eliminada");
+};
 
 window.toggleSpell = function(s) {
   pendingChanges[s] = !pendingChanges[s];
@@ -1115,7 +1249,7 @@ function renderAscensos() {
     const safe = safeAttr(n);
     return `<tr>
       <td>${escHtml(n)}</td>
-      <td><span class="rank-badge rk-${rk}" style="font-size:.7rem">${escHtml(rk)}</span></td>
+      <td><span class="rank-badge ${rankClass("rk", rk)}" style="font-size:.7rem">${escHtml(rk)}</span></td>
       <td>${missing === 0 ? "<span class='asc-yes'>Completo</span>" : `Faltan ${missing}/${total}`}</td>
       <td><span class="asc-yes">→ ${escHtml(nextRk)}</span></td>
       <td><button class="btn sm success" onclick="adminAscend('${safe}')">⬆ Ascender</button></td>
@@ -1213,7 +1347,7 @@ function renderPocaActividad() {
 
   const rows = students.map(s => {
     const safe  = safeAttr(s.name);
-    const rkCls = `rk-${s.rank}`;
+    const rkCls = rankClass("rk", s.rank);
     return `<tr>
       <td>${escHtml(s.name)}</td>
       <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(s.rank)}</span></td>

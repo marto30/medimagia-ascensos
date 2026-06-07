@@ -646,6 +646,34 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
 }
 .rank-add-spell input:focus { outline: none; border-color: var(--gold); }
 
+/* === CAMBIO MANUAL DE RANGO (perfil) === */
+.rank-manual-edit { margin-top: .6rem; }
+.rank-manual-edit label {
+  display: block; font-size: .72rem; color: #6a6060;
+  letter-spacing: .04em; margin-bottom: .3rem;
+}
+.rank-manual-row { display: flex; gap: .5rem; max-width: 320px; }
+.rank-manual-row select {
+  flex: 1; background: rgba(255,255,255,.04); border: 1px solid var(--border-sub);
+  border-radius: var(--r-xs); padding: .4rem .6rem;
+  color: var(--text); font-size: .82rem; font-family: var(--font-b); cursor: pointer;
+}
+.rank-manual-row select:focus { outline: none; border-color: var(--gold); }
+
+/* === INFRACCIONES (perfil) === */
+.infractions-list { display: flex; flex-direction: column; gap: .4rem; }
+.infraction-row {
+  display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+  background: rgba(176,69,69,.06); border: 1px solid rgba(176,69,69,.2);
+  border-radius: var(--r-sm); padding: .5rem .7rem;
+}
+.infraction-main { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.infraction-date { font-size: .68rem; color: #8a7a6a; letter-spacing: .03em; }
+.infraction-reason { font-size: .85rem; color: var(--text-muted); word-break: break-word; }
+.infraction-row .btn.sm.danger {
+  flex-shrink: 0; padding: .2rem .55rem; font-size: .82rem; line-height: 1;
+}
+
 /* === PASSWORD FORM === */
 .pwd-form { max-width: 380px; }
 .pwd-strength {
