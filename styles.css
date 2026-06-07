@@ -382,24 +382,26 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
 
 /* === ADMIN TABS === */
 .admin-tabs {
-  display: flex; gap: .4rem; margin-bottom: 1.5rem;
-  overflow-x: auto; padding-bottom: 2px;
-  scrollbar-width: none; -ms-overflow-style: none;
+  display: flex; flex-wrap: wrap; gap: .55rem; margin-bottom: 1.6rem;
+  padding-bottom: 2px;
 }
-.admin-tabs::-webkit-scrollbar { display: none; }
 .tab {
-  flex-shrink: 0; background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.08); color: #6a6060;
-  padding: .5rem 1.05rem; border-radius: 999px;
+  flex-shrink: 0; background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.1); color: #9a9088;
+  padding: .62rem 1.25rem; border-radius: 999px;
   cursor: pointer; font-family: var(--font-h);
-  font-size: .72rem; letter-spacing: .05em;
+  font-size: .78rem; letter-spacing: .05em; font-weight: 500;
   transition: all var(--t); white-space: nowrap;
 }
 .tab.active {
-  background: var(--gold-faint); border-color: rgba(201,162,39,.42);
-  color: var(--gold); box-shadow: 0 0 14px rgba(201,162,39,.15);
+  background: var(--gold-faint); border-color: rgba(201,162,39,.5);
+  color: var(--gold); box-shadow: 0 0 16px rgba(201,162,39,.18);
+  transform: translateY(-1px);
 }
-.tab:hover:not(.active) { background: rgba(255,255,255,.07); color: var(--text-muted); }
+.tab:hover:not(.active) {
+  background: rgba(255,255,255,.085); color: var(--text);
+  border-color: rgba(255,255,255,.18);
+}
 .admin-section      { display: none; }
 .admin-section.show { display: block; }
 

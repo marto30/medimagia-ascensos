@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260607e">
+  <link rel="stylesheet" href="styles.css?v=20260607f">
 </head>
 <body>
 <div class="bg"></div>
@@ -197,15 +197,15 @@
   <div id="scAdmin" style="display:none">
 
     <div class="admin-tabs">
-      <button class="tab active"  onclick="showTab('tabList')">Alumnos</button>
-      <button class="tab"         onclick="showTab('tabAscensos')">Ascensos</button>
+      <button class="tab active"  onclick="showTab('tabList')">🧑‍🎓 Alumnos</button>
+      <button class="tab"         onclick="showTab('tabAscensos')">⬆ Ascensos</button>
       <button class="tab"         onclick="showTab('tabDirectory')">👥 Directorio</button>
       <button class="tab tab-warn" onclick="showTab('tabActivity')">⚠ Actividad</button>
-      <button class="tab"         onclick="showTab('tabGrad')">Graduados</button>
-      <button class="tab"         onclick="showTab('tabAdd')">Crear alumno</button>
+      <button class="tab"         onclick="showTab('tabGrad')">🎓 Graduados</button>
+      <button class="tab"         onclick="showTab('tabAdd')">➕ Crear alumno</button>
       <button class="tab"         onclick="showTab('tabRanks')">📜 Rangos</button>
       <button class="tab tab-security" id="tabSecurityBtn" onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
-      <button class="tab"         onclick="showTab('tabConfig')">Configuración</button>
+      <button class="tab"         onclick="showTab('tabConfig')">⚙ Configuración</button>
     </div>
 
     <!-- Tab: lista de alumnos -->
@@ -222,7 +222,7 @@
     <!-- Tab: ascensos pendientes -->
     <div class="admin-section" id="tabAscensos">
       <p class="notice">
-        Alumnos a los que les faltan <strong>3 o menos hechizos</strong> de su rango actual. El ascenso es <strong>manual</strong> — confírmalo pulsando el botón.
+        Todos los alumnos sin graduar y sin rango máximo. El ascenso es <strong>siempre manual</strong>: puedes subir a cualquiera con un solo clic, cumpla o no el requisito de hechizos — la columna "Hechizos" es solo informativa.
       </p>
       <div id="ascTable">
         <div class="loading"><span class="spinner"></span>Cargando…</div>
@@ -448,6 +448,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=20260607e"></script>
+<script type="module" src="app.js?v=20260607f"></script>
 </body>
 </html>

@@ -1229,28 +1229,27 @@ window.backFromDirectory = function() {
 //  ADMIN — ASCENSOS
 // =====================================================================
 function renderAscensos() {
-  const ready = Object.keys(allStudents)
-    .filter(n => {
-      const rk = getStudentRank(n);
-      return !allGraduated[n] && canAscend(allStudents[n], rk);
-    }).sort();
+  const candidates = Object.keys(allStudents)
+    .filter(n => !allGraduated[n] && RANKS_ORDER.indexOf(getStudentRank(n)) < RANKS_ORDER.length - 1)
+    .sort((a, b) => norm(a).localeCompare(norm(b)));
 
-  if (!ready.length) {
+  if (!candidates.length) {
     document.getElementById("ascTable").innerHTML =
-      '<p class="empty-state">Ningún alumno cumple el requisito de ascenso ahora mismo.</p>';
+      '<p class="empty-state">No hay alumnos pendientes de ascenso (están graduados o ya en el rango máximo).</p>';
     return;
   }
-  const rows = ready.map(n => {
+  const rows = candidates.map(n => {
     const sp   = allStudents[n];
     const rk   = getStudentRank(n);
     const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
     const missing = RANKS[rk].filter(s => !sp[s]).length;
     const total   = RANKS[rk].length;
+    const ready   = missing <= ASCENSO_MISSING;
     const safe = safeAttr(n);
     return `<tr>
       <td>${escHtml(n)}</td>
       <td><span class="rank-badge ${rankClass("rk", rk)}" style="font-size:.7rem">${escHtml(rk)}</span></td>
-      <td>${missing === 0 ? "<span class='asc-yes'>Completo</span>" : `Faltan ${missing}/${total}`}</td>
+      <td>${ready ? "<span class='asc-yes'>Completo</span>" : `<span class="asc-no">Faltan ${missing}/${total}</span>`}</td>
       <td><span class="asc-yes">→ ${escHtml(nextRk)}</span></td>
       <td><button class="btn sm success" onclick="adminAscend('${safe}')">⬆ Ascender</button></td>
     </tr>`;
@@ -1267,13 +1266,23 @@ window.adminAscend = async function(name) {
   const rk      = getStudentRank(name);
   const nextRank = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
   if (!nextRank) return;
+  const sp      = allStudents[name] || {};
+  const missing = RANKS[rk] ? RANKS[rk].filter(s => !sp[s]).length : 0;
+  const extra   = missing > ASCENSO_MISSING
+    ? ` Ten en cuenta que a este alumno le faltan ${missing} hechizos del rango actual — este ascenso es manual y se salta el requisito.`
+    : "";
   const ok = await showModal(
     `Ascender a ${name}`,
-    `¿Confirmas el ascenso de ${escHtml(name)} de ${rk} a ${nextRank}?`,
+    `¿Confirmas el ascenso de ${escHtml(name)} de ${rk} a ${nextRank}?${extra}`,
     "Ascender", "success"
   );
   if (!ok) return;
-  await setDoc(doc(db, "alumnos", docId(name)), { currentRank: nextRank }, { merge: true });
+  try {
+    await setDoc(doc(db, "alumnos", docId(name)), { currentRank: nextRank }, { merge: true });
+  } catch (err) {
+    toast(`Error al ascender: ${err?.code || err?.message || "desconocido"}`, "error");
+    return;
+  }
   allRanks[name] = nextRank;
   toast(`${name} ha ascendido a ${nextRank}`, "success");
   renderAscensos(); renderList();
@@ -1380,13 +1389,18 @@ window.adminEdit   = function(name) { openProfile(name); };
 window.adminDelete = async function(name) {
   const ok = await showModal(
     "Eliminar alumno",
-    `¿Seguro que quieres eliminar a ${name}? Esta acción no se puede deshacer.`,
+    `¿Seguro que quieres eliminar a ${name}? Esta acción no se puede deshacer y lo borrará permanentemente de la base de datos.`,
     "Eliminar", "danger"
   );
   if (!ok) return;
-  await deleteStudent(name);
-  toast(`${name} eliminado`);
-  renderList(); renderAscensos(); renderGraduados();
+  try {
+    await deleteStudent(name);
+  } catch (err) {
+    toast(`No se pudo eliminar de la base de datos: ${err?.code || err?.message || "desconocido"}`, "error");
+    return;
+  }
+  toast(`${name} eliminado de la base de datos`, "success");
+  renderList(); renderAscensos(); renderGraduados(); renderDirectoryIn("directoryContent");
 };
 
 // =====================================================================
