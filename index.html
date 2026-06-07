@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260607c">
+  <link rel="stylesheet" href="styles.css?v=20260607d">
 </head>
 <body>
 <div class="bg"></div>
@@ -200,6 +200,7 @@
       <button class="tab tab-warn" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="tab"         onclick="showTab('tabGrad')">Graduados</button>
       <button class="tab"         onclick="showTab('tabAdd')">Crear alumno</button>
+      <button class="tab"         onclick="showTab('tabRanks')">📜 Rangos</button>
       <button class="tab tab-security" id="tabSecurityBtn" onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
       <button class="tab"         onclick="showTab('tabConfig')">Configuración</button>
     </div>
@@ -268,12 +269,7 @@
               (opcional — sin selección: empieza sin hechizos)
             </span>
           </label>
-          <div class="rank-selector" id="rankSelector">
-            <div class="rank-opt" data-rank="Aprendiz"     onclick="selectRankOpt(this)">Aprendiz</div>
-            <div class="rank-opt" data-rank="Principiante" onclick="selectRankOpt(this)">Principiante</div>
-            <div class="rank-opt" data-rank="Intermedio"   onclick="selectRankOpt(this)">Intermedio</div>
-            <div class="rank-opt" data-rank="Avanzado"     onclick="selectRankOpt(this)">Avanzado</div>
-          </div>
+          <div class="rank-selector" id="rankSelector"></div>
         </div>
 
         <div class="field" id="spellEditorWrap" style="display:none">
@@ -289,6 +285,36 @@
         </div>
         <p class="err"    id="addErr"></p>
         <p class="ok-msg" id="addOk">✓ Alumno creado correctamente</p>
+      </div>
+    </div>
+
+    <!-- Tab: rangos y hechizos -->
+    <div class="admin-section" id="tabRanks">
+      <div class="card" style="margin-bottom:0">
+        <p class="card-title">Gestionar rangos y hechizos</p>
+        <p class="pwd-hint">
+          Añade o elimina rangos, reordénalos y gestiona qué hechizos pertenecen a cada uno.
+          Los cambios no se aplican hasta que pulses <em>Guardar cambios</em>.
+        </p>
+        <div id="ranksEditor"></div>
+
+        <div class="divider"></div>
+
+        <p class="card-title" style="font-size:.95rem">Añadir nuevo rango</p>
+        <div class="field" style="display:flex;gap:.6rem;align-items:flex-end;max-width:480px">
+          <div style="flex:1">
+            <label for="newRankName">Nombre del rango</label>
+            <input type="text" id="newRankName" placeholder="Ej. Experto"
+                   onkeydown="if(event.key==='Enter')addNewRank()"/>
+          </div>
+          <button class="btn success" onclick="addNewRank()">Añadir rango</button>
+        </div>
+        <p class="err" id="rankErr"></p>
+
+        <div class="btn-row" style="margin-top:1.2rem">
+          <button class="btn success" onclick="saveRanksChanges()">💾 Guardar cambios</button>
+        </div>
+        <p class="ok-msg" id="ranksOk">✓ Cambios guardados en la base de datos</p>
       </div>
     </div>
 
@@ -419,6 +445,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=20260607c"></script>
+<script type="module" src="app.js?v=20260607d"></script>
 </body>
 </html>

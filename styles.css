@@ -295,10 +295,12 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
   padding: .24rem 1.1rem; border-radius: 999px;
   font-family: var(--font-h); font-size: .7rem; letter-spacing: .07em;
 }
-.rk-Aprendiz     { background: rgba(139,90,43,.18);  border: 1px solid rgba(139,90,43,.4);  color: #c4904a; }
-.rk-Principiante { background: rgba(70,130,180,.14); border: 1px solid rgba(70,130,180,.3); color: #7ab0d4; }
-.rk-Intermedio   { background: rgba(60,179,113,.14); border: 1px solid rgba(60,179,113,.3); color: #5bc49a; }
-.rk-Avanzado     { background: rgba(148,0,211,.14);  border: 1px solid rgba(148,0,211,.32); color: #b06ad4; }
+.rk-i0 { background: rgba(139,90,43,.18);   border: 1px solid rgba(139,90,43,.4);   color: #c4904a; }
+.rk-i1 { background: rgba(70,130,180,.14);  border: 1px solid rgba(70,130,180,.3);  color: #7ab0d4; }
+.rk-i2 { background: rgba(60,179,113,.14);  border: 1px solid rgba(60,179,113,.3);  color: #5bc49a; }
+.rk-i3 { background: rgba(148,0,211,.14);   border: 1px solid rgba(148,0,211,.32);  color: #b06ad4; }
+.rk-i4 { background: rgba(32,178,170,.14);  border: 1px solid rgba(32,178,170,.32); color: #4fc7c0; }
+.rk-i5 { background: rgba(219,112,147,.14); border: 1px solid rgba(219,112,147,.32);color: #e08fac; }
 .rk-Graduado {
   background: linear-gradient(135deg, rgba(201,162,39,.3), rgba(240,210,80,.12));
   border: 1px solid rgba(201,162,39,.7); color: var(--gold-bright);
@@ -576,10 +578,12 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
   transition: all var(--t);
 }
 .rank-opt:hover { background: rgba(255,255,255,.08); color: var(--text-muted); }
-.rank-opt.sel-Aprendiz     { background: rgba(139,90,43,.2);  border-color: rgba(139,90,43,.5);  color: #c4904a; }
-.rank-opt.sel-Principiante { background: rgba(70,130,180,.2); border-color: rgba(70,130,180,.4); color: #7ab0d4; }
-.rank-opt.sel-Intermedio   { background: rgba(60,179,113,.2); border-color: rgba(60,179,113,.4); color: #5bc49a; }
-.rank-opt.sel-Avanzado     { background: rgba(148,0,211,.2);  border-color: rgba(148,0,211,.45); color: #b06ad4; }
+.rank-opt.sel-i0 { background: rgba(139,90,43,.2);   border-color: rgba(139,90,43,.5);   color: #c4904a; }
+.rank-opt.sel-i1 { background: rgba(70,130,180,.2);  border-color: rgba(70,130,180,.4);  color: #7ab0d4; }
+.rank-opt.sel-i2 { background: rgba(60,179,113,.2);  border-color: rgba(60,179,113,.4);  color: #5bc49a; }
+.rank-opt.sel-i3 { background: rgba(148,0,211,.2);   border-color: rgba(148,0,211,.45);  color: #b06ad4; }
+.rank-opt.sel-i4 { background: rgba(32,178,170,.2);  border-color: rgba(32,178,170,.45); color: #4fc7c0; }
+.rank-opt.sel-i5 { background: rgba(219,112,147,.2); border-color: rgba(219,112,147,.45);color: #e08fac; }
 
 /* === SPELL EDITOR === */
 .spell-editor {
@@ -603,6 +607,44 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
   width: 14px; height: 14px; accent-color: var(--green);
   margin: 0; flex-shrink: 0; cursor: pointer;
 }
+
+/* === EDITOR DE RANGOS === */
+.rank-edit-block {
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--border-sub); border-radius: var(--r-sm);
+  padding: .8rem 1rem; margin-bottom: .8rem;
+}
+.rank-edit-head {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .6rem;
+}
+.rank-edit-count { font-size: .76rem; color: #6a6060; }
+.rank-edit-actions { display: flex; gap: .4rem; margin-left: auto; }
+.rank-spell-chips {
+  display: flex; flex-wrap: wrap; gap: .4rem;
+  margin-top: .65rem; padding-top: .6rem; border-top: 1px solid var(--border-sub);
+}
+.rank-edit-empty { font-size: .8rem; color: #4a4540; font-style: italic; }
+.spell-chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: rgba(255,255,255,.05); border: 1px solid var(--border-sub);
+  border-radius: 999px; padding: .2rem .35rem .2rem .7rem;
+  font-size: .78rem; color: var(--text-muted);
+}
+.spell-chip button {
+  background: none; border: none; color: #6a6060; cursor: pointer;
+  font-size: .9rem; line-height: 1; padding: .15rem .35rem;
+  border-radius: 50%; transition: background var(--t), color var(--t);
+}
+.spell-chip button:hover { background: rgba(255,80,80,.18); color: var(--red); }
+.rank-add-spell {
+  display: flex; gap: .5rem; margin-top: .65rem;
+}
+.rank-add-spell input {
+  flex: 1; background: rgba(255,255,255,.04); border: 1px solid var(--border-sub);
+  border-radius: var(--r-xs); padding: .4rem .6rem;
+  color: var(--text); font-size: .82rem; font-family: var(--font-b);
+}
+.rank-add-spell input:focus { outline: none; border-color: var(--gold); }
 
 /* === PASSWORD FORM === */
 .pwd-form { max-width: 380px; }
