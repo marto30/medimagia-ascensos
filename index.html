@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260610b">
+  <link rel="stylesheet" href="styles.css?v=20260610c">
 </head>
 <body>
 <div class="bg"></div>
@@ -36,7 +36,7 @@
     <div id="appHeaderUser" class="app-header-bar"></div>
     <div id="adminQuickBar" class="admin-quick-bar" style="display:none">
       <span class="admin-quick-label">Ir a:</span>
-      <button class="admin-quick-btn" onclick="adminDashCol('left')">🧑‍🎓 Alumnos</button>
+      <button class="admin-quick-btn" onclick="showTab('tabList')">🧑‍🎓 Alumnos</button>
       <button class="admin-quick-btn" onclick="showTab('tabAscensos')">⬆ Ascensos</button>
       <button class="admin-quick-btn" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="admin-quick-btn" onclick="showTab('tabGrad')">🎓 Graduados</button>
@@ -137,114 +137,36 @@
     <button class="back-btn" onclick="backFromBitacoras()">← Volver</button>
   </div>
 
-  <!-- ── PANTALLA: PERFIL / STUDENT DASHBOARD ────────────────── -->
+  <!-- ── PANTALLA: PERFIL ──────────────────────────────────────── -->
   <div id="scProfile" style="display:none">
-
-    <!-- Tabs de columnas para móvil -->
-    <div class="mob-tabs" id="profileMobTabs">
-      <button class="mob-tab mob-active" onclick="dashCol('left')">👤 Perfil</button>
-      <button class="mob-tab" onclick="dashCol('mid')">📋 Bitácora</button>
-      <button class="mob-tab" onclick="dashCol('right')">📚 Listas</button>
+    <div id="ascBanner"></div>
+    <div class="card">
+      <div class="stu-header">
+        <div class="stu-name" id="pName"></div>
+        <div style="margin-top:.4rem">
+          <span class="rank-badge" id="pRank"></span>
+          <span class="admin-badge" id="adminBadge" style="display:none">Admin</span>
+        </div>
+        <div id="pRankEdit"></div>
+      </div>
+      <div class="ov-wrap">
+        <div class="ov-labels"><span>Progreso total</span><span id="pOvPct"></span></div>
+        <div class="bar-track"><div class="bar-fill" id="pOvBar" style="width:0%"></div></div>
+      </div>
+      <div id="pBitCount"></div>
+      <div class="notice" id="pTip"></div>
+      <div class="rk-grid" id="pGrid"></div>
+      <div class="save-row">
+        <button class="btn success" id="saveBtn" onclick="guardarCambios()">Guardar cambios</button>
+        <button class="btn" id="gradBtn" style="display:none" onclick="toggleGraduation()"></button>
+        <span class="saved-msg" id="savedMsg">✓ Guardado</span>
+      </div>
+      <div id="pInfractions"></div>
     </div>
-
-    <div class="student-dash">
-
-      <!-- COL IZQUIERDA: Perfil + Hechizos -->
-      <div class="dash-col sd-left mob-col-active" id="sdColLeft">
-        <div id="ascBanner"></div>
-        <div class="card dash-card">
-          <div class="stu-header">
-            <div class="stu-name" id="pName"></div>
-            <div style="margin-top:.4rem">
-              <span class="rank-badge" id="pRank"></span>
-              <span class="admin-badge" id="adminBadge" style="display:none">Admin</span>
-            </div>
-            <div id="pRankEdit"></div>
-          </div>
-          <div class="ov-wrap">
-            <div class="ov-labels"><span>Progreso total</span><span id="pOvPct"></span></div>
-            <div class="bar-track"><div class="bar-fill" id="pOvBar" style="width:0%"></div></div>
-          </div>
-          <div id="pBitCount"></div>
-          <div class="notice" id="pTip"></div>
-          <div class="rk-grid" id="pGrid"></div>
-          <div class="save-row">
-            <button class="btn success" id="saveBtn" onclick="guardarCambios()">Guardar cambios</button>
-            <button class="btn" id="gradBtn" style="display:none" onclick="toggleGraduation()"></button>
-            <span class="saved-msg" id="savedMsg">✓ Guardado</span>
-          </div>
-          <div id="pInfractions"></div>
-        </div>
-        <button class="back-btn" id="profileBackBtn" onclick="backFromProfile()">← Cerrar sesión</button>
-      </div>
-
-      <!-- COL CENTRAL: Nueva bitácora -->
-      <div class="dash-col sd-mid mob-col-hidden" id="sdColMid">
-        <div class="card dash-card">
-          <p class="card-title">Nueva bitácora</p>
-          <div class="field">
-            <label for="pBitPatient">Paciente</label>
-            <input type="text" id="pBitPatient" list="patientsList"
-                   placeholder="Nombre del paciente…"/>
-          </div>
-          <div class="field">
-            <label for="pBitDiag">Diagnóstico</label>
-            <input type="text" id="pBitDiag" placeholder="Ej: Fractura en el brazo derecho"/>
-          </div>
-          <div class="field">
-            <label for="pBitProc">Procedimiento</label>
-            <textarea id="pBitProc" rows="5"
-              placeholder="Describe el procedimiento realizado…"></textarea>
-            <div class="spell-inserter" id="pSpellInserter"></div>
-          </div>
-          <div class="field">
-            <label>¿Quién atendió?
-              <span style="font-size:.72rem;color:#4a4540">(puede ser más de uno)</span>
-            </label>
-            <input type="text" id="pAttendantSearch" class="attendant-search"
-                   placeholder="Buscar medimago…" oninput="filterProfileAttendants()"/>
-            <div class="attendants-list" id="pAttendantsList"></div>
-          </div>
-          <div class="btn-row">
-            <button class="btn success" onclick="saveProfileBitacora()">Guardar bitácora</button>
-            <button class="btn ghost"   onclick="resetProfileBitacoraForm()">Limpiar</button>
-          </div>
-          <p class="err"    id="pBitErr"></p>
-          <p class="ok-msg" id="pBitOk">✓ Bitácora guardada</p>
-        </div>
-      </div>
-
-      <!-- COL DERECHA: Listas con sub-tabs -->
-      <div class="dash-col sd-right mob-col-hidden" id="sdColRight">
-        <div class="inner-tabs">
-          <button class="inner-tab active" onclick="switchRightTab('rtBitacoras')">📋 Bitácoras</button>
-          <button class="inner-tab" onclick="switchRightTab('rtPersonas')">👥 Personas</button>
-          <button class="inner-tab" onclick="switchRightTab('rtDirectorio')">🗺 Directorio</button>
-        </div>
-        <div class="inner-tab-content show" id="rtBitacoras">
-          <div id="dashBitListWrap">
-            <div class="loading"><span class="spinner"></span>Cargando…</div>
-          </div>
-        </div>
-        <div class="inner-tab-content" id="rtPersonas">
-          <input type="text" id="dashPersonasSearch"
-                 placeholder="Buscar persona…" oninput="filterDashPersonas()"
-                 style="margin-bottom:.6rem;width:100%"/>
-          <div id="dashPersonasListWrap"></div>
-          <div id="dashPersonaBitsWrap" style="display:none;margin-top:.8rem">
-            <div class="dash-persona-bit-header">
-              <span class="dash-section-label" id="dashPersonaBitTitle"></span>
-              <button class="btn ghost sm"
-                onclick="document.getElementById('dashPersonaBitsWrap').style.display='none'">✕</button>
-            </div>
-            <div id="dashPersonaBitContent"></div>
-          </div>
-        </div>
-        <div class="inner-tab-content" id="rtDirectorio">
-          <div id="dashDirectorioWrap"></div>
-        </div>
-      </div>
-
+    <div class="admin-footer-btns">
+      <button class="btn ghost" onclick="showBitacoras('profile')">📋 Bitácoras</button>
+      <button class="btn ghost" onclick="showPersonas('profile')">👥 Personas</button>
+      <button class="back-btn" id="profileBackBtn" onclick="backFromProfile()">← Cerrar sesión</button>
     </div>
   </div>
 
@@ -306,53 +228,42 @@
     </div>
   </div>
 
-  <!-- ── PANTALLA: PANEL ADMIN / ADMIN DASHBOARD ──────────────── -->
+  <!-- ── PANTALLA: PANEL ADMIN ────────────────────────────────── -->
   <div id="scAdmin" style="display:none">
 
-    <!-- Tabs de columnas para móvil -->
-    <div class="mob-tabs" id="adminMobTabs">
-      <button class="mob-tab mob-active" onclick="adminDashCol('left')">🧑‍🎓 Alumnos</button>
-      <button class="mob-tab" onclick="adminDashCol('right')">⚙ Panel</button>
+    <div class="admin-tabs">
+      <button class="tab active"       data-tab="tabList"     onclick="showTab('tabList')">🧑‍🎓 Alumnos</button>
+      <button class="tab"              data-tab="tabAscensos" onclick="showTab('tabAscensos')">⬆ Ascensos</button>
+      <button class="tab"              data-tab="tabDirectory" onclick="showTab('tabDirectory')">👥 Directorio</button>
+      <button class="tab tab-warn"     data-tab="tabActivity" onclick="showTab('tabActivity')">⚠ Actividad</button>
+      <button class="tab"              data-tab="tabGrad"     onclick="showTab('tabGrad')">🎓 Graduados</button>
+      <button class="tab"              data-tab="tabAdd"      onclick="showTab('tabAdd')">➕ Crear alumno</button>
+      <button class="tab"              data-tab="tabRanks"    onclick="showTab('tabRanks')">📜 Rangos</button>
+      <button class="tab tab-security" data-tab="tabSecurity" id="tabSecurityBtn"
+              onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
+      <button class="tab"              data-tab="tabConfig"   onclick="showTab('tabConfig')">⚙ Configuración</button>
     </div>
 
-    <div class="admin-dash">
-
-      <!-- COL IZQUIERDA: Lista de alumnos (siempre visible) -->
-      <div class="dash-col ad-left mob-col-active" id="adColLeft">
-        <div class="search-admin">
-          <input type="text" id="adminSearch"
-                 placeholder="Buscar alumno…" oninput="renderList()"/>
-        </div>
-        <div id="adminListWrap">
-          <div class="loading"><span class="spinner"></span>Cargando…</div>
-        </div>
+    <!-- Tab: lista de alumnos -->
+    <div class="admin-section show" id="tabList">
+      <div class="search-admin">
+        <input type="text" id="adminSearch" placeholder="Buscar por nombre…" oninput="renderList()"/>
       </div>
+      <div id="adminListWrap">
+        <div class="loading"><span class="spinner"></span>Cargando…</div>
+      </div>
+    </div>
 
-      <!-- COL DERECHA: Tabs de administración -->
-      <div class="dash-col ad-right mob-col-hidden" id="adColRight">
+    <!-- Ascensos -->
+    <div class="admin-section" id="tabAscensos">
+      <p class="notice">Ascenso <strong>siempre manual</strong>: puedes ascender a cualquiera aunque no cumpla el requisito — el color indica quién sí está listo.</p>
+      <div id="ascTable"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
+    </div>
 
-        <div class="admin-tabs">
-          <button class="tab active" data-tab="tabAscensos"  onclick="showTab('tabAscensos')">⬆ Ascensos</button>
-          <button class="tab"        data-tab="tabDirectory" onclick="showTab('tabDirectory')">🗺 Directorio</button>
-          <button class="tab tab-warn" data-tab="tabActivity" onclick="showTab('tabActivity')">⚠ Actividad</button>
-          <button class="tab"        data-tab="tabGrad"      onclick="showTab('tabGrad')">🎓 Graduados</button>
-          <button class="tab"        data-tab="tabAdd"       onclick="showTab('tabAdd')">➕ Crear</button>
-          <button class="tab"        data-tab="tabRanks"     onclick="showTab('tabRanks')">📜 Rangos</button>
-          <button class="tab tab-security" data-tab="tabSecurity" id="tabSecurityBtn"
-                  onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
-          <button class="tab"        data-tab="tabConfig"    onclick="showTab('tabConfig')">⚙ Config</button>
-        </div>
-
-        <!-- Ascensos -->
-        <div class="admin-section show" id="tabAscensos">
-          <p class="notice">Ascenso <strong>siempre manual</strong>: puedes ascender a cualquiera aunque no cumpla el requisito — el color indica quién sí está listo.</p>
-          <div id="ascTable"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
-        </div>
-
-        <!-- Directorio -->
-        <div class="admin-section" id="tabDirectory">
-          <div id="adminDirectoryContent"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
-        </div>
+    <!-- Directorio -->
+    <div class="admin-section" id="tabDirectory">
+      <div id="adminDirectoryContent"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
+    </div>
 
         <!-- Actividad -->
         <div class="admin-section" id="tabActivity">
@@ -415,72 +326,75 @@
           </div>
         </div>
 
-        <!-- Seguridad -->
-        <div class="admin-section" id="tabSecurity">
-          <div id="securityWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
-        </div>
+    <!-- Seguridad -->
+    <div class="admin-section" id="tabSecurity">
+      <div id="securityWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
+    </div>
 
-        <!-- Configuración -->
-        <div class="admin-section" id="tabConfig">
-          <div class="card" style="margin-bottom:0">
-            <p class="card-title">Cambiar contraseña de administrador</p>
-            <div class="pwd-form">
-              <div class="field">
-                <label for="pwdCurrent">Contraseña actual</label>
-                <input type="password" id="pwdCurrent" placeholder="••••••••••"/>
-              </div>
-              <div class="field">
-                <label for="pwdNew">Nueva contraseña</label>
-                <input type="password" id="pwdNew" placeholder="Mínimo 8 caracteres" oninput="updatePwdStrength()"/>
-                <div class="pwd-strength"><div class="pwd-strength-fill" id="pwdStrengthFill"></div></div>
-                <p class="pwd-hint">Usa mayúsculas, números y símbolos para una contraseña más segura.</p>
-              </div>
-              <div class="field">
-                <label for="pwdConfirm">Confirmar nueva contraseña</label>
-                <input type="password" id="pwdConfirm" placeholder="Repite la contraseña"/>
-              </div>
-              <div class="btn-row">
-                <button class="btn success" onclick="changePassword()">Guardar nueva contraseña</button>
-              </div>
-              <p class="err" id="pwdErr"></p>
-              <p class="ok-msg" id="pwdOk">✓ Contraseña actualizada</p>
-            </div>
-            <div class="divider"></div>
-            <div id="superAdminPwdSection" style="display:none">
-              <p class="card-title" style="margin-top:.2rem">Contraseña de superadmin</p>
-              <p class="pwd-hint" style="margin-bottom:.8rem">Solo tú como admin puedes establecer o cambiar esta contraseña.</p>
-              <div class="pwd-form">
-                <div class="field">
-                  <label for="pwdSuperNew">Nueva contraseña de superadmin</label>
-                  <input type="password" id="pwdSuperNew" placeholder="Mínimo 8 caracteres"/>
-                </div>
-                <div class="field">
-                  <label for="pwdSuperConfirm">Confirmar contraseña</label>
-                  <input type="password" id="pwdSuperConfirm" placeholder="Repite la contraseña"/>
-                </div>
-                <div class="btn-row">
-                  <button class="btn success" onclick="setSuperAdminPwd()">Guardar contraseña de superadmin</button>
-                </div>
-                <p class="err" id="pwdSuperErr"></p>
-                <p class="ok-msg" id="pwdSuperOk">✓ Contraseña de superadmin guardada</p>
-              </div>
-              <div class="divider"></div>
-            </div>
-            <div class="divider"></div>
-            <p class="card-title" style="margin-top:.2rem">Herramientas de mantenimiento</p>
-            <p class="pwd-hint" style="margin-bottom:.9rem">Recalcula el rango de cada alumno según sus hechizos actuales y la regla de ≤3 faltantes.</p>
-            <div class="btn-row">
-              <button class="btn" onclick="migrateAllRanks()">⚙ Recalcular y corregir todos los rangos</button>
-            </div>
-            <p class="ok-msg" id="migrateOk"></p>
-            <div class="divider"></div>
-            <p class="card-title" style="margin-top:.2rem">Sesión</p>
-            <button class="btn danger" onclick="cerrarSesion()">Cerrar sesión de administrador</button>
+    <!-- Configuración -->
+    <div class="admin-section" id="tabConfig">
+      <div class="card" style="margin-bottom:0">
+        <p class="card-title">Cambiar contraseña de administrador</p>
+        <div class="pwd-form">
+          <div class="field">
+            <label for="pwdCurrent">Contraseña actual</label>
+            <input type="password" id="pwdCurrent" placeholder="••••••••••"/>
           </div>
+          <div class="field">
+            <label for="pwdNew">Nueva contraseña</label>
+            <input type="password" id="pwdNew" placeholder="Mínimo 8 caracteres" oninput="updatePwdStrength()"/>
+            <div class="pwd-strength"><div class="pwd-strength-fill" id="pwdStrengthFill"></div></div>
+            <p class="pwd-hint">Usa mayúsculas, números y símbolos para una contraseña más segura.</p>
+          </div>
+          <div class="field">
+            <label for="pwdConfirm">Confirmar nueva contraseña</label>
+            <input type="password" id="pwdConfirm" placeholder="Repite la contraseña"/>
+          </div>
+          <div class="btn-row">
+            <button class="btn success" onclick="changePassword()">Guardar nueva contraseña</button>
+          </div>
+          <p class="err" id="pwdErr"></p>
+          <p class="ok-msg" id="pwdOk">✓ Contraseña actualizada</p>
         </div>
+        <div class="divider"></div>
+        <div id="superAdminPwdSection" style="display:none">
+          <p class="card-title" style="margin-top:.2rem">Contraseña de superadmin</p>
+          <p class="pwd-hint" style="margin-bottom:.8rem">Solo tú como admin puedes establecer o cambiar esta contraseña.</p>
+          <div class="pwd-form">
+            <div class="field">
+              <label for="pwdSuperNew">Nueva contraseña de superadmin</label>
+              <input type="password" id="pwdSuperNew" placeholder="Mínimo 8 caracteres"/>
+            </div>
+            <div class="field">
+              <label for="pwdSuperConfirm">Confirmar contraseña</label>
+              <input type="password" id="pwdSuperConfirm" placeholder="Repite la contraseña"/>
+            </div>
+            <div class="btn-row">
+              <button class="btn success" onclick="setSuperAdminPwd()">Guardar contraseña de superadmin</button>
+            </div>
+            <p class="err" id="pwdSuperErr"></p>
+            <p class="ok-msg" id="pwdSuperOk">✓ Contraseña de superadmin guardada</p>
+          </div>
+          <div class="divider"></div>
+        </div>
+        <div class="divider"></div>
+        <p class="card-title" style="margin-top:.2rem">Herramientas de mantenimiento</p>
+        <p class="pwd-hint" style="margin-bottom:.9rem">Recalcula el rango de cada alumno según sus hechizos actuales y la regla de ≤3 faltantes.</p>
+        <div class="btn-row">
+          <button class="btn" onclick="migrateAllRanks()">⚙ Recalcular y corregir todos los rangos</button>
+        </div>
+        <p class="ok-msg" id="migrateOk"></p>
+        <div class="divider"></div>
+        <p class="card-title" style="margin-top:.2rem">Sesión</p>
+        <button class="btn danger" onclick="cerrarSesion()">Cerrar sesión de administrador</button>
+      </div>
+    </div>
 
-      </div><!-- /ad-right -->
-    </div><!-- /admin-dash -->
+    <div class="admin-footer-btns">
+      <button class="btn ghost" onclick="showBitacoras('admin')">📋 Bitácoras</button>
+      <button class="btn ghost" onclick="showPersonas('admin')">👥 Personas</button>
+      <button class="back-btn"  onclick="goSearch()">← Cerrar panel</button>
+    </div>
   </div>
 
   <!-- TOASTS -->
@@ -553,6 +467,6 @@
 </div>
 
 <datalist id="patientsList"></datalist>
-<script type="module" src="app.js?v=20260610b"></script>
+<script type="module" src="app.js?v=20260610c"></script>
 </body>
 </html>

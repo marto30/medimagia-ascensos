@@ -447,8 +447,7 @@ function show(id) {
     if (el) el.style.display = "none";
   });
   const target = document.getElementById(id);
-  if (target) target.style.display = id === "scProfile" || id === "scAdmin" ? "flex" : "block";
-  document.body.classList.toggle("dash-mode", id === "scProfile" || id === "scAdmin");
+  if (target) target.style.display = "block";
 }
 
 // =====================================================================
@@ -600,28 +599,14 @@ function openProfile(name) {
   show("scProfile");
   document.getElementById("profileBackBtn").textContent =
     isAdmin ? "← Volver al panel" : "← Cerrar sesión";
-
-  // Init dashboard panels
-  const spellIns = document.getElementById("pSpellInserter");
-  if (spellIns) spellIns.innerHTML = buildSpellInserter("pBitProc");
-  const attList = document.getElementById("pAttendantsList");
-  if (attList) attList.innerHTML = buildAttendantsList();
-
   if (!bitacorasLoaded) {
     renderBitCount(name);
     loadBitacoras()
-      .then(() => {
-        bitacorasLoaded = true;
-        renderBitCount(name);
-        renderDashBitacoras(name);
-        updatePatientDatalist();
-      })
+      .then(() => { bitacorasLoaded = true; renderBitCount(name); updatePatientDatalist(); })
       .catch(() => {
         const el = document.getElementById("pBitCount");
         if (el) el.innerHTML = "";
       });
-  } else {
-    renderDashBitacoras(name);
   }
 }
 
@@ -988,6 +973,7 @@ window.showTab = function(id) {
   document.getElementById(id).className = "admin-section show";
   const btn = document.querySelector(`.tab[data-tab="${id}"]`);
   if (btn) btn.className += " active";
+  if (id === "tabList")      renderList();
   if (id === "tabAscensos")  renderAscensos();
   if (id === "tabDirectory") renderDirectoryIn("adminDirectoryContent");
   if (id === "tabActivity")  renderPocaActividad();
@@ -2412,189 +2398,6 @@ window.clearOldLogs = async function() {
   await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
   toast("Registros eliminados", "success");
   renderSecurityTab();
-};
-
-// =====================================================================
-//  DASHBOARD — Mobile column switchers & inner tabs
-// =====================================================================
-window.dashCol = function(col) {
-  const ids = { left: "sdColLeft", mid: "sdColMid", right: "sdColRight" };
-  Object.values(ids).forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove("mob-col-active");
-    el.classList.add("mob-col-hidden");
-  });
-  const target = document.getElementById(ids[col]);
-  if (target) { target.classList.remove("mob-col-hidden"); target.classList.add("mob-col-active"); }
-  const order = ["left","mid","right"];
-  document.querySelectorAll("#profileMobTabs .mob-tab").forEach((btn, i) => {
-    btn.classList.toggle("mob-active", order[i] === col);
-  });
-};
-
-window.adminDashCol = function(col) {
-  const ids = { left: "adColLeft", right: "adColRight" };
-  Object.values(ids).forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove("mob-col-active");
-    el.classList.add("mob-col-hidden");
-  });
-  const target = document.getElementById(ids[col]);
-  if (target) { target.classList.remove("mob-col-hidden"); target.classList.add("mob-col-active"); }
-  const order = ["left","right"];
-  document.querySelectorAll("#adminMobTabs .mob-tab").forEach((btn, i) => {
-    btn.classList.toggle("mob-active", order[i] === col);
-  });
-};
-
-window.switchRightTab = function(tabId) {
-  document.querySelectorAll("#sdColRight .inner-tab-content").forEach(el => {
-    el.className = "inner-tab-content";
-  });
-  const active = document.getElementById(tabId);
-  if (active) active.className = "inner-tab-content it-active";
-  document.querySelectorAll("#sdColRight .inner-tab").forEach(btn => {
-    const isActive = (btn.getAttribute("onclick") || "").includes(`'${tabId}'`);
-    btn.classList.toggle("active", isActive);
-  });
-  if (tabId === "rtPersonas") {
-    const wrap = document.getElementById("dashPersonasListWrap");
-    if (wrap && !wrap.innerHTML.trim()) renderDashPersonas();
-  }
-  if (tabId === "rtDirectorio") {
-    const wrap = document.getElementById("dashDirectorioWrap");
-    if (wrap && !wrap.innerHTML.trim()) renderDirectoryIn("dashDirectorioWrap");
-  }
-};
-
-// =====================================================================
-//  STUDENT DASHBOARD — Bitácora form (pBit* IDs)
-// =====================================================================
-window.saveProfileBitacora = async function() {
-  const patient    = document.getElementById("pBitPatient").value.trim();
-  const diagnosis  = document.getElementById("pBitDiag").value.trim();
-  const procedure  = document.getElementById("pBitProc").value.trim();
-  const attendants = [...document.querySelectorAll("#pAttendantsList .att-chk:checked")].map(c => c.value);
-  if (loggedInStudent && !attendants.includes(loggedInStudent)) attendants.push(loggedInStudent);
-  const errEl = document.getElementById("pBitErr");
-  const okEl  = document.getElementById("pBitOk");
-  errEl.style.display = "none"; okEl.style.display = "none";
-  if (!patient)           { errEl.textContent = "El nombre del paciente es obligatorio."; errEl.style.display = "block"; return; }
-  if (!diagnosis)         { errEl.textContent = "El diagnóstico es obligatorio.";          errEl.style.display = "block"; return; }
-  if (!procedure)         { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
-  if (!attendants.length) { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
-  const entry = { patient, diagnosis, procedure, attendants, createdAt: new Date().toISOString() };
-  const ref = await addDoc(collection(db, "bitacoras"), entry);
-  allBitacoras.unshift({ id: ref.id, ...entry });
-  bitacorasPage = 0;
-  toast("Bitácora guardada", "success");
-  okEl.style.display = "block";
-  setTimeout(() => okEl.style.display = "none", 2500);
-  window.resetProfileBitacoraForm();
-  updatePatientDatalist();
-  renderDashBitacoras(currentStudent);
-};
-
-window.resetProfileBitacoraForm = function() {
-  ["pBitPatient","pBitDiag","pBitProc","pAttendantSearch"].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = "";
-  });
-  const errEl = document.getElementById("pBitErr");
-  const okEl  = document.getElementById("pBitOk");
-  if (errEl) errEl.style.display = "none";
-  if (okEl)  okEl.style.display  = "none";
-  const attList = document.getElementById("pAttendantsList");
-  if (attList) attList.innerHTML = buildAttendantsList();
-};
-
-window.filterProfileAttendants = function() {
-  const q = document.getElementById("pAttendantSearch").value;
-  document.getElementById("pAttendantsList").innerHTML = buildAttendantsList(q);
-};
-
-// =====================================================================
-//  STUDENT DASHBOARD — Right column: bitácoras & personas
-// =====================================================================
-function renderDashBitacoras(name) {
-  const wrap = document.getElementById("dashBitListWrap");
-  if (!wrap) return;
-  if (!bitacorasLoaded) {
-    wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando…</div>';
-    return;
-  }
-  const myBits = allBitacoras.filter(b =>
-    b.patient === name || (b.attendants || []).includes(name)
-  );
-  if (!myBits.length) {
-    wrap.innerHTML = '<p class="empty-state">Aún no tienes bitácoras registradas.</p>';
-    return;
-  }
-  const shown = myBits.slice(0, 6);
-  const more  = myBits.length - shown.length;
-  wrap.innerHTML = shown.map(b => {
-    const date = b.createdAt ? formatDate(b.createdAt) : "–";
-    const role = b.patient === name
-      ? '<span class="persona-role-badge role-patient">Paciente</span>'
-      : '<span class="persona-role-badge role-medimago">Medimago</span>';
-    return `<div class="bit-card" style="margin-bottom:.5rem">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.4rem">
-        <strong class="bit-patient">${escHtml(b.patient)}</strong>${role}
-      </div>
-      <div class="bit-meta">${date}</div>
-      <div class="bit-field" style="font-size:.82rem"><em>${escHtml(b.diagnosis)}</em></div>
-    </div>`;
-  }).join("") + (more > 0 ? `<p style="font-size:.77rem;color:var(--text-muted);text-align:center;margin-top:.3rem">+${more} más — ir a Bitácoras</p>` : "");
-}
-
-function renderDashPersonas() {
-  const wrap = document.getElementById("dashPersonasListWrap");
-  if (!wrap) return;
-  if (!bitacorasLoaded) {
-    wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando…</div>';
-    return;
-  }
-  const q = norm((document.getElementById("dashPersonasSearch")?.value || "").trim());
-  const personas = buildPersonasList().filter(p => !q || norm(p.name).includes(q));
-  if (!personas.length) {
-    wrap.innerHTML = '<p class="empty-state">No se encontraron personas.</p>';
-    return;
-  }
-  wrap.innerHTML = personas.slice(0, PERSONAS_PER_PAGE).map(p =>
-    `<div class="persona-row" onclick="selectDashPersona('${escHtml(p.name).replace(/'/g,"\\'")}')">
-      <div class="persona-info"><span class="persona-name">${escHtml(p.name)}</span></div>
-      <div class="persona-counts">
-        <span class="persona-count as-patient">${p.asPatient}</span>
-        <span class="persona-count as-medimago">${p.asMedimago}</span>
-        <span class="persona-arrow">›</span>
-      </div>
-    </div>`
-  ).join("");
-}
-
-window.filterDashPersonas = function() { renderDashPersonas(); };
-
-window.selectDashPersona = function(name) {
-  const bits = getPersonaBitacoras(name).slice(0, 5);
-  const wrap     = document.getElementById("dashPersonaBitsWrap");
-  const titleEl  = document.getElementById("dashPersonaBitTitle");
-  const contentEl= document.getElementById("dashPersonaBitContent");
-  if (!wrap || !titleEl || !contentEl) return;
-  titleEl.textContent = name;
-  contentEl.innerHTML = bits.length ? bits.map(b => {
-    const role = b.patient === name
-      ? '<span class="persona-role-badge role-patient">Pac.</span>'
-      : '<span class="persona-role-badge role-medimago">Med.</span>';
-    return `<div class="bit-card" style="margin-bottom:.4rem">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.3rem">
-        <strong>${escHtml(b.patient)}</strong>${role}
-      </div>
-      <div class="bit-meta">${b.createdAt ? formatDate(b.createdAt) : "–"}</div>
-      <em style="font-size:.82rem">${escHtml(b.diagnosis)}</em>
-    </div>`;
-  }).join("") : '<p class="empty-state">Sin bitácoras.</p>';
-  wrap.style.display = "block";
 };
 
 // =====================================================================
