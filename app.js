@@ -1043,68 +1043,72 @@ window.quickGraduate = async function(name) {
   renderGraduados();
 };
 
-function buildStudentRow(n) {
-  const sp     = allStudents[n];
-  const grad   = allGraduated[n] || false;
-  const rk     = getStudentRank(n);
-  const asc    = canAscend(sp, rk);
-  const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
-  const pct    = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
-  const safe   = safeAttr(n);
-  const statusCell = grad
-    ? `<span class="asc-yes">🎓 Graduado</span>`
-    : asc && nextRk ? `<span class="asc-yes">⬆ Apto</span>` : `<span class="asc-no">—</span>`;
-  const gradBtnCls   = `btn btn-grad sm${grad ? " is-grad" : ""}`;
-  const gradBtnTitle = grad ? "Revocar graduación" : "Graduar del Colegio";
-  const gradBtnLabel = grad ? "🎓 Grad." : "🎓";
+function buildStudentCard(n) {
+  const sp       = allStudents[n];
+  const grad     = allGraduated[n] || false;
+  const rk       = getStudentRank(n);
+  const asc      = canAscend(sp, rk);
+  const nextRk   = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
+  const allSp    = allSpells();
+  const totPct   = Math.round(allSp.filter(s => sp[s]).length / allSp.length * 100);
+  const rkSpells = RANKS[rk] || [];
+  const rkDone   = rkSpells.filter(s => sp[s]).length;
+  const rkPct    = rkSpells.length ? Math.round(rkDone / rkSpells.length * 100) : 0;
+  const safe     = safeAttr(n);
+  const rkIdx    = Math.max(0, RANKS_ORDER.indexOf(rk)) % RANK_PALETTE_SIZE;
 
-  let thisCell, lastCell;
-  if (!bitacorasLoaded) {
-    thisCell = lastCell = `<span class="bit-count-zero">—</span>`;
-  } else {
+  const statusHtml = grad
+    ? `<span class="sc-status sc-status-grad">🎓 Graduado</span>`
+    : (asc && nextRk ? `<span class="sc-status sc-status-apto">⬆ Apto</span>` : "");
+
+  let bitsHtml;
+  if (bitacorasLoaded) {
     const now = new Date();
     const ty = now.getFullYear(), tm = now.getMonth();
     const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
     const ct = bitCntMonth(n, ty, tm), cl = bitCntMonth(n, ly, lm);
-    thisCell = `<span class="bit-count-badge${ct < 3 ? " bit-count-warn" : ""}">${ct}</span>`;
-    lastCell = `<span class="bit-count-badge${cl < 3 ? " bit-count-warn" : ""}">${cl}</span>`;
+    const mT = capitalize(new Date(ty, tm, 1).toLocaleDateString("es-ES", { month: "short" }));
+    const mL = capitalize(new Date(ly, lm, 1).toLocaleDateString("es-ES", { month: "short" }));
+    bitsHtml = `<span class="sc-bit-pill${ct < 3 ? " warn" : ""}">📋 ${mT}: <strong>${ct}</strong></span>
+      <span class="sc-bit-pill${cl < 3 ? " warn" : ""}">📋 ${mL}: <strong>${cl}</strong></span>`;
+  } else {
+    bitsHtml = `<span class="sc-bit-pill sc-bit-loading">📋 —</span>`;
   }
 
-  return `<tr class="${grad ? "grad-row" : ""}">
-    <td>${escHtml(n)}</td>
-    <td>${pct}%</td>
-    <td>${statusCell}</td>
-    <td style="text-align:center">${thisCell}</td>
-    <td style="text-align:center">${lastCell}</td>
-    <td><div class="td-actions">
-      <button class="${gradBtnCls}" title="${gradBtnTitle}"
-              onclick="quickGraduate('${safe}')">${gradBtnLabel}</button>
-      ${asc && nextRk && !grad ? `<button class="btn sm success" title="Ascender a ${nextRk}" onclick="adminAscend('${safe}')">⬆ ${nextRk}</button>` : ""}
-      <button class="btn sm" onclick="adminEdit('${safe}')">Ver/Editar</button>
-      <button class="btn sm cred-btn" title="Gestionar credenciales de acceso"
-              onclick="showCredentials('${safe}')">🔑 <span class="cred-dot ${allCredentials[n] ? 'on' : 'off'}"></span></button>
-      <button class="btn sm danger" onclick="adminDelete('${safe}')">Eliminar</button>
-    </div></td>
-  </tr>`;
+  const gradBtnCls = `btn btn-grad sm${grad ? " is-grad" : ""}`;
+
+  return `
+  <div class="student-card sc-rank-i${rkIdx}${grad ? " sc-grad" : ""}">
+    <div class="sc-header">
+      <div class="sc-name">${escHtml(n)}</div>
+      <div class="sc-badges">
+        <span class="rank-badge ${rankClass("rk", rk)}">${escHtml(grad ? "Graduado" : rk)}</span>
+        ${statusHtml}
+      </div>
+    </div>
+    <div class="sc-progress-wrap">
+      <div class="sc-progress-bar" style="width:${rkPct}%"></div>
+    </div>
+    <div class="sc-progress-labels">
+      <span>${rkDone}/${rkSpells.length} hechizos — ${escHtml(rk)}</span>
+      <span class="sc-total-pct">${totPct}% total</span>
+    </div>
+    <div class="sc-footer">
+      <div class="sc-bits">${bitsHtml}</div>
+      <div class="sc-actions">
+        <button class="${gradBtnCls}" title="${grad ? "Revocar graduación" : "Graduar"}"
+                onclick="quickGraduate('${safe}')">${grad ? "🎓 Revocar" : "🎓"}</button>
+        ${asc && nextRk && !grad ? `<button class="btn sm success" onclick="adminAscend('${safe}')">⬆ ${escHtml(nextRk)}</button>` : ""}
+        <button class="btn sm" onclick="adminEdit('${safe}')">Ver</button>
+        <button class="btn sm cred-btn" onclick="showCredentials('${safe}')">🔑 <span class="cred-dot ${allCredentials[n] ? "on" : "off"}"></span></button>
+        <button class="btn sm danger" onclick="adminDelete('${safe}')">✕</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 function buildRankTable(members) {
-  const now = new Date();
-  const ty = now.getFullYear(), tm = now.getMonth();
-  const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
-  const mThis = capitalize(new Date(ty, tm, 1).toLocaleDateString("es-ES", { month: "short" }));
-  const mLast = capitalize(new Date(ly, lm, 1).toLocaleDateString("es-ES", { month: "short" }));
-  return `<table class="student-table">
-    <thead><tr>
-      <th class="th-sort" onclick="sortList('name')">Nombre ${sortArrow("name")}</th>
-      <th class="th-sort" onclick="sortList('pct')">Total % ${sortArrow("pct")}</th>
-      <th class="th-sort" onclick="sortList('status')">Estado ${sortArrow("status")}</th>
-      <th class="th-sort" onclick="sortList('thisMonth')" title="Bitácoras este mes">📋 ${mThis} ${sortArrow("thisMonth")}</th>
-      <th class="th-sort" onclick="sortList('lastMonth')" title="Bitácoras el mes pasado">📋 ${mLast} ${sortArrow("lastMonth")}</th>
-      <th></th>
-    </tr></thead>
-    <tbody>${members.map(buildStudentRow).join("")}</tbody>
-  </table>`;
+  return `<div class="students-grid">${members.map(buildStudentCard).join("")}</div>`;
 }
 
 function renderList() {
@@ -1147,22 +1151,35 @@ function renderList() {
   const totalAll    = Object.keys(allStudents).length;
   const totalGrad   = Object.values(allGraduated).filter(Boolean).length;
   const totalActive = totalAll - totalGrad;
+  const now2 = new Date();
+  const ty2 = now2.getFullYear(), tm2 = now2.getMonth();
+  const ly2 = tm2 === 0 ? ty2 - 1 : ty2, lm2 = tm2 === 0 ? 11 : tm2 - 1;
+  const mT2 = capitalize(new Date(ty2, tm2, 1).toLocaleDateString("es-ES", { month: "short" }));
+  const mL2 = capitalize(new Date(ly2, lm2, 1).toLocaleDateString("es-ES", { month: "short" }));
 
-  const summary = `<div class="list-summary">
-    <div class="list-summary-stat">
-      <strong>${totalActive}</strong> sin graduar
-    </div>
-    <span class="list-summary-divider">·</span>
-    <div class="list-summary-stat highlight">
-      <strong>${totalGrad}</strong> graduados
-    </div>
-    <span class="list-summary-divider">·</span>
-    <div class="list-summary-stat">
-      <strong>${totalAll}</strong> total
-    </div>
+  const sortKeys = [
+    { key: "name",      label: "Nombre"   },
+    { key: "pct",       label: "% Total"  },
+    { key: "status",    label: "Estado"   },
+    { key: "thisMonth", label: `📋 ${mT2}` },
+    { key: "lastMonth", label: `📋 ${mL2}` },
+  ];
+  const sortBar = `<div class="sort-bar">
+    <span class="sort-bar-label">Orden:</span>
+    ${sortKeys.map(s =>
+      `<button class="sort-bar-btn${listSort.key === s.key ? " active" : ""}" onclick="sortList('${s.key}')">${s.label} ${sortArrow(s.key)}</button>`
+    ).join("")}
   </div>`;
 
-  document.getElementById("adminListWrap").innerHTML = summary + html;
+  const summary = `<div class="list-summary">
+    <div class="list-summary-stat"><strong>${totalActive}</strong> sin graduar</div>
+    <span class="list-summary-divider">·</span>
+    <div class="list-summary-stat highlight"><strong>${totalGrad}</strong> graduados</div>
+    <span class="list-summary-divider">·</span>
+    <div class="list-summary-stat"><strong>${totalAll}</strong> total</div>
+  </div>`;
+
+  document.getElementById("adminListWrap").innerHTML = summary + sortBar + html;
 }
 
 // =====================================================================
@@ -1284,35 +1301,62 @@ window.backFromDirectory = function() {
 function renderAscensos() {
   const candidates = Object.keys(allStudents)
     .filter(n => !allGraduated[n] && RANKS_ORDER.indexOf(getStudentRank(n)) < RANKS_ORDER.length - 1)
-    .sort((a, b) => norm(a).localeCompare(norm(b)));
+    .sort((a, b) => {
+      const aReady = RANKS[getStudentRank(a)].filter(s => !allStudents[a][s]).length <= ASCENSO_MISSING;
+      const bReady = RANKS[getStudentRank(b)].filter(s => !allStudents[b][s]).length <= ASCENSO_MISSING;
+      if (aReady !== bReady) return aReady ? -1 : 1;
+      return norm(a).localeCompare(norm(b));
+    });
 
   if (!candidates.length) {
     document.getElementById("ascTable").innerHTML =
       '<p class="empty-state">No hay alumnos pendientes de ascenso (están graduados o ya en el rango máximo).</p>';
     return;
   }
-  const rows = candidates.map(n => {
-    const sp   = allStudents[n];
-    const rk   = getStudentRank(n);
-    const nextRk = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
-    const missing = RANKS[rk].filter(s => !sp[s]).length;
-    const total   = RANKS[rk].length;
-    const ready   = missing <= ASCENSO_MISSING;
-    const safe = safeAttr(n);
-    return `<tr>
-      <td>${escHtml(n)}</td>
-      <td><span class="rank-badge ${rankClass("rk", rk)}" style="font-size:.7rem">${escHtml(rk)}</span></td>
-      <td>${ready ? "<span class='asc-yes'>Completo</span>" : `<span class="asc-no">Faltan ${missing}/${total}</span>`}</td>
-      <td><span class="asc-yes">→ ${escHtml(nextRk)}</span></td>
-      <td><button class="btn sm success" onclick="adminAscend('${safe}')">⬆ Ascender</button></td>
-    </tr>`;
+
+  const readyCount = candidates.filter(n =>
+    RANKS[getStudentRank(n)].filter(s => !allStudents[n][s]).length <= ASCENSO_MISSING
+  ).length;
+
+  const cards = candidates.map(n => {
+    const sp       = allStudents[n];
+    const rk       = getStudentRank(n);
+    const nextRk   = RANKS_ORDER[RANKS_ORDER.indexOf(rk) + 1];
+    const rkSpells = RANKS[rk] || [];
+    const missing  = rkSpells.filter(s => !sp[s]).length;
+    const done     = rkSpells.length - missing;
+    const rkPct    = rkSpells.length ? Math.round(done / rkSpells.length * 100) : 0;
+    const ready    = missing <= ASCENSO_MISSING;
+    const safe     = safeAttr(n);
+
+    return `
+    <div class="asc-card${ready ? " asc-ready" : ""}">
+      <div class="asc-header">
+        <div class="asc-name">${escHtml(n)}</div>
+        <div class="asc-rank-row">
+          <span class="rank-badge ${rankClass("rk", rk)}">${escHtml(rk)}</span>
+          <span class="asc-arrow-icon">→</span>
+          <span class="rank-badge ${rankClass("rk", nextRk)}">${escHtml(nextRk)}</span>
+        </div>
+      </div>
+      <div class="asc-spell-wrap">
+        <div class="asc-spell-fill${ready ? " asc-fill-ready" : ""}" style="width:${rkPct}%"></div>
+      </div>
+      <div class="asc-spell-labels">
+        <span>${done}/${rkSpells.length} hechizos de ${escHtml(rk)}</span>
+        <span class="${ready ? "asc-status-yes" : "asc-status-no"}">${ready
+          ? "✓ Listo para ascender"
+          : `Faltan ${missing} hechizo${missing !== 1 ? "s" : ""}`}</span>
+      </div>
+      <button class="btn success asc-btn" onclick="adminAscend('${safe}')">⬆ Ascender a ${escHtml(nextRk)}</button>
+    </div>`;
   }).join("");
 
-  document.getElementById("ascTable").innerHTML =
-    `<table class="student-table">
-      <thead><tr><th>Nombre</th><th>Rango actual</th><th>Hechizos</th><th>Nuevo rango</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  const summary = readyCount
+    ? `<div class="asc-summary asc-summary-ready"><strong>${readyCount}</strong> alumno${readyCount !== 1 ? "s" : ""} listo${readyCount !== 1 ? "s" : ""} para ascender</div>`
+    : `<div class="asc-summary">Ningún alumno alcanza el mínimo aún</div>`;
+
+  document.getElementById("ascTable").innerHTML = summary + `<div class="asc-grid">${cards}</div>`;
 }
 
 window.adminAscend = async function(name) {
