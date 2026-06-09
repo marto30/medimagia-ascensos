@@ -442,12 +442,60 @@ let currentStudent = null;
 let pendingChanges = {};
 
 function show(id) {
-  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras","scBlocked","scDirectory"].forEach(s => {
+  ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras","scBlocked","scDirectory","scPersonas"].forEach(s => {
     const el = document.getElementById(s);
     if (el) el.style.display = "none";
   });
   const target = document.getElementById(id);
   if (target) target.style.display = "block";
+}
+
+// =====================================================================
+//  NAVIGATION HEADER
+// =====================================================================
+function updateAppHeader() {
+  const header     = document.getElementById("appHeader");
+  const userHeader = document.getElementById("appHeaderUser");
+  const adminBar   = document.getElementById("adminQuickBar");
+  if (!header) return;
+
+  if (!isAdmin && !loggedInStudent) {
+    header.style.display   = "none";
+    if (adminBar) adminBar.style.display = "none";
+    return;
+  }
+
+  header.style.display = "block";
+
+  if (loggedInStudent) {
+    const rank = getStudentRank(loggedInStudent);
+    userHeader.innerHTML = `
+      <div class="app-header-left">
+        <span class="app-header-name">${escHtml(loggedInStudent)}</span>
+        <span class="app-header-rank rank-badge ${rankClass("rk", rank)}">${escHtml(rank)}</span>
+      </div>
+      <nav class="app-header-nav">
+        <button class="app-nav-btn" onclick="show('scProfile')">👤 Perfil</button>
+        <button class="app-nav-btn" onclick="showBitacoras('profile')">📋 Bitácoras</button>
+        <button class="app-nav-btn" onclick="showPersonas('profile')">👥 Personas</button>
+        <button class="app-nav-btn" onclick="showDirectory('profile')">🗺 Directorio</button>
+      </nav>
+      <button class="app-nav-btn app-nav-logout" onclick="goSearch()">Salir ✕</button>`;
+  } else if (isAdmin) {
+    userHeader.innerHTML = `
+      <div class="app-header-left">
+        <span class="app-header-name">${isSuperAdmin ? "⚙ Superadmin" : "⚙ Admin"}</span>
+      </div>
+      <nav class="app-header-nav">
+        <button class="app-nav-btn" onclick="show('scAdmin')">⚙ Panel</button>
+        <button class="app-nav-btn" onclick="showBitacoras('admin')">📋 Bitácoras</button>
+        <button class="app-nav-btn" onclick="showPersonas('admin')">👥 Personas</button>
+        <button class="app-nav-btn" onclick="showDirectory('admin')">🗺 Directorio</button>
+      </nav>
+      <button class="app-nav-btn app-nav-logout" onclick="cerrarSesion()">Salir ✕</button>`;
+  }
+
+  if (adminBar) adminBar.style.display = isAdmin ? "flex" : "none";
 }
 
 function goSearch() {
@@ -460,6 +508,7 @@ function goSearch() {
   if (pEl) pEl.value = "";
   if (eEl) eEl.style.display = "none";
   pendingChanges = {}; isAdmin = false;
+  updateAppHeader();
 }
 window.goSearch = goSearch;
 
@@ -480,6 +529,7 @@ window.cerrarSesion = function() {
   clearTimeout(_sessionTimer); _sessionTimer = null;
   const secBtn = document.getElementById("tabSecurityBtn");
   if (secBtn) secBtn.style.display = "none";
+  updateAppHeader();
   goSearch();
   toast("Sesión cerrada");
 };
@@ -508,6 +558,7 @@ window.studentLogin = async function() {
 
   pEl.value = "";
   loggedInStudent = name;
+  updateAppHeader();
   openProfile(name);
 };
 
@@ -899,6 +950,7 @@ window.loginAdmin = async function() {
   clearLoginLock();
   document.getElementById("adminPwd").value = "";
   applyAdminRole();
+  updateAppHeader();
   show("scAdmin");
   renderList(); renderAscensos(); renderGraduados();
   resetSessionTimer();
@@ -912,6 +964,7 @@ window.loginAdmin = async function() {
 //  ADMIN — TABS
 // =====================================================================
 window.showTab = function(id) {
+  show("scAdmin");
   document.querySelectorAll(".admin-section").forEach(el => el.className = "admin-section");
   document.querySelectorAll(".tab").forEach(el => el.className = "tab");
   document.getElementById(id).className = "admin-section show";
@@ -1884,6 +1937,212 @@ window.saveEditBitacora = async function() {
   toast("Bitácora actualizada", "success");
   updatePatientDatalist();
   renderBitacoraList();
+};
+
+// =====================================================================
+//  PERSONAS EN BITÁCORAS
+// =====================================================================
+let personasPage          = 0;
+let personaFilter         = "";
+let selectedPersona       = null;
+let personaBitsPage       = 0;
+const PERSONAS_PER_PAGE   = 5;
+const PERSONA_BITS_PER_PAGE = 3;
+let personasFrom          = "search";
+
+function buildPersonasList() {
+  const map = {};
+  allBitacoras.forEach(b => {
+    if (b.patient) {
+      if (!map[b.patient]) map[b.patient] = { asPatient: 0, asMedimago: 0 };
+      map[b.patient].asPatient++;
+    }
+    (b.attendants || []).forEach(a => {
+      if (!map[a]) map[a] = { asPatient: 0, asMedimago: 0 };
+      map[a].asMedimago++;
+    });
+  });
+  return Object.entries(map)
+    .map(([name, counts]) => ({ name, ...counts, total: counts.asPatient + counts.asMedimago }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+
+window.showPersonas = async function(from = "search") {
+  if (!isAdmin && !loggedInStudent) { goSearch(); return; }
+  personasFrom   = from;
+  personasPage   = 0;
+  selectedPersona = null;
+  show("scPersonas");
+  if (!bitacorasLoaded) {
+    document.getElementById("personasListWrap").innerHTML =
+      '<div class="loading"><span class="spinner"></span>Cargando personas…</div>';
+    try {
+      await loadBitacoras();
+      bitacorasLoaded = true;
+    } catch {
+      document.getElementById("personasListWrap").innerHTML =
+        '<p class="notice" style="color:var(--red)">No se pudieron cargar las bitácoras.</p>';
+      return;
+    }
+  }
+  document.getElementById("personasSearch").value = "";
+  personaFilter = "";
+  renderPersonasList();
+  document.getElementById("personaBitacorasWrap").style.display = "none";
+};
+
+window.filterPersonas = function() {
+  personaFilter = document.getElementById("personasSearch").value;
+  personasPage  = 0;
+  renderPersonasList();
+};
+
+window.setPersonasPage = function(page) {
+  const filtered   = buildPersonasList().filter(p => !personaFilter || norm(p.name).includes(norm(personaFilter)));
+  const totalPages = Math.ceil(filtered.length / PERSONAS_PER_PAGE);
+  personasPage     = Math.max(0, Math.min(page, totalPages - 1));
+  renderPersonasList();
+};
+
+function renderPersonasList() {
+  const all      = buildPersonasList();
+  const filtered = personaFilter ? all.filter(p => norm(p.name).includes(norm(personaFilter))) : all;
+  const wrap     = document.getElementById("personasListWrap");
+
+  if (!filtered.length) {
+    wrap.innerHTML = '<p class="empty-state">No se encontraron personas.</p>';
+    return;
+  }
+
+  const total      = filtered.length;
+  const totalPages = Math.ceil(total / PERSONAS_PER_PAGE);
+  personasPage     = Math.max(0, Math.min(personasPage, totalPages - 1));
+  const start      = personasPage * PERSONAS_PER_PAGE;
+  const page       = filtered.slice(start, start + PERSONAS_PER_PAGE);
+
+  const isRegistered = n => !!allStudents[n];
+
+  const rows = page.map(p => `
+    <div class="persona-row" onclick="selectPersona('${safeAttr(p.name)}')" role="button" tabindex="0">
+      <div class="persona-info">
+        <span class="persona-name">${escHtml(p.name)}</span>
+        ${isRegistered(p.name) ? `<span class="persona-badge medimago">⚕ Medimago</span>` : ""}
+      </div>
+      <div class="persona-counts">
+        ${p.asPatient  ? `<span class="persona-count as-patient" title="Veces como paciente">🤕 ${p.asPatient}</span>` : ""}
+        ${p.asMedimago ? `<span class="persona-count as-medimago" title="Veces como medimago">⚕ ${p.asMedimago}</span>` : ""}
+      </div>
+      <span class="persona-arrow">›</span>
+    </div>`).join("");
+
+  let paginationHtml = "";
+  if (totalPages > 1) {
+    const pageBtns = Array.from({ length: totalPages }, (_, i) =>
+      `<button class="page-btn${i === personasPage ? " active" : ""}" onclick="setPersonasPage(${i})">${i + 1}</button>`
+    ).join("");
+    paginationHtml = `<div class="pagination">
+      <button class="page-btn" onclick="setPersonasPage(${personasPage - 1})" ${personasPage === 0 ? "disabled" : ""}>&#8592;</button>
+      ${pageBtns}
+      <button class="page-btn" onclick="setPersonasPage(${personasPage + 1})" ${personasPage >= totalPages - 1 ? "disabled" : ""}>&#8594;</button>
+    </div>`;
+  }
+
+  wrap.innerHTML = `<p class="personas-count">${total} persona${total !== 1 ? "s" : ""} encontrada${total !== 1 ? "s" : ""}</p>` + rows + paginationHtml;
+}
+
+window.selectPersona = function(name) {
+  selectedPersona = name;
+  personaBitsPage = 0;
+  renderPersonaBitacoras();
+  const wrapEl = document.getElementById("personaBitacorasWrap");
+  wrapEl.style.display = "block";
+  wrapEl.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
+window.setPersonaBitsPage = function(page) {
+  const bits       = getPersonaBitacoras(selectedPersona);
+  const totalPages = Math.ceil(bits.length / PERSONA_BITS_PER_PAGE);
+  personaBitsPage  = Math.max(0, Math.min(page, totalPages - 1));
+  renderPersonaBitacoras();
+};
+
+function getPersonaBitacoras(name) {
+  return allBitacoras.filter(b =>
+    b.patient === name || (b.attendants || []).includes(name)
+  );
+}
+
+function renderPersonaBitacoras() {
+  const bits       = getPersonaBitacoras(selectedPersona);
+  const titleEl    = document.getElementById("personaBitTitle");
+  const contentEl  = document.getElementById("personaBitContent");
+
+  titleEl.textContent = `Bitácoras de ${selectedPersona}`;
+
+  if (!bits.length) {
+    contentEl.innerHTML = '<p class="empty-state">Sin bitácoras registradas.</p>';
+    return;
+  }
+
+  const totalPages = Math.ceil(bits.length / PERSONA_BITS_PER_PAGE);
+  personaBitsPage  = Math.max(0, Math.min(personaBitsPage, totalPages - 1));
+  const start      = personaBitsPage * PERSONA_BITS_PER_PAGE;
+  const page       = bits.slice(start, start + PERSONA_BITS_PER_PAGE);
+
+  const cardsHtml = page.map(b => {
+    const asPatient   = b.patient === selectedPersona;
+    const asMedimago  = (b.attendants || []).includes(selectedPersona);
+    const roleLabel   = asPatient && asMedimago ? "Paciente y Medimago" : asPatient ? "Paciente" : "Medimago";
+    const roleClass   = asPatient ? "role-patient" : "role-medimago";
+    const canEdit     = isAdmin || (loggedInStudent && (b.attendants || []).includes(loggedInStudent));
+    return `
+    <div class="bitacora-card">
+      <div class="bitacora-top">
+        <div>
+          <div class="bitacora-patient">${escHtml(b.patient)}</div>
+          <div class="bitacora-date">${formatDate(b.createdAt)}</div>
+        </div>
+        <div style="display:flex;gap:.4rem;flex-shrink:0;flex-wrap:wrap;align-items:flex-start">
+          <span class="persona-role-badge ${roleClass}">${roleLabel}</span>
+          ${canEdit ? `<button class="btn sm" onclick="openEditBitacora('${b.id}')">Editar</button>` : ""}
+          ${isAdmin ? `<button class="btn sm danger" onclick="deleteBitacora('${b.id}')">Eliminar</button>` : ""}
+        </div>
+      </div>
+      <div class="bitacora-field">
+        <span class="bitacora-label">Diagnóstico</span>
+        <span class="bitacora-value">${escHtml(b.diagnosis)}</span>
+      </div>
+      <div class="bitacora-field">
+        <span class="bitacora-label">Procedimiento</span>
+        <span class="bitacora-value bitacora-proc">${escHtml(b.procedure)}</span>
+      </div>
+      <div class="bitacora-field">
+        <span class="bitacora-label">Atendido por</span>
+        <div class="bitacora-attendants">${(b.attendants || []).map(a =>
+          `<span class="att-badge">${escHtml(a)}</span>`).join("")}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  let paginationHtml = "";
+  if (totalPages > 1) {
+    const pageBtns = Array.from({ length: totalPages }, (_, i) =>
+      `<button class="page-btn${i === personaBitsPage ? " active" : ""}" onclick="setPersonaBitsPage(${i})">${i + 1}</button>`
+    ).join("");
+    paginationHtml = `<div class="pagination">
+      <button class="page-btn" onclick="setPersonaBitsPage(${personaBitsPage - 1})" ${personaBitsPage === 0 ? "disabled" : ""}>&#8592;</button>
+      ${pageBtns}
+      <button class="page-btn" onclick="setPersonaBitsPage(${personaBitsPage + 1})" ${personaBitsPage >= totalPages - 1 ? "disabled" : ""}>&#8594;</button>
+    </div>`;
+  }
+
+  contentEl.innerHTML = `<p class="personas-count">${bits.length} bitácora${bits.length !== 1 ? "s" : ""}</p>` + cardsHtml + paginationHtml;
+}
+
+window.backFromPersonas = function() {
+  if (personasFrom === "admin") show("scAdmin");
+  else if (loggedInStudent) show("scProfile");
+  else goSearch();
 };
 
 // =====================================================================
