@@ -1,20 +1,11 @@
-import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, getDocs, collection, deleteDoc, addDoc }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// =====================================================================
+//  SUPABASE CONFIG
+// =====================================================================
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// =====================================================================
-//  FIREBASE CONFIG
-// =====================================================================
-const firebaseConfig = {
-  apiKey:            "AIzaSyAFeEm4gJv8qcmhWeMnipcmk-Wpwi5I1G4",
-  authDomain:        "medimagia-ascensos.firebaseapp.com",
-  projectId:         "medimagia-ascensos",
-  storageBucket:     "medimagia-ascensos.firebasestorage.app",
-  messagingSenderId: "508815684624",
-  appId:             "1:508815684624:web:988d28cf27268deedc4695"
-};
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+const SUPABASE_URL = "https://lknmsnprnqdrsmllhvwz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Hrzs1L8qHSltt08F7auS6Q_vFoCEQv0";
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // =====================================================================
 //  CONSTANTS
@@ -230,11 +221,13 @@ let visitorIP      = null;
 
 async function loadAdminConfig() {
   try {
-    const ref  = doc(db, "config", "admin");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      adminPwdHash   = snap.data().passwordHash || null;
-      superAdminHash = snap.data().superPasswordHash || null;
+    const { data, error } = await db.from("config").select("*").eq("id", "admin").single();
+    if (error || !data) {
+      adminPwdHash = null;
+      superAdminHash = null;
+    } else {
+      adminPwdHash   = data.password_hash || null;
+      superAdminHash = data.super_password_hash || null;
     }
   } catch {
     adminPwdHash = null;
@@ -243,20 +236,20 @@ async function loadAdminConfig() {
 
 async function loadRanksConfig() {
   try {
-    const ref  = doc(db, "config", "ranks");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const data = snap.data();
-      if (Array.isArray(data.order) && data.order.length && data.spells) {
-        RANKS_ORDER = data.order;
-        RANKS       = data.spells;
-      }
+    const { data, error } = await db.from("config").select("*").eq("id", "ranks").single();
+    if (error || !data) return; /* se mantienen los rangos por defecto */
+    if (Array.isArray(data.ranks_order) && data.ranks_order.length && data.ranks_spells) {
+      RANKS_ORDER = data.ranks_order;
+      RANKS       = data.ranks_spells;
     }
   } catch { /* se mantienen los rangos por defecto */ }
 }
 
 async function saveRanksConfig() {
-  await setDoc(doc(db, "config", "ranks"), { order: RANKS_ORDER, spells: RANKS }, { merge: true });
+  await db.from("config").upsert(
+    { id: "ranks", ranks_order: RANKS_ORDER, ranks_spells: RANKS },
+    { onConflict: "id" }
+  );
 }
 
 // =====================================================================
@@ -382,47 +375,49 @@ window.saveRanksChanges = async function() {
 };
 
 async function loadAllStudents() {
-  const snap = await getDocs(collection(db, "alumnos"));
+  const { data, error } = await db.from("alumnos").select("*");
   allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {};
-  if (snap.empty) {
+  
+  if (error || !data || data.length === 0) {
     for (const [name, spells] of Object.entries(BASE_DATA)) {
-      await setDoc(doc(db, "alumnos", docId(name)), { name, spells, graduated: false }, { merge: true });
+      const dId = docId(name);
+      await db.from("alumnos").insert({ name, doc_id: dId, spells, graduated: false });
       allStudents[name]    = spells;
       allGraduated[name]   = false;
       allRanks[name]       = calcRankLegacy(spells);
       allInfractions[name] = [];
     }
   } else {
-    snap.forEach(d => {
-      const data = d.data();
-      allStudents[data.name]    = data.spells;
-      allGraduated[data.name]   = data.graduated || false;
-      allRanks[data.name]       = data.currentRank || calcRankLegacy(data.spells);
-      allInfractions[data.name] = Array.isArray(data.infractions) ? data.infractions : [];
-      if (data.username) {
-        allCredentials[data.name] = {
-          username:     data.username,
-          passwordHash: data.studentPasswordHash || null
+    data.forEach(row => {
+      allStudents[row.name]    = row.spells;
+      allGraduated[row.name]   = row.graduated || false;
+      allRanks[row.name]       = row.current_rank || calcRankLegacy(row.spells);
+      allInfractions[row.name] = Array.isArray(row.infractions) ? row.infractions : [];
+      if (row.username) {
+        allCredentials[row.name] = {
+          username:     row.username,
+          passwordHash: row.student_password_hash || null
         };
-        usernameIndex[data.username.toLowerCase()] = data.name;
+        usernameIndex[row.username.toLowerCase()] = row.name;
       }
     });
   }
 }
 
 async function saveStudent(name, spells) {
-  await setDoc(doc(db, "alumnos", docId(name)),
-    { name, spells, graduated: allGraduated[name] || false }, { merge: true });
+  await db.from("alumnos").update(
+    { name, spells, graduated: allGraduated[name] || false }
+  ).eq("doc_id", docId(name));
   allStudents[name] = spells;
 }
 
 async function setGraduated(name, val) {
   allGraduated[name] = val;
-  await setDoc(doc(db, "alumnos", docId(name)), { graduated: val }, { merge: true });
+  await db.from("alumnos").update({ graduated: val }).eq("doc_id", docId(name));
 }
 
 async function deleteStudent(name) {
-  await deleteDoc(doc(db, "alumnos", docId(name)));
+  await db.from("alumnos").delete().eq("doc_id", docId(name));
   delete allStudents[name];
   delete allGraduated[name];
   delete allRanks[name];
@@ -692,7 +687,7 @@ window.applyManualRank = async function() {
   if (!ok) { sel.value = oldRank; return; }
 
   try {
-    await setDoc(doc(db, "alumnos", docId(name)), { currentRank: newRank }, { merge: true });
+    await db.from("alumnos").update({ current_rank: newRank }).eq("doc_id", docId(name));
   } catch (err) {
     toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
     sel.value = oldRank;
@@ -749,7 +744,7 @@ window.addInfraction = async function() {
   const entry = { reason, date: new Date().toISOString() };
   const list  = [...(allInfractions[name] || []), entry];
   try {
-    await setDoc(doc(db, "alumnos", docId(name)), { infractions: list }, { merge: true });
+    await db.from("alumnos").update({ infractions: list }).eq("doc_id", docId(name));
   } catch (err) {
     errEl.textContent = `Error al guardar: ${err?.code || err?.message || "desconocido"}`;
     errEl.style.display = "block";
@@ -772,7 +767,7 @@ window.removeInfraction = async function(idx) {
   if (!ok) return;
   const list = (allInfractions[name] || []).filter((_, i) => i !== idx);
   try {
-    await setDoc(doc(db, "alumnos", docId(name)), { infractions: list }, { merge: true });
+    await db.from("alumnos").update({ infractions: list }).eq("doc_id", docId(name));
   } catch (err) {
     toast(`Error al eliminar: ${err?.code || err?.message || "desconocido"}`, "error");
     return;
@@ -1127,7 +1122,7 @@ window.migrateAllRanks = async function() {
     const correct  = calcCorrectRank(allStudents[name]);
     const current  = allRanks[name] || RANKS_ORDER[0];
     if (correct !== current) {
-      await setDoc(doc(db, "alumnos", docId(name)), { currentRank: correct }, { merge: true });
+      await db.from("alumnos").update({ current_rank: correct }).eq("doc_id", docId(name));
       changes.push(`${name}: ${current} → ${correct}`);
       allRanks[name] = correct;
       corrected++;
@@ -1276,7 +1271,7 @@ window.adminAscend = async function(name) {
   );
   if (!ok) return;
   try {
-    await setDoc(doc(db, "alumnos", docId(name)), { currentRank: nextRank }, { merge: true });
+    await db.from("alumnos").update({ current_rank: nextRank }).eq("doc_id", docId(name));
   } catch (err) {
     toast(`Error al ascender: ${err?.code || err?.message || "desconocido"}`, "error");
     return;
@@ -1628,12 +1623,14 @@ window.backFromBitacoras = function() {
 };
 
 async function loadBitacoras() {
-  const snap = await getDocs(collection(db, "bitacoras"));
+  const { data, error } = await db.from("bitacoras").select("*");
   allBitacoras = [];
-  snap.forEach(d => allBitacoras.push({ id: d.id, ...d.data() }));
-  allBitacoras.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  if (!error && data) {
+    data.forEach(row => allBitacoras.push({ id: row.id, ...row }));
+    allBitacoras.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
   // Las mutaciones locales (add/delete) actualizan allBitacoras en memoria,
-  // por lo que no hace falta volver a leer de Firestore.
+  // por lo que no hace falta volver a leer de Supabase.
 }
 
 // ── Insertor de hechizos ──────────────────────────────────────────────
@@ -1714,9 +1711,9 @@ window.saveBitacoraEntry = async function() {
   if (!procedure)         { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length) { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
 
-  const entry = { patient, diagnosis, procedure, attendants, createdAt: new Date().toISOString() };
-  const ref = await addDoc(collection(db, "bitacoras"), entry);
-  allBitacoras.unshift({ id: ref.id, ...entry });
+  const entry = { patient, diagnosis, procedure, attendants, created_at: new Date().toISOString() };
+  const { data, error } = await db.from("bitacoras").insert([entry]).select();
+  if (!error && data && data[0]) allBitacoras.unshift(data[0]);
   toast("Bitácora guardada", "success");
   okEl.style.display = "block";
   setTimeout(() => okEl.style.display = "none", 2500);
@@ -1729,7 +1726,7 @@ window.deleteBitacora = async function(id) {
     "¿Seguro que quieres eliminar esta bitácora? No se puede deshacer.",
     "Eliminar", "danger");
   if (!ok) return;
-  await deleteDoc(doc(db, "bitacoras", id));
+  await db.from("bitacoras").delete().eq("id", id);
   allBitacoras = allBitacoras.filter(b => b.id !== id);
   toast("Bitácora eliminada");
   renderBitacoraList();
@@ -1816,8 +1813,11 @@ window.changePassword = async function() {
 
   btn.disabled = true; btn.textContent = "Guardando…";
   const newHash = await sha256(newPwd);
-  const field   = isSuperAdmin ? "superPasswordHash" : "passwordHash";
-  await setDoc(doc(db, "config", "admin"), { [field]: newHash }, { merge: true });
+  const field   = isSuperAdmin ? "super_password_hash" : "password_hash";
+  await db.from("config").upsert(
+    { id: "admin", [field]: newHash },
+    { onConflict: "id" }
+  );
   if (isSuperAdmin) superAdminHash = newHash; else adminPwdHash = newHash;
 
   document.getElementById("pwdCurrent").value = "";
@@ -1845,7 +1845,10 @@ window.setSuperAdminPwd = async function() {
     errEl.textContent = "Las contraseñas no coinciden."; errEl.style.display = "block"; return;
   }
   const hash = await sha256(newPwd);
-  await setDoc(doc(db, "config", "admin"), { superPasswordHash: hash }, { merge: true });
+  await db.from("config").upsert(
+    { id: "admin", super_password_hash: hash },
+    { onConflict: "id" }
+  );
   superAdminHash = hash;
   document.getElementById("pwdSuperNew").value     = "";
   document.getElementById("pwdSuperConfirm").value = "";
