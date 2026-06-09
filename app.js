@@ -49,6 +49,7 @@ function getRkPct(sp, rk) {
   return { done: d, total: l.length, pct: Math.round(d / l.length * 100) };
 }
 function calcCorrectRank(sp) {
+  if (!sp || typeof sp !== 'object') return RANKS_ORDER[0];
   let rank = RANKS_ORDER[0];
   for (let i = 0; i < RANKS_ORDER.length - 1; i++) {
     const missing = RANKS[RANKS_ORDER[i]].filter(s => !sp[s]).length;
@@ -379,14 +380,7 @@ async function loadAllStudents() {
   allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {};
   
   if (error || !data || data.length === 0) {
-    for (const [name, spells] of Object.entries(BASE_DATA)) {
-      const dId = docId(name);
-      await db.from("alumnos").insert({ name, doc_id: dId, spells, graduated: false });
-      allStudents[name]    = spells;
-      allGraduated[name]   = false;
-      allRanks[name]       = calcRankLegacy(spells);
-      allInfractions[name] = [];
-    }
+    console.warn("No hay alumnos en la base de datos. La tabla está vacía.");
   } else {
     data.forEach(row => {
       allStudents[row.name]    = row.spells;
