@@ -14,10 +14,9 @@ service cloud.firestore {
       allow write: if true;
     }
 
-    // Bitácoras: lectura y creación libres
+    // Bitácoras: lectura, creación, edición y eliminación libres
     match /bitacoras/{docId} {
-      allow read, create, delete: if true;
-      allow update:               if false;
+      allow read, create, delete, update: if true;
     }
 
     // Logs e IPs: solo lectura y creación

@@ -87,7 +87,8 @@
 
       <div class="field">
         <label for="bitPatient">Nombre del paciente</label>
-        <input type="text" id="bitPatient" placeholder="Nombre completo del paciente"/>
+        <input type="text" id="bitPatient" list="patientsList" placeholder="Nombre completo del paciente o busca uno existente…"/>
+        <datalist id="patientsList"></datalist>
       </div>
 
       <div class="field">
@@ -431,6 +432,43 @@
     </div>
   </div>
 
+  <!-- MODAL DE EDICIÓN DE BITÁCORA -->
+  <div class="modal-overlay" id="editBitacoraModal">
+    <div class="modal edit-bitacora-modal">
+      <div class="modal-title">Editar Bitácora</div>
+
+      <div class="field">
+        <label for="editBitPatient">Nombre del paciente</label>
+        <input type="text" id="editBitPatient" list="patientsList" placeholder="Nombre completo del paciente"/>
+      </div>
+
+      <div class="field">
+        <label for="editBitDiag">Diagnóstico</label>
+        <input type="text" id="editBitDiag" placeholder="Ej: Fractura en el brazo derecho"/>
+      </div>
+
+      <div class="field">
+        <label for="editBitProc">Procedimiento</label>
+        <textarea id="editBitProc" rows="4" placeholder="Describe el procedimiento realizado…"></textarea>
+        <div class="spell-inserter" id="editSpellInserter"></div>
+      </div>
+
+      <div class="field">
+        <label>¿Quién le atendió?</label>
+        <input type="text" id="editAttendantSearch" class="attendant-search"
+               placeholder="Buscar medimago…" oninput="filterEditAttendants()"/>
+        <div class="attendants-list" id="editAttendantsList"></div>
+      </div>
+
+      <p class="err" id="editBitErr"></p>
+
+      <div class="modal-actions" style="margin-top:1rem">
+        <button class="btn ghost sm" onclick="cancelEditBitacora()">Cancelar</button>
+        <button class="btn sm success" onclick="saveEditBitacora()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL DE CONFIRMACIÓN -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal">
@@ -448,6 +486,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=20260607f"></script>
+<script type="module" src="app.js?v=20260609a"></script>
 </body>
 </html>

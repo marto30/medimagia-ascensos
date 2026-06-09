@@ -747,6 +747,30 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
   font-size: .74rem; color: var(--gold); white-space: nowrap;
 }
 
+/* Pagination */
+.pagination {
+  display: flex; gap: .4rem; justify-content: center;
+  margin-top: 1rem; flex-wrap: wrap;
+}
+.page-btn {
+  background: var(--bg-card); border: 1px solid var(--border-sub);
+  border-radius: var(--r-sm); color: var(--text-muted);
+  font-size: .8rem; padding: .35rem .75rem; cursor: pointer;
+  font-family: var(--font-b); transition: all var(--t);
+  min-width: 2.2rem;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: var(--gold-dim); color: var(--gold); background: var(--gold-faint);
+}
+.page-btn.active {
+  background: var(--gold-faint); border-color: var(--gold-dim);
+  color: var(--gold); font-weight: 600;
+}
+.page-btn:disabled { opacity: .35; cursor: default; }
+
+/* Edit bitácora modal */
+.edit-bitacora-modal { max-width: 600px; max-height: 85vh; overflow-y: auto; }
+
 /* Spell inserter */
 .spell-inserter { margin-top: .7rem; }
 .si-label {
