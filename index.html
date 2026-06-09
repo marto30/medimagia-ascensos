@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260610c">
+  <link rel="stylesheet" href="styles.css?v=20260610e">
 </head>
 <body>
 <div class="bg"></div>
@@ -73,6 +73,10 @@
                onkeydown="if(event.key==='Enter')studentLogin()"/>
         <p class="err" id="loginErr">Usuario o contraseña incorrectos.</p>
       </div>
+      <label class="remember-row">
+        <input type="checkbox" id="loginRemember" checked/>
+        <span>Mantener sesión iniciada</span>
+      </label>
       <button class="btn full home-search-btn" onclick="studentLogin()">
         Entrar →
       </button>
@@ -132,6 +136,15 @@
       <p class="ok-msg" id="bitOk">✓ Bitácora guardada</p>
     </div>
 
+    <div class="bitacora-search-wrap">
+      <input type="text" id="bitacoraSearch"
+             placeholder="Buscar por paciente, diagnóstico o medimago…"
+             oninput="filterBitacoras()"/>
+      <button class="bitacora-search-clear" id="bitacoraSearchClear"
+              onclick="clearBitacoraSearch()" style="display:none"
+              aria-label="Limpiar búsqueda">✕</button>
+    </div>
+
     <div id="bitacoraListWrap"></div>
 
     <button class="back-btn" onclick="backFromBitacoras()">← Volver</button>
@@ -160,6 +173,7 @@
         <button class="btn success" id="saveBtn" onclick="guardarCambios()">Guardar cambios</button>
         <button class="btn" id="gradBtn" style="display:none" onclick="toggleGraduation()"></button>
         <span class="saved-msg" id="savedMsg">✓ Guardado</span>
+        <span class="unsaved-badge" id="unsavedBadge" style="display:none">● Sin guardar</span>
       </div>
       <div id="pInfractions"></div>
     </div>
@@ -221,6 +235,10 @@
                onkeydown="if(event.key==='Enter')loginAdmin()"/>
         <p class="err" id="adminErr">Contraseña incorrecta.</p>
       </div>
+      <label class="remember-row">
+        <input type="checkbox" id="adminRemember" checked/>
+        <span>Mantener sesión iniciada</span>
+      </label>
       <div class="btn-row">
         <button class="btn" onclick="loginAdmin()">Entrar</button>
         <button class="btn ghost" onclick="goSearch()">Cancelar</button>
@@ -384,6 +402,11 @@
           <button class="btn" onclick="migrateAllRanks()">⚙ Recalcular y corregir todos los rangos</button>
         </div>
         <p class="ok-msg" id="migrateOk"></p>
+        <p class="pwd-hint" style="margin:1rem 0 .6rem">Exporta los datos a una hoja de cálculo (CSV, compatible con Excel).</p>
+        <div class="btn-row">
+          <button class="btn" onclick="exportStudentsCSV()">⬇ Exportar alumnos (CSV)</button>
+          <button class="btn" onclick="exportBitacorasCSV()">⬇ Exportar bitácoras (CSV)</button>
+        </div>
         <div class="divider"></div>
         <p class="card-title" style="margin-top:.2rem">Sesión</p>
         <button class="btn danger" onclick="cerrarSesion()">Cerrar sesión de administrador</button>
@@ -396,6 +419,11 @@
       <button class="back-btn"  onclick="goSearch()">← Cerrar panel</button>
     </div>
   </div>
+
+  <!-- BOTÓN VOLVER ARRIBA -->
+  <button class="scroll-top-btn" id="scrollTopBtn"
+          onclick="window.scrollTo({top:0,behavior:'smooth'})"
+          aria-label="Volver arriba" title="Volver arriba">↑</button>
 
   <!-- TOASTS -->
   <div class="toast-wrap" id="toastWrap"></div>
@@ -467,6 +495,6 @@
 </div>
 
 <datalist id="patientsList"></datalist>
-<script type="module" src="app.js?v=20260610c"></script>
+<script type="module" src="app.js?v=20260610e"></script>
 </body>
 </html>

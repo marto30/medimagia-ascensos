@@ -163,12 +163,14 @@ function clearLoginLock() {
   try { localStorage.removeItem(_LOCK_KEY); } catch {}
 }
 
-// Session timeout: cierre automático por inactividad (30 min)
+// Session timeout: cierre automático por inactividad (30 min) — salvo "mantener sesión"
 const _SESSION_MS = 30 * 60 * 1000;
 let _sessionTimer = null;
+let rememberSession = false;   // true cuando hay sesión persistente activa
 function resetSessionTimer() {
   if (!isAdmin) return;
   clearTimeout(_sessionTimer);
+  if (rememberSession) return; // sesión recordada: no cerrar por inactividad
   _sessionTimer = setTimeout(() => {
     cerrarSesion();
     toast("Sesión cerrada por inactividad", "error");
@@ -176,6 +178,33 @@ function resetSessionTimer() {
 }
 ["click","keydown","touchstart"].forEach(ev =>
   document.addEventListener(ev, resetSessionTimer, { passive: true }));
+
+// =====================================================================
+//  SESIÓN PERSISTENTE  ("mantener sesión iniciada")
+//  Guarda solo el hash ya cifrado (nunca la contraseña en claro), con
+//  caducidad. Se revalida contra la base de datos en cada carga, de modo
+//  que cambiar la contraseña invalida las sesiones guardadas.
+// =====================================================================
+const _SESSION_KEY = "mm_session";
+const _SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 días
+function saveSession(data) {
+  try {
+    localStorage.setItem(_SESSION_KEY, JSON.stringify({ ...data, ts: Date.now() }));
+    rememberSession = true;
+  } catch {}
+}
+function loadSession() {
+  try {
+    const d = JSON.parse(localStorage.getItem(_SESSION_KEY) || "null");
+    if (!d || !d.ts || Date.now() - d.ts > _SESSION_TTL) { clearSession(); return null; }
+    rememberSession = true;
+    return d;
+  } catch { return null; }
+}
+function clearSession() {
+  rememberSession = false;
+  try { localStorage.removeItem(_SESSION_KEY); } catch {}
+}
 
 // =====================================================================
 //  TOAST
@@ -441,13 +470,27 @@ async function deleteStudent(name) {
 let currentStudent = null;
 let pendingChanges = {};
 
+let currentScreen = "scSearch";
 function show(id) {
+  const prev = currentScreen;
   ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras","scBlocked","scDirectory","scPersonas"].forEach(s => {
     const el = document.getElementById(s);
     if (el) el.style.display = "none";
   });
   const target = document.getElementById(id);
-  if (target) target.style.display = "block";
+  if (target) {
+    target.style.display = "block";
+    if (id !== prev) {
+      target.classList.remove("screen-anim");
+      void target.offsetWidth;              // reinicia la animación
+      target.classList.add("screen-anim");
+    }
+  }
+  currentScreen = id;
+  // Resalta el botón de navegación correspondiente a la pantalla activa
+  document.querySelectorAll(".app-nav-btn[data-screen]").forEach(b =>
+    b.classList.toggle("active", b.dataset.screen === id));
+  if (id !== prev) window.scrollTo({ top: 0 });
 }
 
 // =====================================================================
@@ -475,10 +518,10 @@ function updateAppHeader() {
         <span class="app-header-rank rank-badge ${rankClass("rk", rank)}">${escHtml(rank)}</span>
       </div>
       <nav class="app-header-nav">
-        <button class="app-nav-btn" onclick="show('scProfile')">👤 Perfil</button>
-        <button class="app-nav-btn" onclick="showBitacoras('profile')">📋 Bitácoras</button>
-        <button class="app-nav-btn" onclick="showPersonas('profile')">👥 Personas</button>
-        <button class="app-nav-btn" onclick="showDirectory('profile')">🗺 Directorio</button>
+        <button class="app-nav-btn" data-screen="scProfile" onclick="show('scProfile')">👤 Perfil</button>
+        <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('profile')">📋 Bitácoras</button>
+        <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('profile')">👥 Personas</button>
+        <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('profile')">🗺 Directorio</button>
       </nav>
       <button class="app-nav-btn app-nav-logout" onclick="goSearch()">Salir ✕</button>`;
   } else if (isAdmin) {
@@ -487,19 +530,24 @@ function updateAppHeader() {
         <span class="app-header-name">${isSuperAdmin ? "⚙ Superadmin" : "⚙ Admin"}</span>
       </div>
       <nav class="app-header-nav">
-        <button class="app-nav-btn" onclick="show('scAdmin')">⚙ Panel</button>
-        <button class="app-nav-btn" onclick="showBitacoras('admin')">📋 Bitácoras</button>
-        <button class="app-nav-btn" onclick="showPersonas('admin')">👥 Personas</button>
-        <button class="app-nav-btn" onclick="showDirectory('admin')">🗺 Directorio</button>
+        <button class="app-nav-btn" data-screen="scAdmin" onclick="show('scAdmin')">⚙ Panel</button>
+        <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('admin')">📋 Bitácoras</button>
+        <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('admin')">👥 Personas</button>
+        <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('admin')">🗺 Directorio</button>
       </nav>
       <button class="app-nav-btn app-nav-logout" onclick="cerrarSesion()">Salir ✕</button>`;
   }
 
   if (adminBar) adminBar.style.display = isAdmin ? "flex" : "none";
+
+  // Mantiene resaltado el botón de la pantalla activa tras redibujar la nav
+  document.querySelectorAll(".app-nav-btn[data-screen]").forEach(b =>
+    b.classList.toggle("active", b.dataset.screen === currentScreen));
 }
 
 function goSearch() {
   loggedInStudent = null;
+  clearSession();              // volver al inicio = cerrar sesión
   show("scSearch");
   const uEl = document.getElementById("loginUser");
   const pEl = document.getElementById("loginPwd");
@@ -519,7 +567,15 @@ function showAdminLogin() {
 }
 window.showAdminLogin = showAdminLogin;
 
-window.backFromProfile = function() {
+window.backFromProfile = async function() {
+  if (isProfileDirty()) {
+    const ok = await showModal(
+      "Cambios sin guardar",
+      "Tienes hechizos modificados que aún no has guardado. ¿Salir de todos modos y descartar los cambios?",
+      "Salir sin guardar", "danger"
+    );
+    if (!ok) return;
+  }
   if (isAdmin) { show("scAdmin"); renderList(); renderAscensos(); }
   else { loggedInStudent = null; goSearch(); }
 };
@@ -527,6 +583,7 @@ window.backFromProfile = function() {
 window.cerrarSesion = function() {
   isAdmin = false; isSuperAdmin = false;
   clearTimeout(_sessionTimer); _sessionTimer = null;
+  clearSession();
   const secBtn = document.getElementById("tabSecurityBtn");
   if (secBtn) secBtn.style.display = "none";
   updateAppHeader();
@@ -558,6 +615,9 @@ window.studentLogin = async function() {
 
   pEl.value = "";
   loggedInStudent = name;
+  const remember = document.getElementById("loginRemember");
+  if (remember && remember.checked) saveSession({ kind: "student", name, hash });
+  else clearSession();
   updateAppHeader();
   openProfile(name);
 };
@@ -608,6 +668,17 @@ function openProfile(name) {
         if (el) el.innerHTML = "";
       });
   }
+}
+
+// Firma de hechizos independiente del orden de claves → detecta cambios reales
+function spellSig(sp) { return allSpells().map(s => (sp && sp[s]) ? "1" : "0").join(""); }
+function isProfileDirty() {
+  return !!currentStudent && !!allStudents[currentStudent] &&
+    spellSig(pendingChanges) !== spellSig(allStudents[currentStudent]);
+}
+function updateDirtyState() {
+  const el = document.getElementById("unsavedBadge");
+  if (el) el.style.display = isProfileDirty() ? "inline-flex" : "none";
 }
 
 function renderProfile() {
@@ -688,6 +759,10 @@ function renderProfile() {
     const { done, total, pct } = getRkPct(sp, rk);
     const rkMissing = RANKS[rk].filter(s => !sp[s]).length;
     const cls = rkMissing <= ASCENSO_MISSING ? "ok" : done === 0 ? "no" : "mid";
+    const allOn = RANKS[rk].length > 0 && RANKS[rk].every(s => sp[s]);
+    const toggleAll = isAdmin
+      ? `<button class="rk-toggle-all" onclick="toggleRankSpells('${safeAttr(rk)}')">${allOn ? "Quitar todos" : "Marcar todos"}</button>`
+      : "";
     const rows = RANKS[rk].map(s => {
       const on  = sp[s];
       const key = s.replace(/[\s.]/g, "_");
@@ -699,13 +774,27 @@ function renderProfile() {
     return `<div class="rk-card">
       <div class="rk-card-head">
         <span class="rk-card-name">${rk}</span>
-        <span class="rk-pct c-${cls}" id="rkpct_${rk}">${done}/${total}</span>
+        <span class="rk-card-head-right">
+          ${toggleAll}
+          <span class="rk-pct c-${cls}" id="rkpct_${rk}">${done}/${total}</span>
+        </span>
       </div>
       <div class="mini-bar"><div class="mini-fill f-${cls}" id="rkbar_${rk}" style="width:${pct}%"></div></div>
       <div class="spells-list">${rows}</div>
     </div>`;
   }).join("");
+
+  updateDirtyState();
 }
+
+// Admin: marcar/quitar todos los hechizos de un rango de golpe
+window.toggleRankSpells = function(rk) {
+  if (!isAdmin) return;
+  const spells = RANKS[rk] || [];
+  const allOn = spells.length > 0 && spells.every(s => pendingChanges[s]);
+  spells.forEach(s => pendingChanges[s] = !allOn);
+  renderProfile();
+};
 
 // =====================================================================
 //  ADMIN — CAMBIO MANUAL DE RANGO
@@ -872,6 +961,8 @@ window.toggleSpell = function(s) {
     const need    = Math.max(0, missing - ASCENSO_MISSING);
     banner.innerHTML = `<div class="no-ascenso-banner"><div class="big">Aún no puedes ascender</div><div class="sub">Te faltan ${need} hechizo${need !== 1 ? "s" : ""} más en ${rank}.</div></div>`;
   }
+
+  updateDirtyState();
 };
 
 window.guardarCambios = async function() {
@@ -881,6 +972,7 @@ window.guardarCambios = async function() {
     await saveStudent(currentStudent, pendingChanges);
     document.getElementById("savedMsg").style.display = "inline";
     setTimeout(() => document.getElementById("savedMsg").style.display = "none", 2500);
+    updateDirtyState();
     toast("Cambios guardados", "success");
   } catch {
     toast("Error al guardar. Comprueba tu conexión.", "error");
@@ -949,6 +1041,9 @@ window.loginAdmin = async function() {
 
   clearLoginLock();
   document.getElementById("adminPwd").value = "";
+  const rememberAdmin = document.getElementById("adminRemember");
+  if (rememberAdmin && rememberAdmin.checked) saveSession({ kind: "admin", hash, super: isSuperAdmin });
+  else clearSession();
   applyAdminRole();
   updateAppHeader();
   show("scAdmin");
@@ -1173,12 +1268,18 @@ function renderList() {
     ).join("")}
   </div>`;
 
+  const readyCount = Object.keys(allStudents).filter(n =>
+    !allGraduated[n] && canAscend(allStudents[n], getStudentRank(n))).length;
+  const lowActCount = bitacorasLoaded
+    ? Object.keys(allStudents).filter(n => bitCntMonth(n, ly2, lm2) < 3).length
+    : 0;
+
   const summary = `<div class="list-summary">
-    <div class="list-summary-stat"><strong>${totalActive}</strong> sin graduar</div>
-    <span class="list-summary-divider">·</span>
-    <div class="list-summary-stat highlight"><strong>${totalGrad}</strong> graduados</div>
-    <span class="list-summary-divider">·</span>
-    <div class="list-summary-stat"><strong>${totalAll}</strong> total</div>
+    <span class="list-summary-chip"><strong>${totalAll}</strong> total</span>
+    <span class="list-summary-chip"><strong>${totalActive}</strong> sin graduar</span>
+    <span class="list-summary-chip chip-grad"><strong>${totalGrad}</strong> graduados</span>
+    ${readyCount ? `<button class="list-summary-chip chip-asc" onclick="showTab('tabAscensos')" title="Ver ascensos"><strong>${readyCount}</strong> ⬆ listos</button>` : ""}
+    ${bitacorasLoaded && lowActCount ? `<button class="list-summary-chip chip-warn" onclick="showTab('tabActivity')" title="Ver actividad"><strong>${lowActCount}</strong> ⚠ baja actividad</button>` : ""}
   </div>`;
 
   document.getElementById("adminListWrap").innerHTML = summary + sortBar + html;
@@ -1692,6 +1793,7 @@ let bitacorasLoaded   = false;
 let bitacorasPage     = 0;
 const BITS_PER_PAGE   = 3;
 let editingBitacoraId = null;
+let bitacoraQuery     = "";
 
 window.showBitacoras = async function(from = "search") {
   if (!isAdmin && !loggedInStudent) { goSearch(); return; }
@@ -1863,11 +1965,24 @@ function renderBitacoraList() {
     return;
   }
 
-  const total      = allBitacoras.length;
+  const q    = norm(bitacoraQuery);
+  const list = q ? allBitacoras.filter(b =>
+        norm(b.patient   || "").includes(q) ||
+        norm(b.diagnosis || "").includes(q) ||
+        norm(b.procedure || "").includes(q) ||
+        (b.attendants || []).some(a => norm(a).includes(q))
+      ) : allBitacoras;
+
+  if (!list.length) {
+    wrap.innerHTML = `<p class="empty-state">No hay bitácoras que coincidan con “${escHtml(bitacoraQuery)}”.</p>`;
+    return;
+  }
+
+  const total      = list.length;
   const totalPages = Math.ceil(total / BITS_PER_PAGE);
   bitacorasPage    = Math.max(0, Math.min(bitacorasPage, totalPages - 1));
   const start      = bitacorasPage * BITS_PER_PAGE;
-  const pageItems  = allBitacoras.slice(start, start + BITS_PER_PAGE);
+  const pageItems  = list.slice(start, start + BITS_PER_PAGE);
 
   const cardsHtml = pageItems.map(b => {
     const canEdit = isAdmin || (loggedInStudent && (b.attendants || []).includes(loggedInStudent));
@@ -1914,12 +2029,46 @@ function renderBitacoraList() {
       </div>`;
   }
 
-  wrap.innerHTML = cardsHtml + paginationHtml;
+  const countLine = q
+    ? `<p class="bitacora-count-line">${total} resultado${total !== 1 ? "s" : ""} para “${escHtml(bitacoraQuery)}”</p>`
+    : "";
+
+  wrap.innerHTML = countLine + cardsHtml + paginationHtml;
+}
+
+// Cuenta las bitácoras visibles según el filtro activo (para la paginación)
+function filteredBitacorasCount() {
+  const q = norm(bitacoraQuery);
+  if (!q) return allBitacoras.length;
+  return allBitacoras.filter(b =>
+    norm(b.patient   || "").includes(q) ||
+    norm(b.diagnosis || "").includes(q) ||
+    norm(b.procedure || "").includes(q) ||
+    (b.attendants || []).some(a => norm(a).includes(q))
+  ).length;
 }
 
 window.setBitacorasPage = function(page) {
-  const totalPages = Math.ceil(allBitacoras.length / BITS_PER_PAGE);
+  const totalPages = Math.ceil(filteredBitacorasCount() / BITS_PER_PAGE);
   bitacorasPage = Math.max(0, Math.min(page, totalPages - 1));
+  renderBitacoraList();
+};
+
+window.filterBitacoras = function() {
+  bitacoraQuery = document.getElementById("bitacoraSearch").value;
+  bitacorasPage = 0;
+  const clr = document.getElementById("bitacoraSearchClear");
+  if (clr) clr.style.display = bitacoraQuery ? "block" : "none";
+  renderBitacoraList();
+};
+
+window.clearBitacoraSearch = function() {
+  bitacoraQuery = "";
+  const inp = document.getElementById("bitacoraSearch");
+  if (inp) inp.value = "";
+  const clr = document.getElementById("bitacoraSearchClear");
+  if (clr) clr.style.display = "none";
+  bitacorasPage = 0;
   renderBitacoraList();
 };
 
@@ -2401,12 +2550,149 @@ window.clearOldLogs = async function() {
 };
 
 // =====================================================================
+//  EXPORTACIÓN CSV (admin)
+// =====================================================================
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c ?? "");
+    return /[",\n\r;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(",")).join("\r\n");
+  // BOM para que Excel detecte UTF-8 correctamente
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+window.exportStudentsCSV = function() {
+  const names = Object.keys(allStudents);
+  if (!names.length) { toast("No hay alumnos para exportar.", "error"); return; }
+  const now = new Date();
+  const ty = now.getFullYear(), tm = now.getMonth();
+  const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
+  const all = allSpells();
+  const rows = [["Nombre", "Rango", "% Total", "Graduado", "Bitácoras (mes actual)", "Bitácoras (mes pasado)"]];
+  names.sort((a, b) => a.localeCompare(b, "es")).forEach(n => {
+    const sp  = allStudents[n];
+    const pct = Math.round(all.filter(s => sp[s]).length / all.length * 100);
+    rows.push([
+      n, getStudentRank(n), pct + "%", allGraduated[n] ? "Sí" : "No",
+      bitacorasLoaded ? bitCntMonth(n, ty, tm) : "",
+      bitacorasLoaded ? bitCntMonth(n, ly, lm) : ""
+    ]);
+  });
+  downloadCSV(`alumnos_medimagia_${ty}-${String(tm + 1).padStart(2, "0")}.csv`, rows);
+  toast(`✓ Exportados ${names.length} alumnos`, "success");
+};
+
+window.exportBitacorasCSV = async function() {
+  if (!bitacorasLoaded) {
+    try { await loadBitacoras(); bitacorasLoaded = true; }
+    catch { toast("No se pudieron cargar las bitácoras.", "error"); return; }
+  }
+  if (!allBitacoras.length) { toast("No hay bitácoras para exportar.", "error"); return; }
+  const rows = [["Fecha", "Paciente", "Diagnóstico", "Procedimiento", "Atendido por"]];
+  allBitacoras.forEach(b => rows.push([
+    b.createdAt ? new Date(b.createdAt).toLocaleString("es-ES") : "",
+    b.patient || "", b.diagnosis || "", b.procedure || "",
+    (b.attendants || []).join("; ")
+  ]));
+  downloadCSV("bitacoras_medimagia.csv", rows);
+  toast(`✓ Exportadas ${allBitacoras.length} bitácoras`, "success");
+};
+
+// =====================================================================
+//  MEJORAS DE UI — toggle de contraseña · volver arriba
+// =====================================================================
+// Añade un botón mostrar/ocultar a cada campo de contraseña
+function enhancePasswordFields() {
+  document.querySelectorAll('input[type="password"]').forEach(inp => {
+    if (inp.parentElement && inp.parentElement.classList.contains("pwd-wrap")) return;
+    const wrap = document.createElement("span");
+    wrap.className = "pwd-wrap";
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    inp.classList.add("has-pwd-toggle");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pwd-toggle";
+    btn.textContent = "👁";
+    btn.setAttribute("aria-label", "Mostrar u ocultar contraseña");
+    btn.addEventListener("click", () => {
+      const showing = inp.type === "text";
+      inp.type = showing ? "password" : "text";
+      btn.textContent = showing ? "👁" : "🙈";
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+// Muestra el botón "volver arriba" al desplazarse
+function initScrollTop() {
+  const btn = document.getElementById("scrollTopBtn");
+  if (!btn) return;
+  window.addEventListener("scroll", () => {
+    btn.classList.toggle("show", window.scrollY > 380);
+  }, { passive: true });
+}
+
+// Aviso del navegador si se intenta cerrar con cambios sin guardar en el perfil
+window.addEventListener("beforeunload", e => {
+  if (currentScreen === "scProfile" && isProfileDirty()) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+// =====================================================================
+//  AUTO-LOGIN — restaura la sesión guardada (si sigue siendo válida)
+// =====================================================================
+function tryAutoLogin() {
+  const d = loadSession();
+  if (!d) return;
+  // No restaurar si el visitante está bloqueado
+  const blk = document.getElementById("scBlocked");
+  if (currentScreen === "scBlocked" || (blk && blk.style.display === "block")) return;
+
+  if (d.kind === "student") {
+    const cred = allCredentials[d.name];
+    if (cred && cred.passwordHash && cred.passwordHash === d.hash && allStudents[d.name]) {
+      loggedInStudent = d.name;
+      updateAppHeader();
+      openProfile(d.name);
+    } else {
+      clearSession();   // credenciales cambiadas o alumno eliminado
+    }
+    return;
+  }
+
+  if (d.kind === "admin") {
+    if (d.super && superAdminHash && d.hash === superAdminHash) { isAdmin = true; isSuperAdmin = true; }
+    else if (adminPwdHash && d.hash === adminPwdHash)          { isAdmin = true; isSuperAdmin = false; }
+    else { clearSession(); return; }   // contraseña cambiada
+    applyAdminRole();
+    updateAppHeader();
+    show("scAdmin");
+    renderList(); renderAscensos(); renderGraduados();
+    resetSessionTimer();
+    if (!bitacorasLoaded) {
+      loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
+    }
+  }
+}
+
+// =====================================================================
 //  INIT
 // =====================================================================
 const loadingEl  = document.getElementById("loadingIndicator");
 const searchCard = document.querySelector("#scSearch .card");
 loadingEl.style.display    = "block";
 searchCard.style.opacity   = "0.4";
+
+enhancePasswordFields();
+initScrollTop();
 
 initSecurity(); // corre en paralelo: detecta IP, verifica bloqueo y registra visita
 
@@ -2416,6 +2702,7 @@ loadRanksConfig()
     loadingEl.style.display  = "none";
     searchCard.style.opacity = "1";
     renderRankSelector();
+    tryAutoLogin();   // restaura la sesión guardada si "mantener sesión" estaba activo
   })
   .catch(err => {
     const code = err?.code || err?.message || String(err);
