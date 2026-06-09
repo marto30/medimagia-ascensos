@@ -204,7 +204,7 @@ document.getElementById("confirmModal")
   .addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(false); });
 
 // =====================================================================
-//  FIREBASE — alumnos
+//  SUPABASE — alumnos
 // =====================================================================
 let allStudents    = {};
 let allGraduated   = {};
@@ -1469,8 +1469,9 @@ window.doGenerateCredentials = async function() {
   const passwordHash = await hashStudentPwd(password);
 
   try {
-    await setDoc(doc(db, "alumnos", docId(name)),
-      { username, studentPasswordHash: passwordHash }, { merge: true });
+    await db.from("alumnos").update({
+      username, student_password_hash: passwordHash
+    }).eq("doc_id", docId(name));
   } catch (err) {
     console.error("Error guardando credenciales:", err);
     toast(`Error al guardar en la base de datos: ${err?.code || err?.message || "desconocido"}`, "error");
@@ -1749,7 +1750,7 @@ function renderBitacoraList() {
       <div class="bitacora-top">
         <div>
           <div class="bitacora-patient">${escHtml(b.patient)}</div>
-          <div class="bitacora-date">${formatDate(b.createdAt)}</div>
+          <div class="bitacora-date">${formatDate(b.created_at)}</div>
         </div>
         ${isAdmin ? `<button class="btn sm danger" onclick="deleteBitacora('${b.id}')">Eliminar</button>` : ""}
       </div>
@@ -1871,14 +1872,16 @@ async function initSecurity() {
     const ipHash = await hashIP(ip);
     visitorIP = ipHash; // guardamos el hash, no la IP
 
-    const blockSnap = await getDoc(doc(db, "blocked_ips", ipHash));
-    if (blockSnap.exists()) { show("scBlocked"); return; }
+    const { data: blockData } = await db.from("blocked_ips").select("*").eq("doc_id", ipHash).single();
+    if (blockData) { show("scBlocked"); return; }
 
     // Registrar visita: solo hash + timestamp + navegador resumido (fire & forget)
-    addDoc(collection(db, "access_logs"), {
-      ip: ipHash,
-      ts: new Date().toISOString(),
-      ua: uaSummary(navigator.userAgent) // nunca el UA completo
+    db.from("access_logs").insert({
+      doc_id: ipHash,
+      data: {
+        ts: new Date().toISOString(),
+        ua: uaSummary(navigator.userAgent) // nunca el UA completo
+      }
     }).catch(() => {});
   } catch { /* fallo silencioso */ }
 }
@@ -1888,30 +1891,35 @@ async function renderSecurityTab() {
   if (!wrap) return;
   wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando seguridad…</div>';
   try {
-    const [logSnap, blockSnap] = await Promise.all([
-      getDocs(collection(db, "access_logs")),
-      getDocs(collection(db, "blocked_ips"))
+    const [{ data: logs }, { data: blocked }] = await Promise.all([
+      db.from("access_logs").select("*"),
+      db.from("blocked_ips").select("*")
     ]);
 
-    const logs = [];
-    logSnap.forEach(d => logs.push({ id: d.id, ...d.data() }));
-    logs.sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
-    const recent = logs.slice(0, 100);
+    const allLogs = logs || [];
+    allLogs.sort((a, b) => {
+      const ts_a = a.data?.ts || "";
+      const ts_b = b.data?.ts || "";
+      return ts_b.localeCompare(ts_a);
+    });
+    const recent = allLogs.slice(0, 100);
 
-    const blocked = {};
-    blockSnap.forEach(d => { blocked[d.data().ip] = d.data(); });
+    const blockedMap = {};
+    (blocked || []).forEach(b => {
+      blockedMap[b.doc_id] = b;
+    });
 
     // Los hashes de IP son hex seguros — no necesitan escapeHtml
     // — IPs bloqueadas —
-    const blockedList = Object.values(blocked);
+    const blockedList = Object.values(blockedMap);
     const blockedHtml = !blockedList.length
       ? '<p class="empty-state">No hay IPs bloqueadas.</p>'
       : `<table class="student-table">
           <thead><tr><th>Hash IP</th><th>Bloqueada</th><th></th></tr></thead>
           <tbody>${blockedList.map(b => `<tr class="blocked-row">
-            <td class="ip-cell">${b.ip.substring(0,16)}…${b.ip === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
-            <td>${formatDate(b.blockedAt)}</td>
-            <td><button class="btn sm success" onclick="unblockIP('${b.ip}')">Desbloquear</button></td>
+            <td class="ip-cell">${b.doc_id.substring(0,16)}…${b.doc_id === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
+            <td>${formatDate(b.created_at)}</td>
+            <td><button class="btn sm success" onclick="unblockIP('${b.doc_id}')">Desbloquear</button></td>
           </tr>`).join("")}</tbody>
         </table>`;
 
@@ -1921,17 +1929,20 @@ async function renderSecurityTab() {
       : `<table class="student-table">
           <thead><tr><th>Hash IP</th><th>Fecha</th><th>Navegador</th><th></th></tr></thead>
           <tbody>${recent.map(l => {
-            const isBlk = !!blocked[l.ip];
+            const logIpHash = l.doc_id;
+            const logTs = l.data?.ts;
+            const logUa = l.data?.ua;
+            const isBlk = !!blockedMap[logIpHash];
             return `<tr class="${isBlk ? "blocked-row" : ""}">
-              <td class="ip-cell">${escHtml(l.ip).substring(0,16)}…
-                ${l.ip === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
+              <td class="ip-cell">${escHtml(logIpHash).substring(0,16)}…
+                ${logIpHash === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
                 ${isBlk ? '<span class="ip-blocked-badge">bloqueada</span>' : ""}
               </td>
-              <td>${l.ts ? formatDate(l.ts) : "—"}</td>
-              <td class="ua-cell">${escHtml(l.ua || "—")}</td>
+              <td>${logTs ? formatDate(logTs) : "—"}</td>
+              <td class="ua-cell">${escHtml(logUa || "—")}</td>
               <td>${!isBlk
-                ? `<button class="btn sm danger" onclick="blockIP('${l.ip}')">Bloquear</button>`
-                : `<button class="btn sm success" onclick="unblockIP('${l.ip}')">Desbloquear</button>`}
+                ? `<button class="btn sm danger" onclick="blockIP('${logIpHash}')">Bloquear</button>`
+                : `<button class="btn sm success" onclick="unblockIP('${logIpHash}')">Desbloquear</button>`}
               </td>
             </tr>`;
           }).join("")}</tbody>
@@ -1960,13 +1971,13 @@ window.blockIP = async function(ip) {
     "Bloquear", "danger"
   );
   if (!ok) return;
-  await setDoc(doc(db, "blocked_ips", ipDocId(ip)), { ip, blockedAt: new Date().toISOString() });
+  await db.from("blocked_ips").insert({ doc_id: ip, data: { reason: "Bloqueado manualmente" } });
   toast(`IP ${ip} bloqueada`, "error");
   renderSecurityTab();
 };
 
 window.unblockIP = async function(ip) {
-  await deleteDoc(doc(db, "blocked_ips", ipDocId(ip)));
+  await db.from("blocked_ips").delete().eq("doc_id", ip);
   toast(`IP ${ip} desbloqueada`, "success");
   renderSecurityTab();
 };
@@ -1978,8 +1989,7 @@ window.clearOldLogs = async function() {
     "Limpiar", "danger"
   );
   if (!ok) return;
-  const snap = await getDocs(collection(db, "access_logs"));
-  await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  await db.from("access_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
   toast("Registros eliminados", "success");
   renderSecurityTab();
 };
@@ -2003,7 +2013,7 @@ loadRanksConfig()
   })
   .catch(err => {
     const code = err?.code || err?.message || String(err);
-    console.error("Firebase init error:", err);
+    console.error("Supabase init error:", err);
     loadingEl.innerHTML =
-      `<span style="color:var(--red)">Error al conectar con Firebase.<br><small style="opacity:.7">${escHtml(code)}</small><br><small>Abre la consola (F12) para ver más detalles.</small></span>`;
+      `<span style="color:var(--red)">Error al conectar con Supabase.<br><small style="opacity:.7">${escHtml(code)}</small><br><small>Abre la consola (F12) para ver más detalles.</small></span>`;
   });
