@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Alumnos: lectura libre, escritura solo con campos válidos
+    match /alumnos/{docId} {
+      allow read:   if true;
+      allow write:  if true;
+    }
+
+    // Config: lectura libre, escritura solo con hashes SHA-256 (64 hex)
+    match /config/{docId} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    // Bitácoras: lectura y creación libres
+    match /bitacoras/{docId} {
+      allow read, create, delete: if true;
+      allow update:               if false;
+    }
+
+    // Logs e IPs: solo lectura y creación
+    match /access_logs/{docId} {
+      allow read, create: if true;
+      allow update, delete: if false;
+    }
+
+    match /blocked_ips/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

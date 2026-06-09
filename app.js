@@ -1,11 +1,20 @@
-// =====================================================================
-//  SUPABASE CONFIG
-// =====================================================================
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, getDocs, collection, deleteDoc, addDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const SUPABASE_URL = "https://lknmsnprnqdrsmllhvwz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Hrzs1L8qHSltt08F7auS6Q_vFoCEQv0";
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+// =====================================================================
+//  FIREBASE CONFIG
+// =====================================================================
+const firebaseConfig = {
+  apiKey:            "AIzaSyAFeEm4gJv8qcmhWeMnipcmk-Wpwi5I1G4",
+  authDomain:        "medimagia-ascensos.firebaseapp.com",
+  projectId:         "medimagia-ascensos",
+  storageBucket:     "medimagia-ascensos.firebasestorage.app",
+  messagingSenderId: "508815684624",
+  appId:             "1:508815684624:web:988d28cf27268deedc4695"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
 // =====================================================================
 //  CONSTANTS
@@ -26,8 +35,6 @@ function rankClass(prefix, rankName) {
   return `${prefix}-i${(idx < 0 ? 0 : idx) % RANK_PALETTE_SIZE}`;
 }
 
-// Datos iniciales — se suben a Firestore solo si la colección está vacía
-const BASE_DATA = {"Ymir Aleister":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":false,"Confractus":true,"Amicientes":false,"Reparifarge":true,"Panacea":true,"Zanarem":true,"Suturae":false,"Revitalizare":false},"Xaden Knight":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":true,"Confractus":false,"Amicientes":true,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":true,"Revitalizare":false},"Makelele D. Shacklebolt":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":true,"Confractus":true,"Amicientes":true,"Reparifarge":true,"Panacea":true,"Zanarem":false,"Suturae":true,"Revitalizare":true},"Filipo Fuentes":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":false,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":true,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Chloe Miller":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Adrian Marston":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":false,"Solatio":true,"Finite Incantatem":false,"Confractus":true,"Amicientes":false,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Indigo Travers":{"Bullapure":true,"Férula":false,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Lilith Hill":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":false,"Confractus":true,"Amicientes":true,"Reparifarge":true,"Panacea":true,"Zanarem":false,"Suturae":true,"Revitalizare":false},"Virgil Macmillan":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":false,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":true,"Invenio Cardium":false,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":true,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Selina Lestrange":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":false,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Antonio Matamoros":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":false,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Arlequin Nott":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":false,"Solatio":true,"Finite Incantatem":true,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":true},"Bella DiLaurentis":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":false,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":true,"Medimend":false,"Mind Recupero":false,"Solatio":true,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Gideon Umbrawell":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Clarent Avery":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Paul H. Brown":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":true,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Viktoria Bellamy":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Exequiel Delorian":{"Bullapure":true,"Férula":true,"Osseus Reparo":false,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Bayron Shajad":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Nyx Rowengrave":{"Bullapure":false,"Férula":true,"Osseus Reparo":false,"Tergeo":false,"Examino":true,"Vitae Expulso":false,"Leniter":false,"Sommnium":false,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Margot Reed":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":false,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Rebekah Twist":{"Bullapure":false,"Férula":false,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Zeta Tokito":{"Bullapure":false,"Férula":false,"Osseus Reparo":false,"Tergeo":false,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":false,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Darío Crabbe":{"Bullapure":false,"Férula":false,"Osseus Reparo":false,"Tergeo":false,"Examino":false,"Vitae Expulso":false,"Leniter":false,"Sommnium":false,"Anapneo":false,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":false,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Jack Marston":{"Bullapure":true,"Férula":false,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":false,"Medimend":true,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":true,"Revitalizare":true},"Zoey Montes":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":true,"Confractus":false,"Amicientes":true,"Reparifarge":true,"Panacea":true,"Zanarem":true,"Suturae":true,"Revitalizare":true},"Fiore E. Malfoy":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":false,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":false,"Solatio":true,"Finite Incantatem":true,"Confractus":true,"Amicientes":true,"Reparifarge":false,"Panacea":false,"Zanarem":true,"Suturae":true,"Revitalizare":true},"Dustin LaPlace":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":false,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":true,"Confractus":true,"Amicientes":false,"Reparifarge":false,"Panacea":true,"Zanarem":true,"Suturae":true,"Revitalizare":true},"Albert Ronin":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":false,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Aiden Weasley":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":true,"Tergiverso":true,"Vulnera Curatio":true,"Ennervate":true,"Invenio Cardium":true,"Restitutio Mobilitas":true,"Medimend":true,"Mind Recupero":true,"Solatio":true,"Finite Incantatem":true,"Confractus":true,"Amicientes":true,"Reparifarge":true,"Panacea":true,"Zanarem":true,"Suturae":true,"Revitalizare":true},"Zephyr Beckett":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":false,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":true,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":true,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Jacoba Van Dijk":{"Bullapure":true,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":true,"Leniter":true,"Sommnium":true,"Anapneo":false,"Anesthetica":true,"Brackium Emendo":true,"Vitalis":true,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":false,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":true,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false},"Rose Silverthorn":{"Bullapure":false,"Férula":true,"Osseus Reparo":true,"Tergeo":true,"Examino":true,"Vitae Expulso":false,"Leniter":true,"Sommnium":true,"Anapneo":true,"Anesthetica":false,"Brackium Emendo":false,"Vitalis":false,"Tranquillitas":true,"Melis Sanitas":false,"Tergiverso":true,"Vulnera Curatio":false,"Ennervate":false,"Invenio Cardium":false,"Restitutio Mobilitas":false,"Medimend":false,"Mind Recupero":false,"Solatio":false,"Finite Incantatem":false,"Confractus":false,"Amicientes":false,"Reparifarge":false,"Panacea":false,"Zanarem":false,"Suturae":false,"Revitalizare":false}};
 
 // =====================================================================
 //  HELPERS
@@ -51,7 +58,6 @@ function getRkPct(sp, rk) {
   return { done: d, total: l.length, pct: Math.round(d / l.length * 100) };
 }
 function calcCorrectRank(sp) {
-  if (!sp || typeof sp !== 'object') return RANKS_ORDER[0];
   let rank = RANKS_ORDER[0];
   for (let i = 0; i < RANKS_ORDER.length - 1; i++) {
     const missing = RANKS[RANKS_ORDER[i]].filter(s => !sp[s]).length;
@@ -207,7 +213,7 @@ document.getElementById("confirmModal")
   .addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(false); });
 
 // =====================================================================
-//  SUPABASE — alumnos
+//  FIREBASE — alumnos
 // =====================================================================
 let allStudents    = {};
 let allGraduated   = {};
@@ -224,13 +230,11 @@ let visitorIP      = null;
 
 async function loadAdminConfig() {
   try {
-    const { data, error } = await db.from("config").select("*").eq("id", "admin").single();
-    if (error || !data) {
-      adminPwdHash = null;
-      superAdminHash = null;
-    } else {
-      adminPwdHash   = data.password_hash || null;
-      superAdminHash = data.super_password_hash || null;
+    const ref  = doc(db, "config", "admin");
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      adminPwdHash   = snap.data().passwordHash || null;
+      superAdminHash = snap.data().superPasswordHash || null;
     }
   } catch {
     adminPwdHash = null;
@@ -239,20 +243,20 @@ async function loadAdminConfig() {
 
 async function loadRanksConfig() {
   try {
-    const { data, error } = await db.from("config").select("*").eq("id", "ranks").single();
-    if (error || !data) return; /* se mantienen los rangos por defecto */
-    if (Array.isArray(data.ranks_order) && data.ranks_order.length && data.ranks_spells) {
-      RANKS_ORDER = data.ranks_order;
-      RANKS       = data.ranks_spells;
+    const ref  = doc(db, "config", "ranks");
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (Array.isArray(data.order) && data.order.length && data.spells) {
+        RANKS_ORDER = data.order;
+        RANKS       = data.spells;
+      }
     }
   } catch { /* se mantienen los rangos por defecto */ }
 }
 
 async function saveRanksConfig() {
-  await db.from("config").upsert(
-    { id: "ranks", ranks_order: RANKS_ORDER, ranks_spells: RANKS },
-    { onConflict: "id" }
-  );
+  await setDoc(doc(db, "config", "ranks"), { order: RANKS_ORDER, spells: RANKS }, { merge: true });
 }
 
 // =====================================================================
@@ -378,42 +382,47 @@ window.saveRanksChanges = async function() {
 };
 
 async function loadAllStudents() {
-  const { data, error } = await db.from("alumnos").select("*");
+  const snap = await getDocs(collection(db, "alumnos"));
   allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {};
-  
-  if (error || !data || data.length === 0) {
-    console.warn("No hay alumnos en la base de datos. La tabla está vacía.");
+  if (snap.empty) {
+    for (const [name, spells] of Object.entries(BASE_DATA)) {
+      await setDoc(doc(db, "alumnos", docId(name)), { name, spells, graduated: false }, { merge: true });
+      allStudents[name]    = spells;
+      allGraduated[name]   = false;
+      allRanks[name]       = calcRankLegacy(spells);
+      allInfractions[name] = [];
+    }
   } else {
-    data.forEach(row => {
-      allStudents[row.name]    = row.spells;
-      allGraduated[row.name]   = row.graduated || false;
-      allRanks[row.name]       = row.current_rank || calcRankLegacy(row.spells);
-      allInfractions[row.name] = Array.isArray(row.infractions) ? row.infractions : [];
-      if (row.username) {
-        allCredentials[row.name] = {
-          username:     row.username,
-          passwordHash: row.student_password_hash || null
+    snap.forEach(d => {
+      const data = d.data();
+      allStudents[data.name]    = data.spells;
+      allGraduated[data.name]   = data.graduated || false;
+      allRanks[data.name]       = data.currentRank || calcRankLegacy(data.spells);
+      allInfractions[data.name] = Array.isArray(data.infractions) ? data.infractions : [];
+      if (data.username) {
+        allCredentials[data.name] = {
+          username:     data.username,
+          passwordHash: data.studentPasswordHash || null
         };
-        usernameIndex[row.username.toLowerCase()] = row.name;
+        usernameIndex[data.username.toLowerCase()] = data.name;
       }
     });
   }
 }
 
 async function saveStudent(name, spells) {
-  await db.from("alumnos").update(
-    { name, spells, graduated: allGraduated[name] || false }
-  ).eq("doc_id", docId(name));
+  await setDoc(doc(db, "alumnos", docId(name)),
+    { name, spells, graduated: allGraduated[name] || false }, { merge: true });
   allStudents[name] = spells;
 }
 
 async function setGraduated(name, val) {
   allGraduated[name] = val;
-  await db.from("alumnos").update({ graduated: val }).eq("doc_id", docId(name));
+  await setDoc(doc(db, "alumnos", docId(name)), { graduated: val }, { merge: true });
 }
 
 async function deleteStudent(name) {
-  await db.from("alumnos").delete().eq("doc_id", docId(name));
+  await deleteDoc(doc(db, "alumnos", docId(name)));
   delete allStudents[name];
   delete allGraduated[name];
   delete allRanks[name];
@@ -683,7 +692,7 @@ window.applyManualRank = async function() {
   if (!ok) { sel.value = oldRank; return; }
 
   try {
-    await db.from("alumnos").update({ current_rank: newRank }).eq("doc_id", docId(name));
+    await setDoc(doc(db, "alumnos", docId(name)), { currentRank: newRank }, { merge: true });
   } catch (err) {
     toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
     sel.value = oldRank;
@@ -740,7 +749,7 @@ window.addInfraction = async function() {
   const entry = { reason, date: new Date().toISOString() };
   const list  = [...(allInfractions[name] || []), entry];
   try {
-    await db.from("alumnos").update({ infractions: list }).eq("doc_id", docId(name));
+    await setDoc(doc(db, "alumnos", docId(name)), { infractions: list }, { merge: true });
   } catch (err) {
     errEl.textContent = `Error al guardar: ${err?.code || err?.message || "desconocido"}`;
     errEl.style.display = "block";
@@ -763,7 +772,7 @@ window.removeInfraction = async function(idx) {
   if (!ok) return;
   const list = (allInfractions[name] || []).filter((_, i) => i !== idx);
   try {
-    await db.from("alumnos").update({ infractions: list }).eq("doc_id", docId(name));
+    await setDoc(doc(db, "alumnos", docId(name)), { infractions: list }, { merge: true });
   } catch (err) {
     toast(`Error al eliminar: ${err?.code || err?.message || "desconocido"}`, "error");
     return;
@@ -1118,7 +1127,7 @@ window.migrateAllRanks = async function() {
     const correct  = calcCorrectRank(allStudents[name]);
     const current  = allRanks[name] || RANKS_ORDER[0];
     if (correct !== current) {
-      await db.from("alumnos").update({ current_rank: correct }).eq("doc_id", docId(name));
+      await setDoc(doc(db, "alumnos", docId(name)), { currentRank: correct }, { merge: true });
       changes.push(`${name}: ${current} → ${correct}`);
       allRanks[name] = correct;
       corrected++;
@@ -1267,7 +1276,7 @@ window.adminAscend = async function(name) {
   );
   if (!ok) return;
   try {
-    await db.from("alumnos").update({ current_rank: nextRank }).eq("doc_id", docId(name));
+    await setDoc(doc(db, "alumnos", docId(name)), { currentRank: nextRank }, { merge: true });
   } catch (err) {
     toast(`Error al ascender: ${err?.code || err?.message || "desconocido"}`, "error");
     return;
@@ -1465,9 +1474,8 @@ window.doGenerateCredentials = async function() {
   const passwordHash = await hashStudentPwd(password);
 
   try {
-    await db.from("alumnos").update({
-      username, student_password_hash: passwordHash
-    }).eq("doc_id", docId(name));
+    await setDoc(doc(db, "alumnos", docId(name)),
+      { username, studentPasswordHash: passwordHash }, { merge: true });
   } catch (err) {
     console.error("Error guardando credenciales:", err);
     toast(`Error al guardar en la base de datos: ${err?.code || err?.message || "desconocido"}`, "error");
@@ -1620,14 +1628,12 @@ window.backFromBitacoras = function() {
 };
 
 async function loadBitacoras() {
-  const { data, error } = await db.from("bitacoras").select("*");
+  const snap = await getDocs(collection(db, "bitacoras"));
   allBitacoras = [];
-  if (!error && data) {
-    data.forEach(row => allBitacoras.push({ id: row.id, ...row }));
-    allBitacoras.sort((a, b) => b.created_at.localeCompare(a.created_at));
-  }
+  snap.forEach(d => allBitacoras.push({ id: d.id, ...d.data() }));
+  allBitacoras.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   // Las mutaciones locales (add/delete) actualizan allBitacoras en memoria,
-  // por lo que no hace falta volver a leer de Supabase.
+  // por lo que no hace falta volver a leer de Firestore.
 }
 
 // ── Insertor de hechizos ──────────────────────────────────────────────
@@ -1708,9 +1714,9 @@ window.saveBitacoraEntry = async function() {
   if (!procedure)         { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length) { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
 
-  const entry = { patient, diagnosis, procedure, attendants, created_at: new Date().toISOString() };
-  const { data, error } = await db.from("bitacoras").insert([entry]).select();
-  if (!error && data && data[0]) allBitacoras.unshift(data[0]);
+  const entry = { patient, diagnosis, procedure, attendants, createdAt: new Date().toISOString() };
+  const ref = await addDoc(collection(db, "bitacoras"), entry);
+  allBitacoras.unshift({ id: ref.id, ...entry });
   toast("Bitácora guardada", "success");
   okEl.style.display = "block";
   setTimeout(() => okEl.style.display = "none", 2500);
@@ -1723,7 +1729,7 @@ window.deleteBitacora = async function(id) {
     "¿Seguro que quieres eliminar esta bitácora? No se puede deshacer.",
     "Eliminar", "danger");
   if (!ok) return;
-  await db.from("bitacoras").delete().eq("id", id);
+  await deleteDoc(doc(db, "bitacoras", id));
   allBitacoras = allBitacoras.filter(b => b.id !== id);
   toast("Bitácora eliminada");
   renderBitacoraList();
@@ -1746,7 +1752,7 @@ function renderBitacoraList() {
       <div class="bitacora-top">
         <div>
           <div class="bitacora-patient">${escHtml(b.patient)}</div>
-          <div class="bitacora-date">${formatDate(b.created_at)}</div>
+          <div class="bitacora-date">${formatDate(b.createdAt)}</div>
         </div>
         ${isAdmin ? `<button class="btn sm danger" onclick="deleteBitacora('${b.id}')">Eliminar</button>` : ""}
       </div>
@@ -1810,11 +1816,8 @@ window.changePassword = async function() {
 
   btn.disabled = true; btn.textContent = "Guardando…";
   const newHash = await sha256(newPwd);
-  const field   = isSuperAdmin ? "super_password_hash" : "password_hash";
-  await db.from("config").upsert(
-    { id: "admin", [field]: newHash },
-    { onConflict: "id" }
-  );
+  const field   = isSuperAdmin ? "superPasswordHash" : "passwordHash";
+  await setDoc(doc(db, "config", "admin"), { [field]: newHash }, { merge: true });
   if (isSuperAdmin) superAdminHash = newHash; else adminPwdHash = newHash;
 
   document.getElementById("pwdCurrent").value = "";
@@ -1842,10 +1845,7 @@ window.setSuperAdminPwd = async function() {
     errEl.textContent = "Las contraseñas no coinciden."; errEl.style.display = "block"; return;
   }
   const hash = await sha256(newPwd);
-  await db.from("config").upsert(
-    { id: "admin", super_password_hash: hash },
-    { onConflict: "id" }
-  );
+  await setDoc(doc(db, "config", "admin"), { superPasswordHash: hash }, { merge: true });
   superAdminHash = hash;
   document.getElementById("pwdSuperNew").value     = "";
   document.getElementById("pwdSuperConfirm").value = "";
@@ -1868,16 +1868,14 @@ async function initSecurity() {
     const ipHash = await hashIP(ip);
     visitorIP = ipHash; // guardamos el hash, no la IP
 
-    const { data: blockData } = await db.from("blocked_ips").select("*").eq("doc_id", ipHash).single();
-    if (blockData) { show("scBlocked"); return; }
+    const blockSnap = await getDoc(doc(db, "blocked_ips", ipHash));
+    if (blockSnap.exists()) { show("scBlocked"); return; }
 
     // Registrar visita: solo hash + timestamp + navegador resumido (fire & forget)
-    db.from("access_logs").insert({
-      doc_id: ipHash,
-      data: {
-        ts: new Date().toISOString(),
-        ua: uaSummary(navigator.userAgent) // nunca el UA completo
-      }
+    addDoc(collection(db, "access_logs"), {
+      ip: ipHash,
+      ts: new Date().toISOString(),
+      ua: uaSummary(navigator.userAgent) // nunca el UA completo
     }).catch(() => {});
   } catch { /* fallo silencioso */ }
 }
@@ -1887,35 +1885,30 @@ async function renderSecurityTab() {
   if (!wrap) return;
   wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando seguridad…</div>';
   try {
-    const [{ data: logs }, { data: blocked }] = await Promise.all([
-      db.from("access_logs").select("*"),
-      db.from("blocked_ips").select("*")
+    const [logSnap, blockSnap] = await Promise.all([
+      getDocs(collection(db, "access_logs")),
+      getDocs(collection(db, "blocked_ips"))
     ]);
 
-    const allLogs = logs || [];
-    allLogs.sort((a, b) => {
-      const ts_a = a.data?.ts || "";
-      const ts_b = b.data?.ts || "";
-      return ts_b.localeCompare(ts_a);
-    });
-    const recent = allLogs.slice(0, 100);
+    const logs = [];
+    logSnap.forEach(d => logs.push({ id: d.id, ...d.data() }));
+    logs.sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
+    const recent = logs.slice(0, 100);
 
-    const blockedMap = {};
-    (blocked || []).forEach(b => {
-      blockedMap[b.doc_id] = b;
-    });
+    const blocked = {};
+    blockSnap.forEach(d => { blocked[d.data().ip] = d.data(); });
 
     // Los hashes de IP son hex seguros — no necesitan escapeHtml
     // — IPs bloqueadas —
-    const blockedList = Object.values(blockedMap);
+    const blockedList = Object.values(blocked);
     const blockedHtml = !blockedList.length
       ? '<p class="empty-state">No hay IPs bloqueadas.</p>'
       : `<table class="student-table">
           <thead><tr><th>Hash IP</th><th>Bloqueada</th><th></th></tr></thead>
           <tbody>${blockedList.map(b => `<tr class="blocked-row">
-            <td class="ip-cell">${b.doc_id.substring(0,16)}…${b.doc_id === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
-            <td>${formatDate(b.created_at)}</td>
-            <td><button class="btn sm success" onclick="unblockIP('${b.doc_id}')">Desbloquear</button></td>
+            <td class="ip-cell">${b.ip.substring(0,16)}…${b.ip === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
+            <td>${formatDate(b.blockedAt)}</td>
+            <td><button class="btn sm success" onclick="unblockIP('${b.ip}')">Desbloquear</button></td>
           </tr>`).join("")}</tbody>
         </table>`;
 
@@ -1925,20 +1918,17 @@ async function renderSecurityTab() {
       : `<table class="student-table">
           <thead><tr><th>Hash IP</th><th>Fecha</th><th>Navegador</th><th></th></tr></thead>
           <tbody>${recent.map(l => {
-            const logIpHash = l.doc_id;
-            const logTs = l.data?.ts;
-            const logUa = l.data?.ua;
-            const isBlk = !!blockedMap[logIpHash];
+            const isBlk = !!blocked[l.ip];
             return `<tr class="${isBlk ? "blocked-row" : ""}">
-              <td class="ip-cell">${escHtml(logIpHash).substring(0,16)}…
-                ${logIpHash === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
+              <td class="ip-cell">${escHtml(l.ip).substring(0,16)}…
+                ${l.ip === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
                 ${isBlk ? '<span class="ip-blocked-badge">bloqueada</span>' : ""}
               </td>
-              <td>${logTs ? formatDate(logTs) : "—"}</td>
-              <td class="ua-cell">${escHtml(logUa || "—")}</td>
+              <td>${l.ts ? formatDate(l.ts) : "—"}</td>
+              <td class="ua-cell">${escHtml(l.ua || "—")}</td>
               <td>${!isBlk
-                ? `<button class="btn sm danger" onclick="blockIP('${logIpHash}')">Bloquear</button>`
-                : `<button class="btn sm success" onclick="unblockIP('${logIpHash}')">Desbloquear</button>`}
+                ? `<button class="btn sm danger" onclick="blockIP('${l.ip}')">Bloquear</button>`
+                : `<button class="btn sm success" onclick="unblockIP('${l.ip}')">Desbloquear</button>`}
               </td>
             </tr>`;
           }).join("")}</tbody>
@@ -1967,13 +1957,13 @@ window.blockIP = async function(ip) {
     "Bloquear", "danger"
   );
   if (!ok) return;
-  await db.from("blocked_ips").insert({ doc_id: ip, data: { reason: "Bloqueado manualmente" } });
+  await setDoc(doc(db, "blocked_ips", ipDocId(ip)), { ip, blockedAt: new Date().toISOString() });
   toast(`IP ${ip} bloqueada`, "error");
   renderSecurityTab();
 };
 
 window.unblockIP = async function(ip) {
-  await db.from("blocked_ips").delete().eq("doc_id", ip);
+  await deleteDoc(doc(db, "blocked_ips", ipDocId(ip)));
   toast(`IP ${ip} desbloqueada`, "success");
   renderSecurityTab();
 };
@@ -1985,7 +1975,8 @@ window.clearOldLogs = async function() {
     "Limpiar", "danger"
   );
   if (!ok) return;
-  await db.from("access_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  const snap = await getDocs(collection(db, "access_logs"));
+  await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
   toast("Registros eliminados", "success");
   renderSecurityTab();
 };
@@ -2009,7 +2000,7 @@ loadRanksConfig()
   })
   .catch(err => {
     const code = err?.code || err?.message || String(err);
-    console.error("Supabase init error:", err);
+    console.error("Firebase init error:", err);
     loadingEl.innerHTML =
-      `<span style="color:var(--red)">Error al conectar con Supabase.<br><small style="opacity:.7">${escHtml(code)}</small><br><small>Abre la consola (F12) para ver más detalles.</small></span>`;
+      `<span style="color:var(--red)">Error al conectar con Firebase.<br><small style="opacity:.7">${escHtml(code)}</small><br><small>Abre la consola (F12) para ver más detalles.</small></span>`;
   });
