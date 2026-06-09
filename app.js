@@ -447,7 +447,8 @@ function show(id) {
     if (el) el.style.display = "none";
   });
   const target = document.getElementById(id);
-  if (target) target.style.display = "block";
+  if (target) target.style.display = id === "scProfile" || id === "scAdmin" ? "flex" : "block";
+  document.body.classList.toggle("dash-mode", id === "scProfile" || id === "scAdmin");
 }
 
 // =====================================================================
