@@ -1290,3 +1290,202 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
 @media (max-width:360px) {
   .home-nav { grid-template-columns: 1fr; }
 }
+
+/* ================================================================
+   DASHBOARD LAYOUTS — Student (3-col) & Admin (2-col)
+   ================================================================ */
+
+/* ── Mobile column switcher tabs ── */
+.mob-tabs {
+  display: none;
+  gap: .4rem;
+  padding: .7rem 1rem .3rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,.3);
+  flex-wrap: wrap;
+}
+.mob-tab {
+  flex: 1;
+  min-width: 80px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-sub);
+  color: var(--text-muted);
+  border-radius: var(--r-sm);
+  padding: .42rem .7rem;
+  font-family: var(--font-b);
+  font-size: .8rem;
+  cursor: pointer;
+  transition: var(--t);
+  text-align: center;
+}
+.mob-tab.mob-active,
+.mob-tab:hover {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+
+/* ── Column base ── */
+.dash-col {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  min-width: 0;
+  overflow: hidden;
+}
+/* mob-col-hidden / mob-col-active only take effect inside the mobile breakpoint */
+
+/* ── Student dashboard (3 columns) ── */
+.student-dash {
+  display: grid;
+  grid-template-columns: 280px 1fr 300px;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.sd-left  { grid-column: 1; }
+.sd-mid   { grid-column: 2; }
+.sd-right { grid-column: 3; }
+
+/* ── Admin dashboard (2 columns) ── */
+.admin-dash {
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.ad-left  { grid-column: 1; }
+.ad-right { grid-column: 2; }
+
+/* Admin left column search box */
+.ad-left .search-admin { margin-bottom: 0; }
+.ad-left #adminListWrap { max-height: calc(100vh - 180px); overflow-y: auto; }
+
+/* Admin right column: tabs always inside */
+.ad-right .admin-tabs {
+  flex-wrap: wrap;
+  gap: .3rem .25rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding: .6rem .6rem .4rem;
+  border-radius: var(--r) var(--r) 0 0;
+  border: 1px solid var(--border-sub);
+  border-bottom: none;
+  margin-bottom: 0;
+}
+.ad-right .admin-section {
+  border-radius: 0 0 var(--r) var(--r);
+  border: 1px solid var(--border-sub);
+  border-top: none;
+  padding: 1rem;
+  min-height: 200px;
+}
+.admin-tab-action {
+  margin-left: auto;
+  font-size: .72rem !important;
+  padding: .3rem .65rem !important;
+}
+
+/* ── Inner tabs (right column of student dash) ── */
+.inner-tabs {
+  display: flex;
+  gap: .3rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-sub);
+  padding-bottom: .4rem;
+  margin-bottom: .6rem;
+}
+.inner-tab {
+  background: none;
+  border: 1px solid var(--border-sub);
+  color: var(--text-muted);
+  border-radius: var(--r-sm);
+  padding: .3rem .65rem;
+  font-family: var(--font-b);
+  font-size: .78rem;
+  cursor: pointer;
+  transition: var(--t);
+}
+.inner-tab.active,
+.inner-tab:hover {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+.inner-tab-content { display: none; }
+.inner-tab-content.it-active,
+.inner-tab-content.show { display: block; }
+
+/* ── Dash card wrapper ── */
+.dash-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r);
+  padding: .9rem 1rem;
+}
+.dash-section-label {
+  font-family: var(--font-h);
+  font-size: .72rem;
+  letter-spacing: .08em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: .5rem;
+}
+.dash-persona-bit-header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .6rem;
+}
+
+/* Small button variant */
+.btn.sm { padding: .28rem .6rem; font-size: .74rem; }
+
+/* ── Responsive: tablet (≤900px) ── */
+@media (max-width: 900px) {
+  .mob-tabs { display: flex; }
+  .mob-col-hidden { display: none !important; }
+  .mob-col-active  { display: flex !important; }
+
+  .student-dash {
+    display: block;
+    padding: .7rem .6rem;
+  }
+  .sd-left, .sd-mid, .sd-right {
+    width: 100%;
+  }
+
+  .admin-dash {
+    display: block;
+    padding: .7rem .6rem;
+  }
+  .ad-left, .ad-right {
+    width: 100%;
+  }
+  .ad-right .admin-tabs {
+    position: static;
+    border-radius: var(--r);
+    border-bottom: 1px solid var(--border-sub);
+  }
+  .ad-right .admin-section {
+    border-radius: var(--r);
+    border: 1px solid var(--border-sub);
+    margin-top: .4rem;
+  }
+  .ad-left #adminListWrap { max-height: 60vh; }
+}
+
+/* ── Responsive: mobile (≤480px) ── */
+@media (max-width: 480px) {
+  .student-dash, .admin-dash { padding: .5rem; }
+  .inner-tabs { gap: .2rem; }
+  .inner-tab { padding: .28rem .5rem; font-size: .74rem; }
+  .admin-tab-action { display: none; }
+}
