@@ -3094,6 +3094,8 @@ async function loadInventory() {
   }
 }
 
+let pendingInventoryChanges = {};
+
 function renderInventory() {
   const q = (document.getElementById("invSearch") || {}).value.toLowerCase() || "";
   const wrap = document.getElementById("inventoryWrap");
@@ -3108,29 +3110,94 @@ function renderInventory() {
     return;
   }
 
-  const cards = filtered.map(p => {
-    const qty = allInventory[p.id] || 0;
-    const quantityClass = qty === 0 ? "inv-qty-empty" : qty < 5 ? "inv-qty-low" : "";
+  const rows = filtered.map(p => {
+    const currentQty = allInventory[p.id] || 0;
+    const pendingQty = pendingInventoryChanges[p.id] !== undefined ? pendingInventoryChanges[p.id] : currentQty;
+    const changed = pendingQty !== currentQty;
+    const quantityClass = pendingQty === 0 ? "inv-qty-empty" : pendingQty < 5 ? "inv-qty-low" : "";
+
     return `
-    <div class="inv-card">
-      <div class="inv-header">
-        <div class="inv-name">${escHtml(p.name)}</div>
-        <div class="inv-category">${escHtml(p.category)}</div>
-      </div>
-      <p class="inv-desc">${escHtml(p.desc)}</p>
-      <div class="inv-controls">
-        <span class="inv-qty ${quantityClass}">Stock: <strong>${qty}</strong></span>
-        <button class="btn sm" onclick="editPotionQuantity('${safeAttr(p.id)}')">✏ Ajustar</button>
-        <button class="btn sm danger" onclick="deletePotionFromInventory('${safeAttr(p.id)}')">🗑 Eliminar</button>
-      </div>
-    </div>`;
+    <tr class="inv-row${changed ? " inv-row-changed" : ""}">
+      <td class="inv-cell-name">${escHtml(p.name)}</td>
+      <td class="inv-cell-cat">${escHtml(p.category)}</td>
+      <td class="inv-cell-qty">
+        <input type="number" min="0" max="9999" value="${pendingQty}"
+               onchange="updatePotionQty('${safeAttr(p.id)}', this.value)"
+               class="inv-input ${quantityClass}"/>
+      </td>
+      <td class="inv-cell-status">${changed ? '<span class="inv-changed">● Cambio</span>' : '<span class="inv-unchanged">Sin cambios</span>'}</td>
+    </tr>`;
   }).join("");
 
-  wrap.innerHTML = `<div class="inv-grid">${cards}</div>`;
+  const html = `
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>Poción</th>
+          <th>Categoría</th>
+          <th>Cantidad</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>`;
+
+  wrap.innerHTML = html;
+
+  // Mostrar botones de guardar si hay cambios
+  const hasChanges = Object.keys(pendingInventoryChanges).length > 0;
+  const actionBtn = document.getElementById("inventoryActions");
+  if (actionBtn) actionBtn.style.display = hasChanges ? "flex" : "none";
 }
 
 window.filterInventory = function() {
   renderInventory();
+};
+
+window.updatePotionQty = function(id, value) {
+  const qty = parseInt(value) || 0;
+  if (qty < 0) {
+    toast("La cantidad no puede ser negativa", "error");
+    renderInventory();
+    return;
+  }
+  pendingInventoryChanges[id] = qty;
+  renderInventory();
+};
+
+window.saveAllInventory = async function() {
+  if (Object.keys(pendingInventoryChanges).length === 0) {
+    toast("No hay cambios para guardar", "info");
+    return;
+  }
+
+  // Aplicar los cambios al inventario
+  Object.assign(allInventory, pendingInventoryChanges);
+
+  try {
+    await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+    toast("Inventario guardado correctamente", "success");
+
+    // Limpiar cambios pendientes
+    pendingInventoryChanges = {};
+    document.getElementById("invOk").style.display = "block";
+    setTimeout(() => document.getElementById("invOk").style.display = "none", 3000);
+
+    renderInventory();
+  } catch (err) {
+    const errMsg = err?.code || err?.message || "desconocido";
+    document.getElementById("invErr").textContent = `Error: ${errMsg}`;
+    document.getElementById("invErr").style.display = "block";
+    toast(`Error al guardar: ${errMsg}`, "error");
+  }
+};
+
+window.reloadInventoryView = function() {
+  pendingInventoryChanges = {};
+  renderInventory();
+  toast("Cambios descartados", "info");
 };
 
 window.showAddPotionModal = function() {

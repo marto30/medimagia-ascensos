@@ -1647,3 +1647,43 @@ button.list-summary-chip:hover { border-color: rgba(201,162,39,.4); transform: t
 }
 .edit-num { color: var(--gold-light); font-weight: 600; white-space: nowrap; }
 .edit-info { color: var(--text-muted); flex: 1; }
+
+/* ─── TABLA DE INVENTARIO EDITABLE ──────────────────────────────── */
+.inv-table {
+  width: 100%; border-collapse: collapse; margin: 1rem 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); overflow: hidden;
+}
+.inv-table thead {
+  background: rgba(201,162,39,.1); border-bottom: 2px solid var(--border);
+}
+.inv-table th {
+  padding: .8rem 1rem; text-align: left; font-weight: 600;
+  color: var(--gold-light); font-size: .9rem; text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.inv-table tbody tr {
+  border-bottom: 1px solid var(--border-sub); transition: background var(--t);
+}
+.inv-table tbody tr:hover { background: rgba(201,162,39,.05); }
+.inv-row-changed { background: rgba(201,162,39,.08); }
+.inv-cell-name { padding: .8rem 1rem; font-weight: 600; color: var(--text); }
+.inv-cell-cat { padding: .8rem 1rem; font-size: .85rem; color: var(--text-muted); }
+.inv-cell-qty { padding: .6rem 1rem; }
+.inv-input {
+  width: 80px; padding: .4rem .6rem; background: var(--bg-input);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  color: var(--text); font-size: .9rem; text-align: center;
+  transition: border var(--t);
+}
+.inv-input:focus {
+  outline: none; border-color: var(--gold); background: rgba(201,162,39,.1);
+}
+.inv-input.inv-qty-empty { border-color: var(--red); color: var(--red); }
+.inv-input.inv-qty-low { border-color: #ffc03d; color: #ffc03d; }
+.inv-cell-status { padding: .8rem 1rem; font-size: .85rem; text-align: center; }
+.inv-changed { color: var(--gold-light); font-weight: 600; }
+.inv-unchanged { color: var(--text-dim); }
+.inventory-actions {
+  display: flex; gap: .8rem; flex-wrap: wrap;
+}

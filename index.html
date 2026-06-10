@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260610l">
+  <link rel="stylesheet" href="styles.css?v=20260610m">
 </head>
 <body>
 <div class="bg"></div>
@@ -368,12 +368,17 @@
 
     <!-- Inventario -->
     <div class="admin-section" id="tabInventory">
-      <p class="notice">Gestiona el <strong>inventario de pociones</strong>. Cada pocima tiene un contador que se resta automáticamente al usarla en una bitácora.</p>
+      <p class="notice">Gestiona el <strong>inventario de pociones</strong>. Edita las cantidades directamente y guarda todos los cambios de una vez.</p>
       <div class="inventory-controls">
         <input type="text" id="invSearch" placeholder="Buscar poción…" maxlength="100" oninput="filterInventory()"/>
-        <button class="btn success" onclick="showAddPotionModal()">➕ Añadir poción</button>
       </div>
       <div id="inventoryWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
+      <div class="inventory-actions" style="margin-top:1.5rem;display:none" id="inventoryActions">
+        <button class="btn success" onclick="saveAllInventory()">💾 Guardar todos los cambios</button>
+        <button class="btn ghost" onclick="reloadInventoryView()">↻ Descartar cambios</button>
+      </div>
+      <p class="ok-msg" id="invOk" style="display:none">✓ Inventario actualizado correctamente</p>
+      <p class="err" id="invErr" style="display:none"></p>
     </div>
 
     <!-- Modal: Añadir poción -->
@@ -605,6 +610,6 @@
 </div>
 
 <datalist id="patientsList"></datalist>
-<script type="module" src="app.js?v=20260610l"></script>
+<script type="module" src="app.js?v=20260610m"></script>
 </body>
 </html>
