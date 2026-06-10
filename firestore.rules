@@ -53,6 +53,13 @@ service cloud.firestore {
         request.resource.data.spells is map;
       allow delete: if false;
     }
+    // Inventario de pociones
+    match /config/inventory {
+      allow read: if true;
+      allow create, update: if request.resource.data is map &&
+        request.resource.data.keys().length <= 1000;
+      allow delete: if false;
+    }
     // Cualquier otro doc de config: solo lectura
     match /config/{other} {
       allow read: if true;
