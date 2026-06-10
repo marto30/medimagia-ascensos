@@ -716,6 +716,12 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
 .attendant-item-me:hover { background: rgba(201,162,39,.12); }
 .attendant-item-me input[type="checkbox"] { cursor: default; opacity: .7; }
 .att-you { font-size: .72rem; color: var(--gold); margin-left: .2rem; }
+/* Asistente marcado: resaltado y fijado al inicio de la lista */
+.attendant-item-sel {
+  background: rgba(201,162,39,.09); border-radius: var(--r-xs);
+  color: var(--text); margin-bottom: .18rem;
+}
+.attendant-item-sel:hover { background: rgba(201,162,39,.15); }
 .bitacora-card {
   background: var(--bg-card);
   border: 1px solid var(--border-sub);

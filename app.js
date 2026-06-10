@@ -589,6 +589,7 @@ function updateAppHeader() {
 function goSearch() {
   loggedInStudent = null;
   clearSession();              // volver al inicio = cerrar sesión
+  selectedAttendants.clear();  // la selección del formulario no debe pasar a otra sesión
   show("scSearch");
   const uEl = document.getElementById("loginUser");
   const pEl = document.getElementById("loginPwd");
@@ -2046,6 +2047,10 @@ window.insertSpellTo = function(targetId, spell) {
 window.insertSpell = function(spell) { insertSpellTo("bitProc", spell); };
 
 // ── Lista de asistentes (de la BD) ───────────────────────────────────
+// La selección vive en memoria (no en el DOM): así no se pierde al filtrar,
+// y los marcados se muestran siempre al principio aunque no coincidan con la búsqueda.
+let selectedAttendants = new Set();
+
 function buildAttendantsList(filterQ = "") {
   const names = Object.keys(allStudents).sort();
   let pinnedHtml = "";
@@ -2055,18 +2060,31 @@ function buildAttendantsList(filterQ = "") {
       ${escHtml(loggedInStudent)} <span class="att-you">• tú</span>
     </label>`;
   }
+  const item = (n, checked) =>
+    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}">
+      <input type="checkbox" class="att-chk" value="${escHtml(n)}" ${checked ? "checked" : ""}
+             onchange="toggleAttendant(this.value, this.checked)"/> ${escHtml(n)}
+    </label>`;
+  // Marcados: siempre visibles, ignoran el filtro
+  const checkedNames = names.filter(n => n !== loggedInStudent && selectedAttendants.has(n));
   const others = names.filter(n =>
-    n !== loggedInStudent && (!filterQ || norm(n).includes(norm(filterQ)))
+    n !== loggedInStudent && !selectedAttendants.has(n) &&
+    (!filterQ || norm(n).includes(norm(filterQ)))
   );
-  if (!others.length && !pinnedHtml)
+  if (!checkedNames.length && !others.length && !pinnedHtml)
     return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
-  const othersHtml = others.map(n =>
-    `<label class="attendant-item">
-      <input type="checkbox" class="att-chk" value="${escHtml(n)}"/> ${escHtml(n)}
-    </label>`
-  ).join("");
-  return pinnedHtml + othersHtml;
+  return pinnedHtml +
+    checkedNames.map(n => item(n, true)).join("") +
+    others.map(n => item(n, false)).join("");
 }
+
+window.toggleAttendant = function(name, checked) {
+  if (checked) selectedAttendants.add(name);
+  else         selectedAttendants.delete(name);
+  // Re-render para que el marcado suba a la zona de "siempre visibles"
+  const q = document.getElementById("attendantSearch").value;
+  document.getElementById("attendantsList").innerHTML = buildAttendantsList(q);
+};
 
 window.filterAttendants = function() {
   const q = document.getElementById("attendantSearch").value;
@@ -2078,6 +2096,7 @@ window.resetBitacoraForm = function() {
     document.getElementById(id).value = "");
   document.getElementById("bitErr").style.display = "none";
   document.getElementById("bitOk").style.display  = "none";
+  selectedAttendants.clear();
   document.getElementById("attendantsList").innerHTML = buildAttendantsList();
 };
 
@@ -2085,7 +2104,8 @@ window.saveBitacoraEntry = async function() {
   const patient    = document.getElementById("bitPatient").value.trim();
   const diagnosis  = document.getElementById("bitDiag").value.trim();
   const procedure  = document.getElementById("bitProc").value.trim();
-  const attendants = [...document.querySelectorAll(".att-chk:checked")].map(c => c.value);
+  // Selección desde memoria: incluye marcados que el filtro de búsqueda oculta
+  const attendants = [...selectedAttendants].filter(n => allStudents[n]);
   if (loggedInStudent && !attendants.includes(loggedInStudent)) attendants.push(loggedInStudent);
   const errEl = document.getElementById("bitErr");
   const okEl  = document.getElementById("bitOk");
@@ -2244,37 +2264,51 @@ window.clearBitacoraSearch = function() {
 };
 
 // ── Edición de bitácoras ──────────────────────────────────────────────
+// Selección en memoria del modal de edición (mismo patrón que el formulario)
+let editSelectedAttendants = new Set();
+
 window.openEditBitacora = function(id) {
   const b = allBitacoras.find(x => x.id === id);
   if (!b) return;
   editingBitacoraId = id;
+  editSelectedAttendants = new Set(b.attendants || []);
   document.getElementById("editBitPatient").value  = b.patient   || "";
   document.getElementById("editBitDiag").value     = b.diagnosis || "";
   document.getElementById("editBitProc").value     = b.procedure || "";
   document.getElementById("editBitErr").style.display    = "none";
   document.getElementById("editAttendantSearch").value   = "";
-  document.getElementById("editAttendantsList").innerHTML = buildEditAttendantsList("", b.attendants || []);
+  document.getElementById("editAttendantsList").innerHTML = buildEditAttendantsList();
   document.getElementById("editSpellInserter").innerHTML  = buildSpellInserter("editBitProc");
   document.getElementById("editBitacoraModal").classList.add("show");
 };
 
-function buildEditAttendantsList(filterQ = "", checked = []) {
+function buildEditAttendantsList(filterQ = "") {
   const names = Object.keys(allStudents).sort();
-  return names
-    .filter(n => !filterQ || norm(n).includes(norm(filterQ)))
-    .map(n => {
-      const isChecked = checked.includes(n);
-      return `<label class="attendant-item${isChecked ? " attendant-item-me" : ""}">
-        <input type="checkbox" class="edit-att-chk" value="${escHtml(n)}" ${isChecked ? "checked" : ""}/>
-        ${escHtml(n)}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
-      </label>`;
-    }).join("");
+  const item = (n, checked) =>
+    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}">
+      <input type="checkbox" class="edit-att-chk" value="${escHtml(n)}" ${checked ? "checked" : ""}
+             onchange="toggleEditAttendant(this.value, this.checked)"/>
+      ${escHtml(n)}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
+    </label>`;
+  // Marcados siempre visibles arriba; el resto respeta el filtro de búsqueda
+  const checkedNames = names.filter(n => editSelectedAttendants.has(n));
+  const others = names.filter(n =>
+    !editSelectedAttendants.has(n) && (!filterQ || norm(n).includes(norm(filterQ)))
+  );
+  return checkedNames.map(n => item(n, true)).join("") +
+         others.map(n => item(n, false)).join("");
 }
 
+window.toggleEditAttendant = function(name, checked) {
+  if (checked) editSelectedAttendants.add(name);
+  else         editSelectedAttendants.delete(name);
+  document.getElementById("editAttendantsList").innerHTML =
+    buildEditAttendantsList(document.getElementById("editAttendantSearch").value);
+};
+
 window.filterEditAttendants = function() {
-  const q       = document.getElementById("editAttendantSearch").value;
-  const checked = [...document.querySelectorAll(".edit-att-chk:checked")].map(c => c.value);
-  document.getElementById("editAttendantsList").innerHTML = buildEditAttendantsList(q, checked);
+  document.getElementById("editAttendantsList").innerHTML =
+    buildEditAttendantsList(document.getElementById("editAttendantSearch").value);
 };
 
 window.cancelEditBitacora = function() {
@@ -2286,7 +2320,8 @@ window.saveEditBitacora = async function() {
   const patient   = document.getElementById("editBitPatient").value.trim();
   const diagnosis = document.getElementById("editBitDiag").value.trim();
   const procedure = document.getElementById("editBitProc").value.trim();
-  const attendants = [...document.querySelectorAll(".edit-att-chk:checked")].map(c => c.value);
+  // Selección desde memoria: incluye marcados ocultos por el filtro de búsqueda
+  const attendants = [...editSelectedAttendants].filter(n => allStudents[n]);
   const errEl = document.getElementById("editBitErr");
   errEl.style.display = "none";
 
