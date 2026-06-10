@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260610i">
+  <link rel="stylesheet" href="styles.css?v=20260610j">
 </head>
 <body>
 <div class="bg"></div>
@@ -130,6 +130,16 @@
         <input type="text" id="attendantSearch" class="attendant-search"
                placeholder="Buscar medimago…" maxlength="80" oninput="filterAttendantsD()"/>
         <div class="attendants-list" id="attendantsList"></div>
+      </div>
+
+      <div class="field">
+        <label>Pociones usadas
+          <span style="font-size:.74rem;color:#4a4540">(opcional)</span>
+        </label>
+        <button class="btn-potion-selector" onclick="showPotionSelectorModal()">
+          🧪 Seleccionar pociones
+        </button>
+        <div class="potions-selected" id="potionsSelected"></div>
       </div>
 
       <div class="btn-row">
@@ -520,11 +530,59 @@
         <div class="attendants-list" id="editAttendantsList"></div>
       </div>
 
+      <div class="field">
+        <label>Pociones usadas
+          <span style="font-size:.74rem;color:#4a4540">(opcional)</span>
+        </label>
+        <button class="btn-potion-selector" onclick="showEditPotionSelectorModal()">
+          🧪 Seleccionar pociones
+        </button>
+        <div class="potions-selected" id="editPotionsSelected"></div>
+      </div>
+
       <p class="err" id="editBitErr"></p>
 
       <div class="modal-actions" style="margin-top:1rem">
         <button class="btn ghost sm" onclick="cancelEditBitacora()">Cancelar</button>
         <button class="btn sm success" onclick="saveEditBitacora()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Seleccionar pociones para bitácora -->
+  <div class="modal-overlay" id="potionSelectorModal">
+    <div class="modal edit-bitacora-modal" style="max-width:600px;max-height:80vh;overflow-y:auto">
+      <div class="modal-title">Seleccionar pociones usadas</div>
+
+      <div style="margin-bottom:1rem">
+        <input type="text" id="potionSelectorSearch" placeholder="Buscar poción…" maxlength="100"
+               oninput="filterPotionSelector()" style="width:100%;padding:.6rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:.9rem"/>
+      </div>
+
+      <div id="potionSelectorList" style="margin-bottom:1rem"></div>
+
+      <div class="modal-actions" style="margin-top:1.2rem">
+        <button class="btn ghost sm" onclick="closePotionSelectorModal()">Cancelar</button>
+        <button class="btn sm success" onclick="confirmPotionSelection()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Seleccionar pociones para editar bitácora -->
+  <div class="modal-overlay" id="editPotionSelectorModal">
+    <div class="modal edit-bitacora-modal" style="max-width:600px;max-height:80vh;overflow-y:auto">
+      <div class="modal-title">Seleccionar pociones usadas</div>
+
+      <div style="margin-bottom:1rem">
+        <input type="text" id="editPotionSelectorSearch" placeholder="Buscar poción…" maxlength="100"
+               oninput="filterEditPotionSelector()" style="width:100%;padding:.6rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:.9rem"/>
+      </div>
+
+      <div id="editPotionSelectorList" style="margin-bottom:1rem"></div>
+
+      <div class="modal-actions" style="margin-top:1.2rem">
+        <button class="btn ghost sm" onclick="closeEditPotionSelectorModal()">Cancelar</button>
+        <button class="btn sm success" onclick="confirmEditPotionSelection()">Confirmar</button>
       </div>
     </div>
   </div>
@@ -547,6 +605,6 @@
 </div>
 
 <datalist id="patientsList"></datalist>
-<script type="module" src="app.js?v=20260610i"></script>
+<script type="module" src="app.js?v=20260610j"></script>
 </body>
 </html>

@@ -82,7 +82,10 @@ service cloud.firestore {
         request.resource.data.attendants is list &&
         request.resource.data.attendants.size() >= 1 &&
         request.resource.data.attendants.size() <= 40 &&
-        optStr(request.resource.data, 'createdAt', 40);
+        optStr(request.resource.data, 'createdAt', 40) &&
+        (!('potionsUsed' in request.resource.data) ||
+          (request.resource.data.potionsUsed is list &&
+           request.resource.data.potionsUsed.size() <= 50));
       allow delete: if true;
     }
 

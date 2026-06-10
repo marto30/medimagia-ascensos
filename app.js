@@ -2148,7 +2148,9 @@ window.resetBitacoraForm = function() {
   document.getElementById("bitErr").style.display = "none";
   document.getElementById("bitOk").style.display  = "none";
   selectedAttendants.clear();
+  selectedPotions.clear();
   document.getElementById("attendantsList").innerHTML = buildAttendantsList();
+  document.getElementById("potionsSelected").innerHTML = "";
 };
 
 window.saveBitacoraEntry = async function() {
@@ -2158,6 +2160,7 @@ window.saveBitacoraEntry = async function() {
   // Selección desde memoria: incluye marcados que el filtro de búsqueda oculta
   const attendants = [...selectedAttendants].filter(n => allStudents[n]);
   if (loggedInStudent && !attendants.includes(loggedInStudent)) attendants.push(loggedInStudent);
+  const potionsUsed = [...selectedPotions];
   const errEl = document.getElementById("bitErr");
   const okEl  = document.getElementById("bitOk");
   errEl.style.display = "none"; okEl.style.display = "none";
@@ -2172,15 +2175,36 @@ window.saveBitacoraEntry = async function() {
   }
 
   const entry = { patient, diagnosis, procedure, attendants, createdAt: new Date().toISOString() };
-  const ref = await addDoc(collection(db, "bitacoras"), entry);
-  allBitacoras.unshift({ id: ref.id, ...entry });
-  bitacorasPage = 0;
-  toast("Bitácora guardada", "success");
-  okEl.style.display = "block";
-  setTimeout(() => okEl.style.display = "none", 2500);
-  resetBitacoraForm();
-  updatePatientDatalist();
-  renderBitacoraList();
+  if (potionsUsed.length) entry.potionsUsed = potionsUsed;
+
+  try {
+    const ref = await addDoc(collection(db, "bitacoras"), entry);
+    allBitacoras.unshift({ id: ref.id, ...entry });
+
+    // Restar pociones del inventario
+    if (potionsUsed.length) {
+      for (const potionId of potionsUsed) {
+        if (allInventory[potionId]) {
+          allInventory[potionId] = Math.max(0, allInventory[potionId] - 1);
+        }
+      }
+      try {
+        await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+      } catch (invErr) {
+        console.error("Error actualizando inventario:", invErr);
+      }
+    }
+
+    bitacorasPage = 0;
+    toast("Bitácora guardada", "success");
+    okEl.style.display = "block";
+    setTimeout(() => okEl.style.display = "none", 2500);
+    resetBitacoraForm();
+    updatePatientDatalist();
+    renderBitacoraList();
+  } catch (err) {
+    toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
+  }
 };
 
 window.deleteBitacora = async function(id) {
@@ -2323,6 +2347,7 @@ window.openEditBitacora = function(id) {
   if (!b) return;
   editingBitacoraId = id;
   editSelectedAttendants = new Set(b.attendants || []);
+  editSelectedPotions = new Set(b.potionsUsed || []);
   document.getElementById("editBitPatient").value  = b.patient   || "";
   document.getElementById("editBitDiag").value     = b.diagnosis || "";
   document.getElementById("editBitProc").value     = b.procedure || "";
@@ -2330,6 +2355,7 @@ window.openEditBitacora = function(id) {
   document.getElementById("editAttendantSearch").value   = "";
   document.getElementById("editAttendantsList").innerHTML = buildEditAttendantsList();
   document.getElementById("editSpellInserter").innerHTML  = buildSpellInserter("editBitProc");
+  renderEditSelectedPotions();
   document.getElementById("editBitacoraModal").classList.add("show");
 };
 
@@ -2373,6 +2399,7 @@ window.saveEditBitacora = async function() {
   const procedure = document.getElementById("editBitProc").value.trim();
   // Selección desde memoria: incluye marcados ocultos por el filtro de búsqueda
   const attendants = [...editSelectedAttendants].filter(n => allStudents[n]);
+  const potionsUsed = [...editSelectedPotions];
   const errEl = document.getElementById("editBitErr");
   errEl.style.display = "none";
 
@@ -2385,14 +2412,52 @@ window.saveEditBitacora = async function() {
     errEl.style.display = "block"; return;
   }
 
-  await updateDoc(doc(db, "bitacoras", editingBitacoraId), { patient, diagnosis, procedure, attendants });
-  const idx = allBitacoras.findIndex(x => x.id === editingBitacoraId);
-  if (idx >= 0) Object.assign(allBitacoras[idx], { patient, diagnosis, procedure, attendants });
+  try {
+    const updateData = { patient, diagnosis, procedure, attendants };
+    if (potionsUsed.length) updateData.potionsUsed = potionsUsed;
+    else updateData.potionsUsed = [];
 
-  cancelEditBitacora();
-  toast("Bitácora actualizada", "success");
-  updatePatientDatalist();
-  renderBitacoraList();
+    await updateDoc(doc(db, "bitacoras", editingBitacoraId), updateData);
+    const idx = allBitacoras.findIndex(x => x.id === editingBitacoraId);
+    if (idx >= 0) Object.assign(allBitacoras[idx], updateData);
+
+    // Ajustar inventario si hay cambios en pociones
+    const oldPotions = (allBitacoras[idx]?.potionsUsed || []);
+    const newPotions = potionsUsed;
+    const oldSet = new Set(oldPotions);
+    const newSet = new Set(newPotions);
+
+    // Devolver al inventario las pociones que se quitaron
+    for (const potionId of oldSet) {
+      if (!newSet.has(potionId) && allInventory[potionId] !== undefined) {
+        allInventory[potionId]++;
+      }
+    }
+    // Restar las pociones nuevas que se agregaron
+    for (const potionId of newSet) {
+      if (!oldSet.has(potionId)) {
+        if (allInventory[potionId]) {
+          allInventory[potionId] = Math.max(0, allInventory[potionId] - 1);
+        }
+      }
+    }
+
+    // Guardar cambios del inventario
+    if (oldSet.size || newSet.size) {
+      try {
+        await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+      } catch (invErr) {
+        console.error("Error actualizando inventario:", invErr);
+      }
+    }
+
+    cancelEditBitacora();
+    toast("Bitácora actualizada", "success");
+    updatePatientDatalist();
+    renderBitacoraList();
+  } catch (err) {
+    toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
+  }
 };
 
 // =====================================================================
@@ -3125,4 +3190,157 @@ window.deletePotionFromInventory = async function(id) {
   } catch (err) {
     toast(`Error: ${err?.message || "desconocido"}`, "error");
   }
+};
+
+// =====================================================================
+//  POCIONES EN BITÁCORAS — Selección y deducción automática
+// =====================================================================
+let selectedPotions = new Set();           // para crear bitácora
+let editSelectedPotions = new Set();       // para editar bitácora
+let potionSelectorMode = "create";         // "create" o "edit"
+
+window.showPotionSelectorModal = function() {
+  selectedPotions = new Set();
+  potionSelectorMode = "create";
+  renderPotionSelectorList("");
+  document.getElementById("potionSelectorSearch").value = "";
+  document.getElementById("potionSelectorModal").classList.add("show");
+};
+
+window.closePotionSelectorModal = function() {
+  document.getElementById("potionSelectorModal").classList.remove("show");
+};
+
+window.showEditPotionSelectorModal = function() {
+  editSelectedPotions = new Set();
+  potionSelectorMode = "edit";
+  renderEditPotionSelectorList("");
+  document.getElementById("editPotionSelectorSearch").value = "";
+  document.getElementById("editPotionSelectorModal").classList.add("show");
+};
+
+window.closeEditPotionSelectorModal = function() {
+  document.getElementById("editPotionSelectorModal").classList.remove("show");
+};
+
+function renderPotionSelectorList(filterQ = "") {
+  const q = filterQ.toLowerCase();
+  const filtered = POTIONS_CATALOG.filter(p =>
+    p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+  );
+
+  const items = filtered.map(p => {
+    const checked = selectedPotions.has(p.id) ? "checked" : "";
+    return `
+    <label class="potion-selector-item">
+      <input type="checkbox" ${checked} onchange="togglePotion('${safeAttr(p.id)}', this.checked)"/>
+      <div class="potion-selector-info">
+        <div class="potion-selector-name">${escHtml(p.name)}</div>
+        <div class="potion-selector-cat">${escHtml(p.category)}</div>
+      </div>
+    </label>`;
+  }).join("");
+
+  document.getElementById("potionSelectorList").innerHTML = items || '<p class="empty-state">Sin resultados</p>';
+}
+
+function renderEditPotionSelectorList(filterQ = "") {
+  const q = filterQ.toLowerCase();
+  const filtered = POTIONS_CATALOG.filter(p =>
+    p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+  );
+
+  const items = filtered.map(p => {
+    const checked = editSelectedPotions.has(p.id) ? "checked" : "";
+    return `
+    <label class="potion-selector-item">
+      <input type="checkbox" ${checked} onchange="toggleEditPotion('${safeAttr(p.id)}', this.checked)"/>
+      <div class="potion-selector-info">
+        <div class="potion-selector-name">${escHtml(p.name)}</div>
+        <div class="potion-selector-cat">${escHtml(p.category)}</div>
+      </div>
+    </label>`;
+  }).join("");
+
+  document.getElementById("editPotionSelectorList").innerHTML = items || '<p class="empty-state">Sin resultados</p>';
+}
+
+window.togglePotion = function(id, checked) {
+  if (checked) selectedPotions.add(id);
+  else         selectedPotions.delete(id);
+  renderPotionSelectorList(document.getElementById("potionSelectorSearch").value);
+};
+
+window.toggleEditPotion = function(id, checked) {
+  if (checked) editSelectedPotions.add(id);
+  else         editSelectedPotions.delete(id);
+  renderEditPotionSelectorList(document.getElementById("editPotionSelectorSearch").value);
+};
+
+window.filterPotionSelector = function() {
+  renderPotionSelectorList(document.getElementById("potionSelectorSearch").value);
+};
+
+window.filterEditPotionSelector = function() {
+  renderEditPotionSelectorList(document.getElementById("editPotionSelectorSearch").value);
+};
+
+window.confirmPotionSelection = function() {
+  closePotionSelectorModal();
+  renderSelectedPotions();
+};
+
+window.confirmEditPotionSelection = function() {
+  closeEditPotionSelectorModal();
+  renderEditSelectedPotions();
+};
+
+function renderSelectedPotions() {
+  const wrap = document.getElementById("potionsSelected");
+  if (!selectedPotions.size) {
+    wrap.innerHTML = "";
+    return;
+  }
+  const potions = Array.from(selectedPotions)
+    .map(id => POTIONS_CATALOG.find(p => p.id === id))
+    .filter(p => p);
+
+  const tags = potions.map(p =>
+    `<span class="potion-tag">
+      🧪 ${escHtml(p.name)}
+      <button type="button" onclick="removeSelectedPotion('${safeAttr(p.id)}')">✕</button>
+    </span>`
+  ).join("");
+
+  wrap.innerHTML = tags;
+}
+
+function renderEditSelectedPotions() {
+  const wrap = document.getElementById("editPotionsSelected");
+  if (!editSelectedPotions.size) {
+    wrap.innerHTML = "";
+    return;
+  }
+  const potions = Array.from(editSelectedPotions)
+    .map(id => POTIONS_CATALOG.find(p => p.id === id))
+    .filter(p => p);
+
+  const tags = potions.map(p =>
+    `<span class="potion-tag">
+      🧪 ${escHtml(p.name)}
+      <button type="button" onclick="removeEditSelectedPotion('${safeAttr(p.id)}')">✕</button>
+    </span>`
+  ).join("");
+
+  wrap.innerHTML = tags;
+}
+
+window.removeSelectedPotion = function(id) {
+  selectedPotions.delete(id);
+  renderSelectedPotions();
+};
+
+window.removeEditSelectedPotion = function(id) {
+  editSelectedPotions.delete(id);
+  renderEditSelectedPotions();
 };
