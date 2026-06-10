@@ -1637,3 +1637,13 @@ button.list-summary-chip:hover { border-color: rgba(201,162,39,.4); transform: t
 .potion-selector-info { flex: 1; }
 .potion-selector-name { font-size: .95rem; color: var(--text); font-weight: 600; }
 .potion-selector-cat { font-size: .75rem; color: var(--text-dim); margin-top: .2rem; }
+
+/* ─── HISTORIAL DE EDICIONES EN BITÁCORAS ────────────────────────── */
+.bitacora-edits { display: flex; flex-direction: column; gap: .5rem; }
+.bitacora-edit-entry {
+  display: flex; gap: .8rem; font-size: .85rem;
+  padding: .4rem .6rem; background: rgba(201,162,39,.08);
+  border-left: 3px solid var(--gold); border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.edit-num { color: var(--gold-light); font-weight: 600; white-space: nowrap; }
+.edit-info { color: var(--text-muted); flex: 1; }

@@ -2169,8 +2169,16 @@ window.saveBitacoraEntry = async function() {
     errEl.style.display = "block"; return;
   }
 
-  const entry = { patient, diagnosis, procedure, attendants, createdAt: new Date().toISOString() };
-  if (potionsUsed.length) entry.potionsUsed = potionsUsed;
+  const now = new Date().toISOString();
+  const entry = {
+    patient, diagnosis, procedure, attendants, potionsUsed,
+    createdAt: now,
+    createdBy: loggedInStudent || "Sistema",
+    editHistory: [
+      { editor: loggedInStudent || "Sistema", editedAt: now, editNumber: 1 }
+    ]
+  };
+  if (!potionsUsed.length) delete entry.potionsUsed;
 
   try {
     const ref = await addDoc(collection(db, "bitacoras"), entry);
@@ -2274,6 +2282,19 @@ function renderBitacoraList() {
         <div class="bitacora-attendants">${(b.attendants || []).map(a =>
           `<span class="att-badge">${escHtml(a)}</span>`).join("")}</div>
       </div>
+      ${b.editHistory && b.editHistory.length > 0 ? `
+      <div class="bitacora-field">
+        <span class="bitacora-label">Ediciones</span>
+        <div class="bitacora-edits">
+          ${b.editHistory.map((edit, idx) => `
+            <div class="bitacora-edit-entry">
+              <span class="edit-num">Edición ${edit.editNumber}:</span>
+              <span class="edit-info">${escHtml(edit.editor)} · ${formatDate(edit.editedAt)}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      ` : ""}
     </div>`;
   }).join("");
 
@@ -2408,12 +2429,22 @@ window.saveEditBitacora = async function() {
   }
 
   try {
+    const now = new Date().toISOString();
+    const idx = allBitacoras.findIndex(x => x.id === editingBitacoraId);
+    const existingHistory = allBitacoras[idx]?.editHistory || [];
+    const newEditNumber = existingHistory.length + 1;
+
     const updateData = { patient, diagnosis, procedure, attendants };
     if (potionsUsed.length) updateData.potionsUsed = potionsUsed;
     else updateData.potionsUsed = [];
 
+    // Agregar entrada al historial de ediciones
+    updateData.editHistory = [
+      ...existingHistory,
+      { editor: loggedInStudent || "Sistema", editedAt: now, editNumber: newEditNumber }
+    ];
+
     await updateDoc(doc(db, "bitacoras", editingBitacoraId), updateData);
-    const idx = allBitacoras.findIndex(x => x.id === editingBitacoraId);
     if (idx >= 0) Object.assign(allBitacoras[idx], updateData);
 
     // Ajustar inventario si hay cambios en pociones
@@ -2637,6 +2668,19 @@ function renderPersonaBitacoras() {
         <div class="bitacora-attendants">${(b.attendants || []).map(a =>
           `<span class="att-badge">${escHtml(a)}</span>`).join("")}</div>
       </div>
+      ${b.editHistory && b.editHistory.length > 0 ? `
+      <div class="bitacora-field">
+        <span class="bitacora-label">Ediciones</span>
+        <div class="bitacora-edits">
+          ${b.editHistory.map((edit, idx) => `
+            <div class="bitacora-edit-entry">
+              <span class="edit-num">Edición ${edit.editNumber}:</span>
+              <span class="edit-info">${escHtml(edit.editor)} · ${formatDate(edit.editedAt)}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      ` : ""}
     </div>`;
   }).join("");
 

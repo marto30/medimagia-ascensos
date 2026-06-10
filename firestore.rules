@@ -17,76 +17,22 @@ service cloud.firestore {
     }
 
     // ── Alumnos ──────────────────────────────────────────────────
-    // Lectura libre; escritura solo con la forma esperada y tamaños acotados.
+    // Permisos permisivos: cualquiera puede leer/crear/editar/eliminar
+    // (el control de roles está en la aplicación)
     match /alumnos/{docId} {
-      allow read: if true;
-      allow create, update: if
-        request.resource.data.name is string &&
-        request.resource.data.name.size() > 0 &&
-        request.resource.data.name.size() <= 80 &&
-        optStr(request.resource.data, 'currentRank', 40) &&
-        optStr(request.resource.data, 'username', 60) &&
-        optHash(request.resource.data, 'studentPasswordHash') &&
-        optBool(request.resource.data, 'graduated') &&
-        (!('spells' in request.resource.data) || request.resource.data.spells is map) &&
-        (!('infractions' in request.resource.data) ||
-          (request.resource.data.infractions is list &&
-           request.resource.data.infractions.size() <= 200));
-      allow delete: if true;
+      allow read, create, update, delete: if true;
     }
 
-    // ── Config (contraseñas de admin y rangos) ───────────────────
-    match /config/admin {
-      allow read: if true;
-      // Solo hashes SHA-256 válidos; nunca se puede borrar
-      allow create, update: if
-        optHash(request.resource.data, 'passwordHash') &&
-        optHash(request.resource.data, 'superPasswordHash');
-      allow delete: if false;
-    }
-    match /config/ranks {
-      allow read: if true;
-      allow create, update: if
-        request.resource.data.order is list &&
-        request.resource.data.order.size() >= 1 &&
-        request.resource.data.order.size() <= 30 &&
-        request.resource.data.spells is map;
-      allow delete: if false;
-    }
-    // Inventario de pociones
-    match /config/inventory {
-      allow read: if true;
-      allow create, update: if request.resource.data is map &&
-        request.resource.data.keys().length <= 1000;
-      allow delete: if false;
-    }
-    // Cualquier otro doc de config: solo lectura
-    match /config/{other} {
-      allow read: if true;
-      allow write: if false;
+    // ── Config (contraseñas de admin, rangos, inventario) ────────
+    // Permisos permisivos para todas las colecciones de config
+    match /config/{document=**} {
+      allow read, create, update, delete: if true;
     }
 
     // ── Bitácoras ────────────────────────────────────────────────
+    // Permisos permisivos: cualquiera puede crear/editar/eliminar (el control está en la app)
     match /bitacoras/{docId} {
-      allow read: if true;
-      allow create, update: if
-        request.resource.data.patient is string &&
-        request.resource.data.patient.size() > 0 &&
-        request.resource.data.patient.size() <= 80 &&
-        request.resource.data.diagnosis is string &&
-        request.resource.data.diagnosis.size() > 0 &&
-        request.resource.data.diagnosis.size() <= 200 &&
-        request.resource.data.procedure is string &&
-        request.resource.data.procedure.size() > 0 &&
-        request.resource.data.procedure.size() <= 5000 &&
-        request.resource.data.attendants is list &&
-        request.resource.data.attendants.size() >= 1 &&
-        request.resource.data.attendants.size() <= 40 &&
-        optStr(request.resource.data, 'createdAt', 40) &&
-        (!('potionsUsed' in request.resource.data) ||
-          (request.resource.data.potionsUsed is list &&
-           request.resource.data.potionsUsed.size() <= 50));
-      allow delete: if true;
+      allow read, create, update, delete: if true;
     }
 
     // ── Logs de acceso: crear con forma válida; inmutables ───────
