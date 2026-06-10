@@ -289,6 +289,44 @@ let loggedInStudent = null;
 let adminPwdHash   = null;
 let superAdminHash = null;
 let visitorIP      = null;
+let allInventory   = {};   // potion_id → { name, category, quantity }
+
+// Catálogo completo de pociones
+const POTIONS_CATALOG = [
+  { id: "pocion_pimentonica", name: "Poción Pimentónica", category: "Pociones", desc: "Tratar fiebres, gripes, pérdidas de temperatura corporal (el paciente entra en calor y emite vapor por las orejas)." },
+  { id: "pocion_purgante", name: "Poción Purgante", category: "Pociones", desc: "Tratar intoxicaciones o envenenamiento (por ejemplo, estomacales)." },
+  { id: "pocion_hipotusiva", name: "Poción Hipotusiva", category: "Pociones", desc: "Tratar episodios de ataques de hipo y tos." },
+  { id: "pocion_despertare", name: "Poción Despertare", category: "Pociones", desc: "Despertar pacientes inconscientes/dormidos (se inhala)." },
+  { id: "pocion_herbovitalizante", name: "Poción Herbovitalizante", category: "Pociones", desc: "Tratar heridas leves (como cortes o abrasiones), reconstituyente/energizante." },
+  { id: "pocion_reabastecedora", name: "Poción Reabastecedora de Sangre", category: "Pociones", desc: "Tratar pérdidas de sangre significativas en el paciente." },
+  { id: "pocion_crecehuesos", name: "Poción Crecehuesos", category: "Pociones", desc: "Tratar huesos con fracturas moderadas y graves." },
+  { id: "pocion_antiparalis", name: "Poción antiparálisis", category: "Pociones", desc: "Elimina y cura los efectos de la parálisis." },
+  { id: "pocion_conciencia", name: "Poción restauradora de la conciencia", category: "Pociones", desc: "Restaura la conciencia de uno." },
+  { id: "pocion_foruniculos", name: "Poción curadora de forúnculos", category: "Pociones", desc: "Sencilla poción para curar forúnculos." },
+  { id: "pocion_crisopea", name: "Poción para revertir la crisopea", category: "Pociones", desc: "Revierte los efectos de la Crisopea." },
+  { id: "pocima_dormir", name: "Pócima para dormir", category: "Pociones", desc: "Permite que al consumidor concilie el sueño de forma instantánea." },
+  { id: "pocion_laxante", name: "Poción laxante", category: "Pociones", desc: "Una poción que más bien se parece a un laxante." },
+  { id: "pocion_sueño_tranquilo", name: "Poción de sueño sin sueños", category: "Pociones", desc: "Una poción que induce el sueño y evita que se tengan pesadillas." },
+  { id: "pocion_tos", name: "Poción para la tos", category: "Pociones", desc: "Es una poción que cura la irritación de la garganta." },
+  { id: "filtro_paz", name: "Filtro de Paz", category: "Filtros", desc: "Tratar la ansiedad y el nerviosismo, generando un sentimiento de paz." },
+  { id: "filtro_mandrágora", name: "Filtro restaurativo de mandrágora", category: "Filtros", desc: "Devuelve la movilidad a aquellos que han sido petrificados." },
+  { id: "esencia_dictamo", name: "Esencia de díctamo", category: "Esencias", desc: "Tratar heridas abiertas, externas e internas, leves y graves. Rara vez dejan cicatriz." },
+  { id: "esencia_murtlap", name: "Esencia de Murtlap", category: "Esencias", desc: "Tratar cortes y abrasiones. Puede calmar el dolor." },
+  { id: "ungüento_quemaduras", name: "Ungüento para quemaduras", category: "Ungüentos", desc: "Tratar quemaduras de primer a tercer grado." },
+  { id: "ungüento_desinfectante", name: "Ungüento desinfectante", category: "Ungüentos", desc: "Desinfectar cualquier tipo de herida." },
+  { id: "antidoto_venenos", name: "Antídoto para venenos comunes", category: "Antídotos", desc: "Tratar envenenamientos comunes (plantas, pociones, ciertas criaturas)." },
+  { id: "antidoto_acromántula", name: "Antídoto para veneno de acromántula", category: "Antídotos", desc: "Tratar envenenamientos por mordeduras o ácido de acromántula." },
+  { id: "antidoto_comezón", name: "Antídoto contra la comezón bucal", category: "Antídotos", desc: "Una poción con el poder de curar la picazón en la boca." },
+  { id: "antidoto_billywig", name: "Antídoto para las picaduras de billywig", category: "Antídotos", desc: "Contrarresta los efectos de la picadura de un billywig." },
+  { id: "balsamo_raiz", name: "Bálsamo de raíz amarga ardiente", category: "Bálsamos", desc: "Posiblemente un tipo de bálsamo tranquilizador cuyo ingrediente principal es la raíz amarga." },
+  { id: "balsamo_asclepias", name: "Bálsamo de Asclepias tuberosa", category: "Bálsamos", desc: "Un bálsamo usada para aliviar el dolor." },
+  { id: "emplasto_plata", name: "Emplasto de polvo de plata y de díctamo", category: "Emplastos", desc: "Se usa para curar las mordeduras y garrazos producidas por hombres lobos." },
+  { id: "solucion_cabeza", name: "Solución para el dolor de cabeza", category: "Soluciones", desc: "Tratar dolores de cabeza leves y moderados, indistintamente de su origen mágico o no." },
+  { id: "solucion_limpiadora", name: "Solución limpiadora", category: "Soluciones", desc: "Pociones diseñadas para propósitos de limpieza." },
+  { id: "bezoar", name: "Bezoar", category: "Otros", desc: "Tratar intoxicaciones y envenenamientos leves." },
+  { id: "chocolate", name: "Chocolate", category: "Otros", desc: "Se usa para calmar algunas situaciones o para endulzar la vida." },
+  { id: "piruletas", name: "Piruletas", category: "Otros", desc: "Ayuda a los mas pequeños a estar bien después de una intervención." }
+];
 
 async function loadAdminConfig() {
   try {
@@ -618,7 +656,12 @@ window.backFromProfile = async function() {
     );
     if (!ok) return;
   }
-  if (isAdmin) { show("scAdmin"); renderList(); renderAscensos(); }
+  if (isAdmin) {
+    show("scAdmin");
+    renderList();
+    renderAscensos();
+    loadInventory().catch(() => {});
+  }
   else { loggedInStudent = null; goSearch(); }
 };
 
@@ -1127,7 +1170,15 @@ window.showTab = function(id) {
   const btn = document.querySelector(`.tab[data-tab="${id}"]`);
   if (btn) btn.className += " active";
   if (id === "tabList")      renderList();
-  if (id === "tabAscensos")  renderAscensos();
+  if (id === "tabAscensos") {
+    // Ensure bitácoras are loaded before rendering, so stats are available
+    if (!bitacorasLoaded) {
+      loadBitacoras().then(() => { bitacorasLoaded = true; renderAscensos(); }).catch(() => renderAscensos());
+    } else {
+      renderAscensos();
+    }
+  }
+  if (id === "tabInventory") renderInventory();
   if (id === "tabStats")     renderStats();
   if (id === "tabDirectory") renderDirectoryIn("adminDirectoryContent");
   if (id === "tabActivity")  renderPocaActividad();
@@ -1531,8 +1582,8 @@ window.adminAscend = async function(name) {
     ? ` Ten en cuenta que a este alumno le faltan ${missing} hechizos del rango actual — este ascenso es manual y se salta el requisito.`
     : "";
   const ok = await showModal(
-    `Ascender a ${name}`,
-    `¿Confirmas el ascenso de ${escHtml(name)} de ${rk} a ${nextRank}?${extra}`,
+    `Ascender a ${escHtml(name)}`,
+    `¿Confirmas el ascenso de ${escHtml(name)} de ${escHtml(rk)} a ${escHtml(nextRank)}?${extra}`,
     "Ascender", "success"
   );
   if (!ok) return;
@@ -2920,3 +2971,158 @@ loadRanksConfig()
     loadingEl.innerHTML =
       `<span style="color:var(--red)">Error al conectar con Firebase.<br><small style="opacity:.7">${escHtml(code)}</small><br><small>Abre la consola (F12) para ver más detalles.</small></span>`;
   });
+
+// =====================================================================
+//  INVENTARIO DE POCIONES
+// =====================================================================
+async function loadInventory() {
+  try {
+    const ref = doc(db, "config", "inventory");
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      allInventory = snap.data() || {};
+    } else {
+      allInventory = {};
+    }
+  } catch (err) {
+    console.error("Error cargando inventario:", err);
+    allInventory = {};
+  }
+}
+
+function renderInventory() {
+  const q = (document.getElementById("invSearch") || {}).value.toLowerCase() || "";
+  const wrap = document.getElementById("inventoryWrap");
+  if (!wrap) return;
+
+  const filtered = POTIONS_CATALOG.filter(p =>
+    p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+  );
+
+  if (!filtered.length) {
+    wrap.innerHTML = '<p class="empty-state">No hay pociones que coincidan con la búsqueda.</p>';
+    return;
+  }
+
+  const cards = filtered.map(p => {
+    const qty = allInventory[p.id] || 0;
+    const quantityClass = qty === 0 ? "inv-qty-empty" : qty < 5 ? "inv-qty-low" : "";
+    return `
+    <div class="inv-card">
+      <div class="inv-header">
+        <div class="inv-name">${escHtml(p.name)}</div>
+        <div class="inv-category">${escHtml(p.category)}</div>
+      </div>
+      <p class="inv-desc">${escHtml(p.desc)}</p>
+      <div class="inv-controls">
+        <span class="inv-qty ${quantityClass}">Stock: <strong>${qty}</strong></span>
+        <button class="btn sm" onclick="editPotionQuantity('${safeAttr(p.id)}')">✏ Ajustar</button>
+        <button class="btn sm danger" onclick="deletePotionFromInventory('${safeAttr(p.id)}')">🗑 Eliminar</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  wrap.innerHTML = `<div class="inv-grid">${cards}</div>`;
+}
+
+window.filterInventory = function() {
+  renderInventory();
+};
+
+window.showAddPotionModal = function() {
+  const select = document.getElementById("potionSelect");
+  select.innerHTML = '<option value="">-- Seleccionar --</option>' +
+    POTIONS_CATALOG.map(p => `<option value="${p.id}">${escHtml(p.name)} (${escHtml(p.category)})</option>`).join("");
+  document.getElementById("potionSelect").value = "";
+  document.getElementById("potionQuantity").value = "1";
+  document.getElementById("potionErr").style.display = "none";
+  document.getElementById("potionDetailsWrap").style.display = "none";
+  document.getElementById("addPotionModal").style.display = "block";
+};
+
+window.closeAddPotionModal = function() {
+  document.getElementById("addPotionModal").style.display = "none";
+};
+
+window.updatePotionDetails = function() {
+  const id = document.getElementById("potionSelect").value;
+  const potion = POTIONS_CATALOG.find(p => p.id === id);
+  const detailsWrap = document.getElementById("potionDetailsWrap");
+  if (potion) {
+    document.getElementById("potionDescription").textContent = potion.desc;
+    detailsWrap.style.display = "block";
+  } else {
+    detailsWrap.style.display = "none";
+  }
+};
+
+window.savePotionToInventory = async function() {
+  const id = document.getElementById("potionSelect").value;
+  const qty = parseInt(document.getElementById("potionQuantity").value) || 0;
+  const errEl = document.getElementById("potionErr");
+
+  if (!id) {
+    errEl.textContent = "Selecciona una poción.";
+    errEl.style.display = "block";
+    return;
+  }
+  if (qty < 1) {
+    errEl.textContent = "La cantidad debe ser al menos 1.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  allInventory[id] = (allInventory[id] || 0) + qty;
+
+  try {
+    await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+    toast(`${qty} unidad${qty !== 1 ? "es" : ""} añadidas al inventario`, "success");
+    closeAddPotionModal();
+    renderInventory();
+  } catch (err) {
+    toast(`Error al guardar: ${err?.message || "desconocido"}`, "error");
+  }
+};
+
+window.editPotionQuantity = async function(id) {
+  const potion = POTIONS_CATALOG.find(p => p.id === id);
+  if (!potion) return;
+  const currentQty = allInventory[id] || 0;
+  const newQty = prompt(`${escHtml(potion.name)}\nCantidad actual: ${currentQty}\n\nNueva cantidad:`, currentQty);
+  if (newQty === null) return;
+  const parsedQty = parseInt(newQty);
+  if (isNaN(parsedQty) || parsedQty < 0) {
+    toast("Cantidad inválida", "error");
+    return;
+  }
+  if (parsedQty === currentQty) return;
+
+  allInventory[id] = parsedQty;
+  try {
+    await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+    toast(`${potion.name} actualizado a ${parsedQty} unidades`, "success");
+    renderInventory();
+  } catch (err) {
+    toast(`Error: ${err?.message || "desconocido"}`, "error");
+  }
+};
+
+window.deletePotionFromInventory = async function(id) {
+  const potion = POTIONS_CATALOG.find(p => p.id === id);
+  if (!potion) return;
+  const ok = await showModal(
+    "Eliminar del inventario",
+    `¿Eliminar ${escHtml(potion.name)} del inventario?`,
+    "Eliminar", "danger"
+  );
+  if (!ok) return;
+
+  delete allInventory[id];
+  try {
+    await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+    toast(`${potion.name} eliminado del inventario`, "success");
+    renderInventory();
+  } catch (err) {
+    toast(`Error: ${err?.message || "desconocido"}`, "error");
+  }
+};

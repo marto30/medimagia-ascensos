@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260610g">
+  <link rel="stylesheet" href="styles.css?v=20260610i">
 </head>
 <body>
 <div class="bg"></div>
@@ -43,6 +43,7 @@
       <button class="admin-quick-btn" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="admin-quick-btn" onclick="showTab('tabGrad')">🎓 Graduados</button>
       <button class="admin-quick-btn" onclick="showTab('tabAdd')">➕ Nuevo alumno</button>
+      <button class="admin-quick-btn" onclick="showTab('tabInventory')">🧪 Inventario</button>
     </div>
   </div>
 
@@ -261,6 +262,7 @@
       <button class="tab tab-warn"     data-tab="tabActivity" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="tab"              data-tab="tabGrad"     onclick="showTab('tabGrad')">🎓 Graduados</button>
       <button class="tab"              data-tab="tabAdd"      onclick="showTab('tabAdd')">➕ Crear alumno</button>
+      <button class="tab"              data-tab="tabInventory" onclick="showTab('tabInventory')">🧪 Inventario</button>
       <button class="tab"              data-tab="tabRanks"    onclick="showTab('tabRanks')">📜 Rangos</button>
       <button class="tab tab-security" data-tab="tabSecurity" id="tabSecurityBtn"
               onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
@@ -353,6 +355,46 @@
             <p class="ok-msg" id="ranksOk">✓ Cambios guardados en la base de datos</p>
           </div>
         </div>
+
+    <!-- Inventario -->
+    <div class="admin-section" id="tabInventory">
+      <p class="notice">Gestiona el <strong>inventario de pociones</strong>. Cada pocima tiene un contador que se resta automáticamente al usarla en una bitácora.</p>
+      <div class="inventory-controls">
+        <input type="text" id="invSearch" placeholder="Buscar poción…" maxlength="100" oninput="filterInventory()"/>
+        <button class="btn success" onclick="showAddPotionModal()">➕ Añadir poción</button>
+      </div>
+      <div id="inventoryWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
+    </div>
+
+    <!-- Modal: Añadir poción -->
+    <div id="addPotionModal" class="modal" style="display:none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Añadir poción</h2>
+          <button class="modal-close" onclick="closeAddPotionModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label for="potionSelect">Seleccionar poción</label>
+            <select id="potionSelect" onchange="updatePotionDetails()">
+              <option value="">-- Seleccionar --</option>
+            </select>
+          </div>
+          <div id="potionDetailsWrap" style="margin-bottom:1rem;padding:.8rem;background:rgba(74,69,64,.1);border-radius:.4rem;display:none">
+            <p id="potionDescription" style="margin:0;font-size:.9rem;color:#6d6a66"></p>
+          </div>
+          <div class="field">
+            <label for="potionQuantity">Cantidad a añadir</label>
+            <input type="number" id="potionQuantity" min="1" max="999" value="1"/>
+          </div>
+          <p class="err" id="potionErr" style="display:none"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn ghost" onclick="closeAddPotionModal()">Cancelar</button>
+          <button class="btn success" onclick="savePotionToInventory()">Añadir a inventario</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Seguridad -->
     <div class="admin-section" id="tabSecurity">
@@ -505,6 +547,6 @@
 </div>
 
 <datalist id="patientsList"></datalist>
-<script type="module" src="app.js?v=20260610g"></script>
+<script type="module" src="app.js?v=20260610i"></script>
 </body>
 </html>

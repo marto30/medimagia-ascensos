@@ -1526,3 +1526,79 @@ button.list-summary-chip:hover { border-color: rgba(201,162,39,.4); transform: t
 .hbar-fill.hbar-green { background: linear-gradient(90deg, rgba(77,184,122,.5), rgba(77,184,122,.9)); }
 .hbar-fill.hbar-red   { background: linear-gradient(90deg, rgba(176,69,69,.5), rgba(176,69,69,.85)); }
 .hbar-num { flex: 0 0 2.4rem; text-align: right; font-size: .78rem; color: var(--text); font-weight: 600; }
+
+/* ─── INVENTARIO DE POCIONES ─────────────────────────────────────── */
+.inventory-controls {
+  display: flex; gap: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap;
+}
+.inventory-controls input {
+  flex: 1; min-width: 180px;
+  padding: .6rem .8rem; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--r); color: var(--text); font-size: .9rem;
+}
+.inventory-controls input:focus {
+  outline: none; border-color: var(--gold); background: rgba(201,162,39,.1);
+}
+.inv-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem;
+}
+.inv-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 1rem; transition: all var(--t);
+}
+.inv-card:hover { background: rgba(201,162,39,.06); border-color: var(--gold); }
+.inv-header {
+  display: flex; justify-content: space-between; align-items: start; margin-bottom: .5rem;
+}
+.inv-name {
+  font-size: 1rem; font-weight: 600; color: var(--text);
+}
+.inv-category {
+  font-size: .75rem; padding: .2rem .5rem; background: rgba(201,162,39,.15);
+  border-radius: var(--r-xs); color: var(--gold-light); text-transform: uppercase; letter-spacing: .03em;
+}
+.inv-desc {
+  font-size: .85rem; color: var(--text-muted); margin: .6rem 0; line-height: 1.4;
+}
+.inv-controls {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+}
+.inv-qty {
+  font-size: .9rem; padding: .4rem .6rem; background: rgba(77,184,122,.12);
+  border-radius: var(--r-sm); color: var(--green); font-weight: 600;
+}
+.inv-qty-empty { background: rgba(176,69,69,.12); color: var(--red); }
+.inv-qty-low   { background: rgba(255,192,61,.12); color: #ffc03d; }
+
+/* ─── MODAL PARA AÑADIR POCIONES ─────────────────────────────────── */
+#addPotionModal {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+}
+#addPotionModal.modal {
+  display: flex !important;
+}
+.modal-content {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); max-width: 450px; width: 90%; max-height: 90vh; overflow-y: auto;
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.2rem; border-bottom: 1px solid var(--border-sub);
+}
+.modal-header h2 {
+  margin: 0; font-size: 1.1rem; color: var(--text);
+}
+.modal-close {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 1.8rem; padding: 0; line-height: 1; transition: color var(--t);
+}
+.modal-close:hover { color: var(--gold); }
+.modal-body {
+  padding: 1.2rem;
+}
+.modal-footer {
+  display: flex; gap: .8rem; justify-content: flex-end;
+  padding: 1.2rem; border-top: 1px solid var(--border-sub);
+}
