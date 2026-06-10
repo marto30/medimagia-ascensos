@@ -103,9 +103,12 @@ body {
 /* === LAYOUT === */
 .wrap {
   position: relative; z-index: 1;
-  max-width: 780px; margin: 0 auto;
-  padding: 2.5rem 1.5rem 4rem;
+  max-width: 1440px; margin: 0 auto;
+  padding: 2.5rem 2rem 4rem;
 }
+/* Pantallas que deben seguir siendo estrechas y centradas (login, bloqueo) */
+#scSearch, #scAdminLogin { max-width: 560px; margin-left: auto; margin-right: auto; }
+#scBlocked { max-width: 620px; margin-left: auto; margin-right: auto; }
 
 /* === HEADER === */
 .header {
@@ -1392,3 +1395,128 @@ button.list-summary-chip:hover { border-color: rgba(201,162,39,.4); transform: t
 }
 .bitacora-search-clear:hover { color: var(--gold); }
 .bitacora-count-line { font-size: .76rem; color: var(--text-dim); font-style: italic; margin-bottom: .7rem; }
+
+/* =================================================================
+   DISTRIBUCIÓN A LO ANCHO (pantallas ≥ 1100px)
+   La página sigue fluyendo con scroll normal: solo se reparten
+   los contenidos en columnas donde tiene sentido.
+   ================================================================= */
+@media (min-width: 1100px) {
+
+  /* Cabecera decorativa más compacta en pantallas grandes */
+  .header { margin-bottom: 2.2rem; padding-bottom: 1.4rem; }
+
+  /* — Bitácoras: formulario a la izquierda (fijo al hacer scroll), lista a la derecha — */
+  #scBitacoras {
+    display: grid;
+    grid-template-columns: 440px minmax(0, 1fr);
+    gap: 1.6rem;
+    align-items: start;
+  }
+  #scBitacoras > .card {
+    grid-column: 1; grid-row: 1 / span 2;
+    position: sticky; top: 1.2rem;
+    max-height: calc(100vh - 2.4rem); overflow-y: auto;
+    margin-bottom: 0 !important;
+  }
+  #scBitacoras > .bitacora-search-wrap { grid-column: 2; grid-row: 1; }
+  #scBitacoras > #bitacoraListWrap     { grid-column: 2; grid-row: 2; }
+  #scBitacoras > .back-btn             { grid-column: 1 / -1; grid-row: 3; }
+
+  /* — Personas: lista a la izquierda, detalle de bitácoras a la derecha — */
+  #scPersonas {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: 1.6rem;
+    align-items: start;
+  }
+  #scPersonas > .card               { grid-column: 1; grid-row: 1; margin-bottom: 0 !important; }
+  #scPersonas > #personasListWrap   { grid-column: 1; grid-row: 2; }
+  #scPersonas > #personaBitacorasWrap {
+    grid-column: 2; grid-row: 1 / span 2;
+    margin-top: 0 !important;
+  }
+  #scPersonas > .back-btn           { grid-column: 1 / -1; grid-row: 3; }
+
+  /* — Perfil: la rejilla de hechizos se reparte en más columnas — */
+  .rk-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  .ov-wrap { max-width: 560px; }
+
+  /* — Directorio: miembros en varias columnas — */
+  .dir-members {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 0 1.2rem;
+  }
+
+  /* — Listas de asistentes: más columnas — */
+  .attendants-list { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+}
+
+/* =================================================================
+   ESTADÍSTICAS (panel admin)
+   ================================================================= */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: .7rem; margin-bottom: 1.4rem;
+}
+.stat-card {
+  background: rgba(255,255,255,.04); border: 1px solid var(--border-sub);
+  border-radius: var(--r); padding: .9rem 1rem; text-align: center;
+  transition: border-color var(--t);
+}
+.stat-card:hover { border-color: rgba(201,162,39,.25); }
+.stat-num {
+  font-family: var(--font-h); font-size: 1.65rem; color: var(--gold-light);
+  line-height: 1.2; text-shadow: 0 0 18px rgba(201,162,39,.25);
+}
+.stat-num.stat-warn  { color: var(--red); text-shadow: 0 0 18px rgba(176,69,69,.25); }
+.stat-num.stat-green { color: var(--green); text-shadow: 0 0 18px rgba(77,184,122,.25); }
+.stat-label {
+  font-family: var(--font-h); font-size: .6rem; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .08em; margin-top: .3rem;
+}
+.stats-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: .9rem;
+}
+.stats-panel {
+  background: rgba(255,255,255,.03); border: 1px solid var(--border-sub);
+  border-radius: var(--r); padding: 1.1rem 1.2rem;
+}
+.stats-panel-title {
+  font-family: var(--font-h); font-size: .66rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-bottom: .9rem; padding-bottom: .5rem;
+  border-bottom: 1px solid rgba(201,162,39,.1);
+}
+/* Gráfico de barras verticales (bitácoras por mes) */
+.chart-bars {
+  display: flex; align-items: flex-end; gap: .55rem;
+  height: 130px; padding-top: .4rem;
+}
+.chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: .3rem; height: 100%; }
+.chart-col-bar {
+  width: 100%; max-width: 46px; flex: 1;
+  display: flex; align-items: flex-end;
+}
+.chart-col-fill {
+  width: 100%; border-radius: 4px 4px 0 0; min-height: 2px;
+  background: linear-gradient(180deg, rgba(201,162,39,.85), rgba(201,162,39,.35));
+  transition: height .6s cubic-bezier(.4,0,.2,1);
+}
+.chart-col-num   { font-size: .72rem; color: var(--gold-light); font-weight: 600; }
+.chart-col-label { font-size: .64rem; color: var(--text-dim); text-transform: capitalize; }
+/* Barras horizontales (distribución por rango, tops) */
+.hbar-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .55rem; }
+.hbar-label {
+  flex: 0 0 110px; font-size: .78rem; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hbar-track { flex: 1; height: 9px; background: rgba(255,255,255,.06); border-radius: 5px; overflow: hidden; }
+.hbar-fill  { height: 100%; border-radius: 5px; background: linear-gradient(90deg, rgba(201,162,39,.5), rgba(201,162,39,.9)); transition: width .6s ease; }
+.hbar-fill.hbar-green { background: linear-gradient(90deg, rgba(77,184,122,.5), rgba(77,184,122,.9)); }
+.hbar-fill.hbar-red   { background: linear-gradient(90deg, rgba(176,69,69,.5), rgba(176,69,69,.85)); }
+.hbar-num { flex: 0 0 2.4rem; text-align: right; font-size: .78rem; color: var(--text); font-weight: 600; }

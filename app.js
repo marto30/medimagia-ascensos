@@ -1,5 +1,6 @@
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, getDocs, collection, deleteDoc, addDoc, updateDoc }
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+         doc, getDoc, setDoc, getDocs, collection, deleteDoc, addDoc, updateDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // =====================================================================
@@ -14,7 +15,16 @@ const firebaseConfig = {
   appId:             "1:508815684624:web:988d28cf27268deedc4695"
 };
 const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+// Caché local persistente (IndexedDB): cargas casi instantáneas en visitas
+// repetidas y lectura sin conexión. Si el navegador no lo soporta, cae al modo normal.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+} catch {
+  db = getFirestore(app);
+}
 
 // =====================================================================
 //  CONSTANTS
@@ -77,6 +87,8 @@ function canAscend(sp, rank) {
 }
 function safeStr(n)  { return n.replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
 function docId(name) { return name.replace(/\s+/g,"_").replace(/[^a-zA-Z0-9_]/g,"X"); }
+// Sanea cualquier texto para usarlo como id de elemento DOM (sin comillas ni símbolos)
+function domKey(s)   { return String(s).replace(/[^a-zA-Z0-9_-]/g, "_"); }
 // Escapa texto para inserción segura en innerHTML
 function escHtml(v)  {
   return String(v ?? "")
@@ -135,32 +147,33 @@ if (location.protocol !== "https:" && !["localhost","127.0.0.1"].includes(locati
 }
 
 // Rate limiting para login (5 intentos, bloqueo 15 min)
+// key: "mm_ll" = admin · "mm_sl" = alumnos (contadores independientes)
 const _LOCK_KEY  = "mm_ll";
 const _LOCK_MAX  = 5;
 const _LOCK_MS   = 15 * 60 * 1000;
-function loginAllowed() {
+function loginAllowed(key = _LOCK_KEY) {
   try {
-    const d = JSON.parse(localStorage.getItem(_LOCK_KEY) || "{}");
+    const d = JSON.parse(localStorage.getItem(key) || "{}");
     if (!d.since || Date.now() - d.since > _LOCK_MS) return true;
     return (d.count || 0) < _LOCK_MAX;
   } catch { return true; }
 }
-function loginLockRemaining() {
+function loginLockRemaining(key = _LOCK_KEY) {
   try {
-    const d = JSON.parse(localStorage.getItem(_LOCK_KEY) || "{}");
+    const d = JSON.parse(localStorage.getItem(key) || "{}");
     if (!d.since || Date.now() - d.since > _LOCK_MS) return 0;
     return (d.count || 0) >= _LOCK_MAX ? Math.ceil((_LOCK_MS - (Date.now() - d.since)) / 60000) : 0;
   } catch { return 0; }
 }
-function recordFailedLogin() {
+function recordFailedLogin(key = _LOCK_KEY) {
   try {
-    const d = JSON.parse(localStorage.getItem(_LOCK_KEY) || "{}");
+    const d = JSON.parse(localStorage.getItem(key) || "{}");
     const since = d.since && Date.now() - d.since <= _LOCK_MS ? d.since : Date.now();
-    localStorage.setItem(_LOCK_KEY, JSON.stringify({ count: (d.count || 0) + 1, since }));
+    localStorage.setItem(key, JSON.stringify({ count: (d.count || 0) + 1, since }));
   } catch {}
 }
-function clearLoginLock() {
-  try { localStorage.removeItem(_LOCK_KEY); } catch {}
+function clearLoginLock(key = _LOCK_KEY) {
+  try { localStorage.removeItem(key); } catch {}
 }
 
 // Session timeout: cierre automático por inactividad (30 min) — salvo "mantener sesión"
@@ -205,6 +218,24 @@ function clearSession() {
   rememberSession = false;
   try { localStorage.removeItem(_SESSION_KEY); } catch {}
 }
+
+// =====================================================================
+//  DEBOUNCE — evita re-renderizar listas completas en cada pulsación
+// =====================================================================
+function debounce(fn, ms = 160) {
+  let t;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+// Versiones debounced para los oninput de los buscadores (definidas como
+// arrows para que resuelvan la función real en el momento de la llamada)
+window.renderListD           = debounce(() => renderList());
+window.filterBitacorasD      = debounce(() => window.filterBitacoras());
+window.filterPersonasD       = debounce(() => window.filterPersonas());
+window.filterAttendantsD     = debounce(() => window.filterAttendants(), 120);
+window.filterEditAttendantsD = debounce(() => window.filterEditAttendants(), 120);
 
 // =====================================================================
 //  TOAST
@@ -324,7 +355,7 @@ function renderRanksEditor() {
       </div>
       <div class="rank-spell-chips">${chips}</div>
       <div class="rank-add-spell">
-        <input type="text" id="newSpell_${i}" placeholder="Nombre del nuevo hechizo"
+        <input type="text" id="newSpell_${i}" placeholder="Nombre del nuevo hechizo" maxlength="60"
                onkeydown="if(event.key==='Enter')addSpellToRank('${safeAttr(rk)}',${i})"/>
         <button type="button" class="btn sm" onclick="addSpellToRank('${safeAttr(rk)}',${i})">+ Añadir hechizo</button>
       </div>
@@ -338,6 +369,11 @@ window.addSpellToRank = function(rank, inputIdx) {
   errEl.style.display = "none";
   const name = (input.value || "").trim();
   if (!name) return;
+  if (name.length > 60) {
+    errEl.textContent = "El nombre del hechizo no puede superar los 60 caracteres.";
+    errEl.style.display = "block";
+    return;
+  }
   if (allSpells().some(s => norm(s) === norm(name))) {
     errEl.textContent = `Ya existe un hechizo llamado "${name}".`;
     errEl.style.display = "block";
@@ -387,6 +423,11 @@ window.addNewRank = function() {
   errEl.style.display = "none";
   const name = (input.value || "").trim();
   if (!name) return;
+  if (name.length > 40) {
+    errEl.textContent = "El nombre del rango no puede superar los 40 caracteres.";
+    errEl.style.display = "block";
+    return;
+  }
   if (RANKS_ORDER.some(r => norm(r) === norm(name))) {
     errEl.textContent = `Ya existe un rango llamado "${name}".`;
     errEl.style.display = "block";
@@ -602,17 +643,28 @@ window.studentLogin = async function() {
   const pwd  = pEl.value;
 
   eEl.style.display = "none";
-  if (!user || !pwd) { eEl.style.display = "block"; return; }
+  eEl.textContent = "Usuario o contraseña incorrectos.";
+
+  // Rate limit: 5 intentos fallidos → bloqueo 15 min
+  const lockLeft = loginLockRemaining("mm_sl");
+  if (lockLeft > 0) {
+    eEl.textContent = `Demasiados intentos. Espera ${lockLeft} minuto${lockLeft !== 1 ? "s" : ""}.`;
+    eEl.style.display = "block"; return;
+  }
+
+  if (!user || !pwd) { eEl.style.display = "block"; return;  }
 
   const name = usernameIndex[user];
-  if (!name || !allCredentials[name] || !allCredentials[name].passwordHash) {
-    eEl.style.display = "block"; return;
-  }
-  const hash = await hashStudentPwd(pwd);
-  if (hash !== allCredentials[name].passwordHash) {
+  const hash = await hashStudentPwd(pwd);   // hash siempre: mismo tiempo exista o no el usuario
+  if (!name || !allCredentials[name] || !allCredentials[name].passwordHash ||
+      hash !== allCredentials[name].passwordHash) {
+    recordFailedLogin("mm_sl");
+    const left = loginLockRemaining("mm_sl");
+    if (left > 0) eEl.textContent = `Usuario o contraseña incorrectos. Cuenta bloqueada ${left} min.`;
     eEl.style.display = "block"; return;
   }
 
+  clearLoginLock("mm_sl");
   pEl.value = "";
   loggedInStudent = name;
   const remember = document.getElementById("loginRemember");
@@ -723,20 +775,20 @@ function renderProfile() {
     </div>`;
   } else if (ascending && nextRank) {
     banner.innerHTML = `<div class="ascenso-banner">
-      <div class="big">✦ Listo para ascender a ${nextRank}</div>
+      <div class="big">✦ Listo para ascender a ${escHtml(nextRank)}</div>
       <div class="sub">Notifica a un administrador para que confirme el ascenso.</div>
     </div>`;
   } else if (rank === RANKS_ORDER[RANKS_ORDER.length - 1] && RANKS[rank].filter(s => !sp[s]).length === 0) {
     banner.innerHTML = `<div class="ascenso-banner">
       <div class="big">✦ Dominio completo alcanzado</div>
-      <div class="sub">Has aprendido todos los hechizos del rango Avanzado.</div>
+      <div class="sub">Has aprendido todos los hechizos del rango ${escHtml(rank)}.</div>
     </div>`;
   } else {
     const missing = RANKS[rank].filter(s => !sp[s]).length;
     const need    = Math.max(0, missing - ASCENSO_MISSING);
     banner.innerHTML = `<div class="no-ascenso-banner">
       <div class="big">Aún no puedes ascender</div>
-      <div class="sub">Te faltan ${need} hechizo${need !== 1 ? "s" : ""} más en ${rank} (se permiten hasta ${ASCENSO_MISSING} sin aprender).</div>
+      <div class="sub">Te faltan ${need} hechizo${need !== 1 ? "s" : ""} más en ${escHtml(rank)} (se permiten hasta ${ASCENSO_MISSING} sin aprender).</div>
     </div>`;
   }
 
@@ -749,7 +801,7 @@ function renderProfile() {
     const { pct } = getRkPct(sp, rk);
     if (pct < 100) {
       const miss = RANKS[rk].filter(s => !sp[s]);
-      tip = `Te faltan en <strong>${rk}</strong>: ${miss.join(", ")}.`;
+      tip = `Te faltan en <strong>${escHtml(rk)}</strong>: ${miss.map(escHtml).join(", ")}.`;
       break;
     }
   }
@@ -765,21 +817,21 @@ function renderProfile() {
       : "";
     const rows = RANKS[rk].map(s => {
       const on  = sp[s];
-      const key = s.replace(/[\s.]/g, "_");
+      const key = domKey(s);
       return `<div class="spell-row" onclick="toggleSpell('${safeAttr(s)}')">
         <div class="spell-dot ${on ? "on" : "off"}" id="dot_${key}"></div>
-        <span class="spell-txt ${on ? "" : "off"}" id="txt_${key}">${s}</span>
+        <span class="spell-txt ${on ? "" : "off"}" id="txt_${key}">${escHtml(s)}</span>
       </div>`;
     }).join("");
     return `<div class="rk-card">
       <div class="rk-card-head">
-        <span class="rk-card-name">${rk}</span>
+        <span class="rk-card-name">${escHtml(rk)}</span>
         <span class="rk-card-head-right">
           ${toggleAll}
-          <span class="rk-pct c-${cls}" id="rkpct_${rk}">${done}/${total}</span>
+          <span class="rk-pct c-${cls}" id="rkpct_${domKey(rk)}">${done}/${total}</span>
         </span>
       </div>
-      <div class="mini-bar"><div class="mini-fill f-${cls}" id="rkbar_${rk}" style="width:${pct}%"></div></div>
+      <div class="mini-bar"><div class="mini-fill f-${cls}" id="rkbar_${domKey(rk)}" style="width:${pct}%"></div></div>
       <div class="spells-list">${rows}</div>
     </div>`;
   }).join("");
@@ -868,7 +920,7 @@ function renderInfractions(name) {
     <div class="infractions-list">${rows}</div>
     ${isAdmin ? `
       <div class="rank-add-spell" style="margin-top:.6rem">
-        <input type="text" id="infractionReason" placeholder="Motivo de la infracción"
+        <input type="text" id="infractionReason" placeholder="Motivo de la infracción" maxlength="300"
                onkeydown="if(event.key==='Enter')addInfraction()"/>
         <button type="button" class="btn sm danger" onclick="addInfraction()">+ Añadir infracción</button>
       </div>
@@ -885,6 +937,11 @@ window.addInfraction = async function() {
   const reason = input.value.trim();
   if (!reason) {
     errEl.textContent = "Escribe el motivo de la infracción.";
+    errEl.style.display = "block";
+    return;
+  }
+  if (reason.length > 300) {
+    errEl.textContent = "El motivo no puede superar los 300 caracteres.";
     errEl.style.display = "block";
     return;
   }
@@ -926,7 +983,7 @@ window.removeInfraction = async function(idx) {
 
 window.toggleSpell = function(s) {
   pendingChanges[s] = !pendingChanges[s];
-  const key = s.replace(/[\s.]/g, "_");
+  const key = domKey(s);
   const dot = document.getElementById("dot_" + key);
   const txt = document.getElementById("txt_" + key);
   if (dot) dot.className = "spell-dot " + (pendingChanges[s] ? "on" : "off");
@@ -937,8 +994,8 @@ window.toggleSpell = function(s) {
     const { done, total, pct } = getRkPct(pendingChanges, rk);
     const rkMiss = total - done;
     const cls = rkMiss <= ASCENSO_MISSING ? "ok" : done === 0 ? "no" : "mid";
-    const pEl = document.getElementById("rkpct_" + rk);
-    const bEl = document.getElementById("rkbar_"  + rk);
+    const pEl = document.getElementById("rkpct_" + domKey(rk));
+    const bEl = document.getElementById("rkbar_"  + domKey(rk));
     if (pEl) { pEl.textContent = `${done}/${total}`; pEl.className = "rk-pct c-" + cls; }
     if (bEl) { bEl.style.width = pct + "%";           bEl.className = "mini-fill f-" + cls; }
   }
@@ -953,13 +1010,13 @@ window.toggleSpell = function(s) {
   const nextRank  = RANKS_ORDER[RANKS_ORDER.indexOf(rank) + 1];
   const banner    = document.getElementById("ascBanner");
   if (ascending && nextRank) {
-    banner.innerHTML = `<div class="ascenso-banner"><div class="big">✦ Listo para ascender a ${nextRank}</div><div class="sub">Notifica a un administrador para que confirme el ascenso.</div></div>`;
+    banner.innerHTML = `<div class="ascenso-banner"><div class="big">✦ Listo para ascender a ${escHtml(nextRank)}</div><div class="sub">Notifica a un administrador para que confirme el ascenso.</div></div>`;
   } else if (rank === RANKS_ORDER[RANKS_ORDER.length - 1] && RANKS[rank].filter(s => !pendingChanges[s]).length === 0) {
     banner.innerHTML = `<div class="ascenso-banner"><div class="big">✦ Dominio completo alcanzado</div></div>`;
   } else {
     const missing = RANKS[rank].filter(s => !pendingChanges[s]).length;
     const need    = Math.max(0, missing - ASCENSO_MISSING);
-    banner.innerHTML = `<div class="no-ascenso-banner"><div class="big">Aún no puedes ascender</div><div class="sub">Te faltan ${need} hechizo${need !== 1 ? "s" : ""} más en ${rank}.</div></div>`;
+    banner.innerHTML = `<div class="no-ascenso-banner"><div class="big">Aún no puedes ascender</div><div class="sub">Te faltan ${need} hechizo${need !== 1 ? "s" : ""} más en ${escHtml(rank)}.</div></div>`;
   }
 
   updateDirtyState();
@@ -1070,6 +1127,7 @@ window.showTab = function(id) {
   if (btn) btn.className += " active";
   if (id === "tabList")      renderList();
   if (id === "tabAscensos")  renderAscensos();
+  if (id === "tabStats")     renderStats();
   if (id === "tabDirectory") renderDirectoryIn("adminDirectoryContent");
   if (id === "tabActivity")  renderPocaActividad();
   if (id === "tabGrad")      renderGraduados();
@@ -1238,7 +1296,7 @@ function renderList() {
     const count = members.length;
     return `<div class="rank-section">
       <div class="rank-section-header">
-        <span class="rank-badge ${rankClass("rk", rk)}">${rk}</span>
+        <span class="rank-badge ${rankClass("rk", rk)}">${escHtml(rk)}</span>
         <span class="rank-count">${count} alumno${count !== 1 ? "s" : ""}</span>
       </div>
       ${buildRankTable(members)}
@@ -1583,6 +1641,112 @@ function renderPocaActividad() {
 }
 
 // =====================================================================
+//  ADMIN — ESTADÍSTICAS
+// =====================================================================
+function renderStats() {
+  const wrap = document.getElementById("statsWrap");
+  if (!wrap) return;
+
+  if (!bitacorasLoaded) {
+    wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando estadísticas…</div>';
+    loadBitacoras()
+      .then(() => { bitacorasLoaded = true; renderStats(); renderList(); })
+      .catch(() => {
+        wrap.innerHTML = '<p class="notice" style="color:var(--red)">Error al cargar bitácoras.</p>';
+      });
+    return;
+  }
+
+  const names    = Object.keys(allStudents);
+  const totalAll = names.length;
+  const grads    = names.filter(n => allGraduated[n]).length;
+  const ready    = names.filter(n => !allGraduated[n] && canAscend(allStudents[n], getStudentRank(n))).length;
+  const totalBits = allBitacoras.length;
+
+  const now = new Date();
+  const ty = now.getFullYear(), tm = now.getMonth();
+  const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
+  const bitsThisMonth = allBitacoras.filter(b => {
+    if (!b.createdAt) return false;
+    const d = new Date(b.createdAt);
+    return d.getFullYear() === ty && d.getMonth() === tm;
+  }).length;
+  const lowAct = names.filter(n => bitCntMonth(n, ly, lm) < 3).length;
+
+  // Bitácoras por mes — últimos 6 meses
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(ty, tm - i, 1);
+    const cnt = allBitacoras.filter(b => {
+      if (!b.createdAt) return false;
+      const x = new Date(b.createdAt);
+      return x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth();
+    }).length;
+    months.push({ label: capitalize(d.toLocaleDateString("es-ES", { month: "short" })), cnt });
+  }
+  const maxM = Math.max(1, ...months.map(m => m.cnt));
+
+  // Distribución por rango (graduados aparte)
+  const dist = RANKS_ORDER.map(rk => ({
+    rk, cnt: names.filter(n => !allGraduated[n] && getStudentRank(n) === rk).length
+  }));
+  dist.push({ rk: "🎓 Graduados", cnt: grads });
+  const maxD = Math.max(1, ...dist.map(d => d.cnt));
+
+  // Medimagos más activos (total de bitácoras)
+  const medCount = {};
+  allBitacoras.forEach(b => (b.attendants || []).forEach(a => medCount[a] = (medCount[a] || 0) + 1));
+  const topMed = Object.entries(medCount).sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const maxMed = Math.max(1, ...topMed.map(t => t[1]));
+
+  // Pacientes más atendidos
+  const patCount = {};
+  allBitacoras.forEach(b => { if (b.patient) patCount[b.patient] = (patCount[b.patient] || 0) + 1; });
+  const topPat = Object.entries(patCount).sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const maxPat = Math.max(1, ...topPat.map(t => t[1]));
+
+  const hbar = (label, n, max, cls = "") => `<div class="hbar-row">
+    <span class="hbar-label" title="${escHtml(label)}">${escHtml(label)}</span>
+    <div class="hbar-track"><div class="hbar-fill ${cls}" style="width:${Math.round(n / max * 100)}%"></div></div>
+    <span class="hbar-num">${n}</span>
+  </div>`;
+
+  wrap.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${totalAll}</div><div class="stat-label">Medimagos</div></div>
+      <div class="stat-card"><div class="stat-num">${grads}</div><div class="stat-label">Graduados</div></div>
+      <div class="stat-card"><div class="stat-num stat-green">${ready}</div><div class="stat-label">Listos p. ascender</div></div>
+      <div class="stat-card"><div class="stat-num">${totalBits}</div><div class="stat-label">Bitácoras totales</div></div>
+      <div class="stat-card"><div class="stat-num">${bitsThisMonth}</div><div class="stat-label">Bitácoras este mes</div></div>
+      <div class="stat-card"><div class="stat-num${lowAct ? " stat-warn" : ""}">${lowAct}</div><div class="stat-label">Baja actividad</div></div>
+    </div>
+    <div class="stats-panels">
+      <div class="stats-panel">
+        <p class="stats-panel-title">📋 Bitácoras por mes (últimos 6)</p>
+        <div class="chart-bars">${months.map(m => `
+          <div class="chart-col">
+            <span class="chart-col-num">${m.cnt}</span>
+            <div class="chart-col-bar"><div class="chart-col-fill" style="height:${Math.max(2, Math.round(m.cnt / maxM * 100))}%"></div></div>
+            <span class="chart-col-label">${m.label}</span>
+          </div>`).join("")}
+        </div>
+      </div>
+      <div class="stats-panel">
+        <p class="stats-panel-title">🎖 Distribución por rango</p>
+        ${dist.map(d => hbar(d.rk, d.cnt, maxD)).join("")}
+      </div>
+      <div class="stats-panel">
+        <p class="stats-panel-title">⚕ Medimagos más activos</p>
+        ${topMed.length ? topMed.map(([n, c]) => hbar(n, c, maxMed, "hbar-green")).join("") : '<p class="empty-state">Sin datos aún.</p>'}
+      </div>
+      <div class="stats-panel">
+        <p class="stats-panel-title">🤕 Pacientes más atendidos</p>
+        ${topPat.length ? topPat.map(([n, c]) => hbar(n, c, maxPat, "hbar-red")).join("") : '<p class="empty-state">Sin datos aún.</p>'}
+      </div>
+    </div>`;
+}
+
+// =====================================================================
 //  ADMIN — EDITAR / ELIMINAR
 // =====================================================================
 window.adminEdit   = function(name) { openProfile(name); };
@@ -1737,13 +1901,13 @@ window.selectRankOpt = function(el) {
 
 function buildSpellEditor() {
   document.getElementById("spellEditor").innerHTML = RANKS_ORDER.map(rk =>
-    `<div class="spell-group-label">${rk}</div>` +
+    `<div class="spell-group-label">${escHtml(rk)}</div>` +
     RANKS[rk].map(s => {
-      const key = "addchk_" + s.replace(/[\s.]/g, "_");
+      const key = "addchk_" + domKey(s);
       return `<label class="spell-check-row">
         <input type="checkbox" id="${key}" ${addSpells[s] ? "checked" : ""}
                onchange="toggleAddSpell('${safeAttr(s)}', this.checked)"/>
-        ${s}
+        ${escHtml(s)}
       </label>`;
     }).join("")
   ).join("");
@@ -1768,6 +1932,9 @@ window.addAlumno = async function() {
 
   if (!name) {
     errEl.textContent = "Escribe un nombre."; errEl.style.display = "block"; return;
+  }
+  if (name.length > 80) {
+    errEl.textContent = "El nombre no puede superar los 80 caracteres."; errEl.style.display = "block"; return;
   }
   if (allStudents[name]) {
     errEl.textContent = "Ya existe un alumno con ese nombre."; errEl.style.display = "block"; return;
@@ -1854,7 +2021,7 @@ function updatePatientDatalist() {
 function buildSpellInserter(targetId = "bitProc") {
   const groups = RANKS_ORDER.map(rk =>
     `<div class="si-group">
-      <span class="si-rank">${rk}</span>
+      <span class="si-rank">${escHtml(rk)}</span>
       <div class="si-spells">
         ${RANKS[rk].map(s =>
           `<button class="si-btn" type="button" onclick="insertSpellTo('${targetId}','${safeAttr(s)}')">${escHtml(s)}</button>`
@@ -1928,6 +2095,10 @@ window.saveBitacoraEntry = async function() {
   if (!diagnosis)         { errEl.textContent = "El diagnóstico es obligatorio.";          errEl.style.display = "block"; return; }
   if (!procedure)         { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length) { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
+  if (patient.length > 80 || diagnosis.length > 200 || procedure.length > 5000) {
+    errEl.textContent = "Texto demasiado largo (paciente ≤80, diagnóstico ≤200, procedimiento ≤5000 caracteres).";
+    errEl.style.display = "block"; return;
+  }
 
   const entry = { patient, diagnosis, procedure, attendants, createdAt: new Date().toISOString() };
   const ref = await addDoc(collection(db, "bitacoras"), entry);
@@ -2123,6 +2294,10 @@ window.saveEditBitacora = async function() {
   if (!diagnosis)          { errEl.textContent = "El diagnóstico es obligatorio.";          errEl.style.display = "block"; return; }
   if (!procedure)          { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length)  { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
+  if (patient.length > 80 || diagnosis.length > 200 || procedure.length > 5000) {
+    errEl.textContent = "Texto demasiado largo (paciente ≤80, diagnóstico ≤200, procedimiento ≤5000 caracteres).";
+    errEl.style.display = "block"; return;
+  }
 
   await updateDoc(doc(db, "bitacoras", editingBitacoraId), { patient, diagnosis, procedure, attendants });
   const idx = allBitacoras.findIndex(x => x.id === editingBitacoraId);

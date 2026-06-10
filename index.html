@@ -13,12 +13,13 @@
                  img-src 'self' data: https://www.gstatic.com;
                  object-src 'none';
                  base-uri 'self';
-                 form-action 'self';">
+                 form-action 'self';
+                 upgrade-insecure-requests;">
   <title>Medimagia — Registro de Ascensos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260610e">
+  <link rel="stylesheet" href="styles.css?v=20260610f">
 </head>
 <body>
 <div class="bg"></div>
@@ -38,6 +39,7 @@
       <span class="admin-quick-label">Ir a:</span>
       <button class="admin-quick-btn" onclick="showTab('tabList')">🧑‍🎓 Alumnos</button>
       <button class="admin-quick-btn" onclick="showTab('tabAscensos')">⬆ Ascensos</button>
+      <button class="admin-quick-btn" onclick="showTab('tabStats')">📊 Estadísticas</button>
       <button class="admin-quick-btn" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="admin-quick-btn" onclick="showTab('tabGrad')">🎓 Graduados</button>
       <button class="admin-quick-btn" onclick="showTab('tabAdd')">➕ Nuevo alumno</button>
@@ -63,13 +65,14 @@
       <div class="field">
         <label for="loginUser">Usuario</label>
         <input type="text" id="loginUser" placeholder="tu.usuario"
-               autocomplete="username"
+               autocomplete="username" maxlength="60"
+               autocapitalize="none" spellcheck="false"
                onkeydown="if(event.key==='Enter')studentLogin()"/>
       </div>
       <div class="field" style="margin-bottom:.8rem">
         <label for="loginPwd">Contraseña</label>
         <input type="password" id="loginPwd" placeholder="••••••••••"
-               autocomplete="current-password"
+               autocomplete="current-password" maxlength="100"
                onkeydown="if(event.key==='Enter')studentLogin()"/>
         <p class="err" id="loginErr">Usuario o contraseña incorrectos.</p>
       </div>
@@ -104,17 +107,17 @@
 
       <div class="field">
         <label for="bitPatient">Nombre del paciente</label>
-        <input type="text" id="bitPatient" list="patientsList" placeholder="Nombre completo del paciente o busca uno existente…"/>
+        <input type="text" id="bitPatient" list="patientsList" maxlength="80" placeholder="Nombre completo del paciente o busca uno existente…"/>
       </div>
 
       <div class="field">
         <label for="bitDiag">Diagnóstico</label>
-        <input type="text" id="bitDiag" placeholder="Ej: Fractura en el brazo derecho"/>
+        <input type="text" id="bitDiag" maxlength="200" placeholder="Ej: Fractura en el brazo derecho"/>
       </div>
 
       <div class="field">
         <label for="bitProc">Procedimiento</label>
-        <textarea id="bitProc" rows="4"
+        <textarea id="bitProc" rows="4" maxlength="5000"
           placeholder="Describe el procedimiento realizado…"></textarea>
         <div class="spell-inserter" id="spellInserter"></div>
       </div>
@@ -124,7 +127,7 @@
           <span style="font-size:.74rem;color:#4a4540">(puede ser más de uno)</span>
         </label>
         <input type="text" id="attendantSearch" class="attendant-search"
-               placeholder="Buscar medimago…" oninput="filterAttendants()"/>
+               placeholder="Buscar medimago…" maxlength="80" oninput="filterAttendantsD()"/>
         <div class="attendants-list" id="attendantsList"></div>
       </div>
 
@@ -139,7 +142,7 @@
     <div class="bitacora-search-wrap">
       <input type="text" id="bitacoraSearch"
              placeholder="Buscar por paciente, diagnóstico o medimago…"
-             oninput="filterBitacoras()"/>
+             maxlength="120" oninput="filterBitacorasD()"/>
       <button class="bitacora-search-clear" id="bitacoraSearchClear"
               onclick="clearBitacoraSearch()" style="display:none"
               aria-label="Limpiar búsqueda">✕</button>
@@ -192,7 +195,7 @@
       <div class="field" style="margin-bottom:0">
         <input type="text" id="personasSearch"
                placeholder="Buscar persona por nombre…"
-               oninput="filterPersonas()"/>
+               maxlength="80" oninput="filterPersonasD()"/>
       </div>
     </div>
 
@@ -231,7 +234,8 @@
       <p class="card-title">Acceso de administrador</p>
       <div class="field">
         <label for="adminPwd">Contraseña</label>
-        <input type="password" id="adminPwd" placeholder="••••••••••"
+        <input type="password" id="adminPwd" placeholder="••••••••••" maxlength="100"
+               autocomplete="current-password"
                onkeydown="if(event.key==='Enter')loginAdmin()"/>
         <p class="err" id="adminErr">Contraseña incorrecta.</p>
       </div>
@@ -252,6 +256,7 @@
     <div class="admin-tabs">
       <button class="tab active"       data-tab="tabList"     onclick="showTab('tabList')">🧑‍🎓 Alumnos</button>
       <button class="tab"              data-tab="tabAscensos" onclick="showTab('tabAscensos')">⬆ Ascensos</button>
+      <button class="tab"              data-tab="tabStats"    onclick="showTab('tabStats')">📊 Estadísticas</button>
       <button class="tab"              data-tab="tabDirectory" onclick="showTab('tabDirectory')">👥 Directorio</button>
       <button class="tab tab-warn"     data-tab="tabActivity" onclick="showTab('tabActivity')">⚠ Actividad</button>
       <button class="tab"              data-tab="tabGrad"     onclick="showTab('tabGrad')">🎓 Graduados</button>
@@ -265,7 +270,7 @@
     <!-- Tab: lista de alumnos -->
     <div class="admin-section show" id="tabList">
       <div class="search-admin">
-        <input type="text" id="adminSearch" placeholder="Buscar por nombre…" oninput="renderList()"/>
+        <input type="text" id="adminSearch" placeholder="Buscar por nombre…" maxlength="80" oninput="renderListD()"/>
       </div>
       <div id="adminListWrap">
         <div class="loading"><span class="spinner"></span>Cargando…</div>
@@ -276,6 +281,11 @@
     <div class="admin-section" id="tabAscensos">
       <p class="notice">Ascenso <strong>siempre manual</strong>: puedes ascender a cualquiera aunque no cumpla el requisito — el color indica quién sí está listo.</p>
       <div id="ascTable"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="admin-section" id="tabStats">
+      <div id="statsWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
     </div>
 
     <!-- Directorio -->
@@ -301,7 +311,7 @@
             <p class="card-title">Crear nuevo alumno</p>
             <div class="field">
               <label for="newName">Nombre del personaje</label>
-              <input type="text" id="newName" placeholder="Nombre Apellido"/>
+              <input type="text" id="newName" maxlength="80" placeholder="Nombre Apellido"/>
             </div>
             <div class="field">
               <label>Rango inicial <span style="font-size:.74rem;color:#4a4540">(opcional)</span></label>
@@ -331,7 +341,7 @@
             <div class="field" style="display:flex;gap:.6rem;align-items:flex-end;max-width:480px">
               <div style="flex:1">
                 <label for="newRankName">Nombre del rango</label>
-                <input type="text" id="newRankName" placeholder="Ej. Experto"
+                <input type="text" id="newRankName" maxlength="40" placeholder="Ej. Experto"
                        onkeydown="if(event.key==='Enter')addNewRank()"/>
               </div>
               <button class="btn success" onclick="addNewRank()">Añadir rango</button>
@@ -356,17 +366,17 @@
         <div class="pwd-form">
           <div class="field">
             <label for="pwdCurrent">Contraseña actual</label>
-            <input type="password" id="pwdCurrent" placeholder="••••••••••"/>
+            <input type="password" id="pwdCurrent" placeholder="••••••••••" maxlength="100" autocomplete="current-password"/>
           </div>
           <div class="field">
             <label for="pwdNew">Nueva contraseña</label>
-            <input type="password" id="pwdNew" placeholder="Mínimo 8 caracteres" oninput="updatePwdStrength()"/>
+            <input type="password" id="pwdNew" placeholder="Mínimo 8 caracteres" maxlength="100" autocomplete="new-password" oninput="updatePwdStrength()"/>
             <div class="pwd-strength"><div class="pwd-strength-fill" id="pwdStrengthFill"></div></div>
             <p class="pwd-hint">Usa mayúsculas, números y símbolos para una contraseña más segura.</p>
           </div>
           <div class="field">
             <label for="pwdConfirm">Confirmar nueva contraseña</label>
-            <input type="password" id="pwdConfirm" placeholder="Repite la contraseña"/>
+            <input type="password" id="pwdConfirm" placeholder="Repite la contraseña" maxlength="100" autocomplete="new-password"/>
           </div>
           <div class="btn-row">
             <button class="btn success" onclick="changePassword()">Guardar nueva contraseña</button>
@@ -381,11 +391,11 @@
           <div class="pwd-form">
             <div class="field">
               <label for="pwdSuperNew">Nueva contraseña de superadmin</label>
-              <input type="password" id="pwdSuperNew" placeholder="Mínimo 8 caracteres"/>
+              <input type="password" id="pwdSuperNew" placeholder="Mínimo 8 caracteres" maxlength="100" autocomplete="new-password"/>
             </div>
             <div class="field">
               <label for="pwdSuperConfirm">Confirmar contraseña</label>
-              <input type="password" id="pwdSuperConfirm" placeholder="Repite la contraseña"/>
+              <input type="password" id="pwdSuperConfirm" placeholder="Repite la contraseña" maxlength="100" autocomplete="new-password"/>
             </div>
             <div class="btn-row">
               <button class="btn success" onclick="setSuperAdminPwd()">Guardar contraseña de superadmin</button>
@@ -447,24 +457,24 @@
 
       <div class="field">
         <label for="editBitPatient">Nombre del paciente</label>
-        <input type="text" id="editBitPatient" list="patientsList" placeholder="Nombre completo del paciente"/>
+        <input type="text" id="editBitPatient" list="patientsList" maxlength="80" placeholder="Nombre completo del paciente"/>
       </div>
 
       <div class="field">
         <label for="editBitDiag">Diagnóstico</label>
-        <input type="text" id="editBitDiag" placeholder="Ej: Fractura en el brazo derecho"/>
+        <input type="text" id="editBitDiag" maxlength="200" placeholder="Ej: Fractura en el brazo derecho"/>
       </div>
 
       <div class="field">
         <label for="editBitProc">Procedimiento</label>
-        <textarea id="editBitProc" rows="4" placeholder="Describe el procedimiento realizado…"></textarea>
+        <textarea id="editBitProc" rows="4" maxlength="5000" placeholder="Describe el procedimiento realizado…"></textarea>
         <div class="spell-inserter" id="editSpellInserter"></div>
       </div>
 
       <div class="field">
         <label>¿Quién le atendió?</label>
         <input type="text" id="editAttendantSearch" class="attendant-search"
-               placeholder="Buscar medimago…" oninput="filterEditAttendants()"/>
+               placeholder="Buscar medimago…" maxlength="80" oninput="filterEditAttendantsD()"/>
         <div class="attendants-list" id="editAttendantsList"></div>
       </div>
 
@@ -495,6 +505,6 @@
 </div>
 
 <datalist id="patientsList"></datalist>
-<script type="module" src="app.js?v=20260610e"></script>
+<script type="module" src="app.js?v=20260610f"></script>
 </body>
 </html>
