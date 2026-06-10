@@ -2104,28 +2104,23 @@ let selectedAttendants = new Set();
 
 function buildAttendantsList(filterQ = "") {
   const names = Object.keys(allStudents).sort();
-  let pinnedHtml = "";
-  if (loggedInStudent && allStudents[loggedInStudent]) {
-    pinnedHtml = `<label class="attendant-item attendant-item-me">
-      <input type="checkbox" class="att-chk" value="${escHtml(loggedInStudent)}" checked disabled/>
-      ${escHtml(loggedInStudent)} <span class="att-you">• tú</span>
-    </label>`;
+  // Auto-seleccionar al usuario logueado
+  if (loggedInStudent && allStudents[loggedInStudent] && !selectedAttendants.has(loggedInStudent)) {
+    selectedAttendants.add(loggedInStudent);
   }
   const item = (n, checked) =>
-    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}">
-      <input type="checkbox" class="att-chk" value="${escHtml(n)}" ${checked ? "checked" : ""}
-             onchange="toggleAttendant(this.value, this.checked)"/> ${escHtml(n)}
+    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
+      <input type="checkbox" class="att-chk" value="${safeAttr(n)}" ${checked ? "checked" : ""}
+             onchange="toggleAttendant(this.value, this.checked)"/> ${escHtml(n)}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
     </label>`;
   // Marcados: siempre visibles, ignoran el filtro
-  const checkedNames = names.filter(n => n !== loggedInStudent && selectedAttendants.has(n));
+  const checkedNames = names.filter(n => selectedAttendants.has(n));
   const others = names.filter(n =>
-    n !== loggedInStudent && !selectedAttendants.has(n) &&
-    (!filterQ || norm(n).includes(norm(filterQ)))
+    !selectedAttendants.has(n) && (!filterQ || norm(n).includes(norm(filterQ)))
   );
-  if (!checkedNames.length && !others.length && !pinnedHtml)
+  if (!checkedNames.length && !others.length)
     return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
-  return pinnedHtml +
-    checkedNames.map(n => item(n, true)).join("") +
+  return checkedNames.map(n => item(n, true)).join("") +
     others.map(n => item(n, false)).join("");
 }
 
@@ -2362,8 +2357,8 @@ window.openEditBitacora = function(id) {
 function buildEditAttendantsList(filterQ = "") {
   const names = Object.keys(allStudents).sort();
   const item = (n, checked) =>
-    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}">
-      <input type="checkbox" class="edit-att-chk" value="${escHtml(n)}" ${checked ? "checked" : ""}
+    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
+      <input type="checkbox" class="edit-att-chk" value="${safeAttr(n)}" ${checked ? "checked" : ""}
              onchange="toggleEditAttendant(this.value, this.checked)"/>
       ${escHtml(n)}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
     </label>`;
