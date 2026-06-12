@@ -2743,7 +2743,13 @@ window.saveEditBitacora = async function() {
     // Guardar cambios del inventario
     if (oldSet.size || newSet.size) {
       try {
-        await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+        const changedPotions = new Set([...oldSet, ...newSet]);
+        for (const potionId of changedPotions) {
+          await supabase
+            .from("potions")
+            .update({ qty: allInventory[potionId] || 0 })
+            .eq("id", potionId);
+        }
       } catch (invErr) {
         console.error("Error actualizando inventario:", invErr);
       }
@@ -3022,7 +3028,27 @@ window.changePassword = async function() {
   btn.disabled = true; btn.textContent = "Guardando…";
   const newHash = await sha256(newPwd);
   const field   = isSuperAdmin ? "superPasswordHash" : "passwordHash";
-  await setDoc(doc(db, "config", "admin"), { [field]: newHash }, { merge: true });
+  try {
+    const { error } = await supabase
+      .from("app_config")
+      .upsert(
+        {
+          key: "admin_config",
+          value: {
+            ...(isSuperAdmin ? { superPasswordHash: newHash, passwordHash: adminPwdHash }
+                            : { passwordHash: newHash, superPasswordHash: superAdminHash })
+          }
+        },
+        { onConflict: "key" }
+      );
+    if (error) throw error;
+  } catch (err) {
+    errEl.textContent = `Error al guardar: ${err?.message || "desconocido"}`;
+    errEl.style.display = "block";
+    btn.disabled = false;
+    btn.textContent = "Guardar contraseña";
+    return;
+  }
   if (isSuperAdmin) superAdminHash = newHash; else adminPwdHash = newHash;
 
   document.getElementById("pwdCurrent").value = "";
@@ -3050,7 +3076,25 @@ window.setSuperAdminPwd = async function() {
     errEl.textContent = "Las contraseñas no coinciden."; errEl.style.display = "block"; return;
   }
   const hash = await sha256(newPwd);
-  await setDoc(doc(db, "config", "admin"), { superPasswordHash: hash }, { merge: true });
+  try {
+    const { error } = await supabase
+      .from("app_config")
+      .upsert(
+        {
+          key: "admin_config",
+          value: {
+            superPasswordHash: hash,
+            passwordHash: adminPwdHash
+          }
+        },
+        { onConflict: "key" }
+      );
+    if (error) throw error;
+  } catch (err) {
+    errEl.textContent = `Error al guardar: ${err?.message || "desconocido"}`;
+    errEl.style.display = "block";
+    return;
+  }
   superAdminHash = hash;
   document.getElementById("pwdSuperNew").value     = "";
   document.getElementById("pwdSuperConfirm").value = "";
@@ -3073,15 +3117,22 @@ async function initSecurity() {
     const ipHash = await hashIP(ip);
     visitorIP = ipHash; // guardamos el hash, no la IP
 
-    const blockSnap = await getDoc(doc(db, "blocked_ips", ipHash));
-    if (blockSnap.exists()) { show("scBlocked"); return; }
+    const { data: blocked } = await supabase
+      .from("blocked_ips")
+      .select("*")
+      .eq("ip_hash", ipHash)
+      .single();
+    if (blocked) { show("scBlocked"); return; }
 
     // Registrar visita: solo hash + timestamp + navegador resumido (fire & forget)
-    addDoc(collection(db, "access_logs"), {
-      ip: ipHash,
-      ts: new Date().toISOString(),
-      ua: uaSummary(navigator.userAgent) // nunca el UA completo
-    }).catch(() => {});
+    supabase
+      .from("access_logs")
+      .insert({
+        ip_hash: ipHash,
+        ts: new Date().toISOString(),
+        ua: uaSummary(navigator.userAgent)
+      })
+      .catch(() => {});
   } catch { /* fallo silencioso */ }
 }
 
@@ -3090,18 +3141,16 @@ async function renderSecurityTab() {
   if (!wrap) return;
   wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando seguridad…</div>';
   try {
-    const [logSnap, blockSnap] = await Promise.all([
-      getDocs(collection(db, "access_logs")),
-      getDocs(collection(db, "blocked_ips"))
+    const [{ data: logs }, { data: blockedList }] = await Promise.all([
+      supabase.from("access_logs").select("*"),
+      supabase.from("blocked_ips").select("*")
     ]);
 
-    const logs = [];
-    logSnap.forEach(d => logs.push({ id: d.id, ...d.data() }));
-    logs.sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
-    const recent = logs.slice(0, 100);
+    const sortedLogs = (logs || []).sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
+    const recent = sortedLogs.slice(0, 100);
 
     const blocked = {};
-    blockSnap.forEach(d => { blocked[d.data().ip] = d.data(); });
+    (blockedList || []).forEach(b => { blocked[b.ip_hash] = b; });
 
     // Los hashes de IP son hex seguros — no necesitan escapeHtml
     // — IPs bloqueadas —
@@ -3111,9 +3160,9 @@ async function renderSecurityTab() {
       : `<table class="student-table">
           <thead><tr><th>Hash IP</th><th>Bloqueada</th><th></th></tr></thead>
           <tbody>${blockedList.map(b => `<tr class="blocked-row">
-            <td class="ip-cell">${b.ip.substring(0,16)}…${b.ip === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
-            <td>${formatDate(b.blockedAt)}</td>
-            <td><button class="btn sm success" onclick="unblockIP('${b.ip}')">Desbloquear</button></td>
+            <td class="ip-cell">${b.ip_hash.substring(0,16)}…${b.ip_hash === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
+            <td>${formatDate(b.blocked_at)}</td>
+            <td><button class="btn sm success" onclick="unblockIP('${b.ip_hash}')">Desbloquear</button></td>
           </tr>`).join("")}</tbody>
         </table>`;
 
@@ -3123,17 +3172,17 @@ async function renderSecurityTab() {
       : `<table class="student-table">
           <thead><tr><th>Hash IP</th><th>Fecha</th><th>Navegador</th><th></th></tr></thead>
           <tbody>${recent.map(l => {
-            const isBlk = !!blocked[l.ip];
+            const isBlk = !!blocked[l.ip_hash];
             return `<tr class="${isBlk ? "blocked-row" : ""}">
-              <td class="ip-cell">${escHtml(l.ip).substring(0,16)}…
-                ${l.ip === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
+              <td class="ip-cell">${escHtml(l.ip_hash).substring(0,16)}…
+                ${l.ip_hash === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
                 ${isBlk ? '<span class="ip-blocked-badge">bloqueada</span>' : ""}
               </td>
               <td>${l.ts ? formatDate(l.ts) : "—"}</td>
               <td class="ua-cell">${escHtml(l.ua || "—")}</td>
               <td>${!isBlk
-                ? `<button class="btn sm danger" onclick="blockIP('${l.ip}')">Bloquear</button>`
-                : `<button class="btn sm success" onclick="unblockIP('${l.ip}')">Desbloquear</button>`}
+                ? `<button class="btn sm danger" onclick="blockIP('${l.ip_hash}')">Bloquear</button>`
+                : `<button class="btn sm success" onclick="unblockIP('${l.ip_hash}')">Desbloquear</button>`}
               </td>
             </tr>`;
           }).join("")}</tbody>
@@ -3155,22 +3204,40 @@ async function renderSecurityTab() {
   }
 }
 
-window.blockIP = async function(ip) {
+window.blockIP = async function(ipHash) {
   const ok = await showModal(
     "Bloquear IP",
-    `¿Bloquear acceso desde ${ip}? No podrá acceder a la web.`,
+    `¿Bloquear acceso desde ${ipHash}? No podrá acceder a la web.`,
     "Bloquear", "danger"
   );
   if (!ok) return;
-  await setDoc(doc(db, "blocked_ips", ipDocId(ip)), { ip, blockedAt: new Date().toISOString() });
-  toast(`IP ${ip} bloqueada`, "error");
-  renderSecurityTab();
+  try {
+    const { error } = await supabase
+      .from("blocked_ips")
+      .insert({
+        ip_hash: ipHash,
+        blocked_at: new Date().toISOString()
+      });
+    if (error) throw error;
+    toast(`IP ${ipHash} bloqueada`, "error");
+    renderSecurityTab();
+  } catch (err) {
+    toast(`Error al bloquear: ${err?.message || "desconocido"}`, "error");
+  }
 };
 
-window.unblockIP = async function(ip) {
-  await deleteDoc(doc(db, "blocked_ips", ipDocId(ip)));
-  toast(`IP ${ip} desbloqueada`, "success");
-  renderSecurityTab();
+window.unblockIP = async function(ipHash) {
+  try {
+    const { error } = await supabase
+      .from("blocked_ips")
+      .delete()
+      .eq("ip_hash", ipHash);
+    if (error) throw error;
+    toast(`IP ${ipHash} desbloqueada`, "success");
+    renderSecurityTab();
+  } catch (err) {
+    toast(`Error al desbloquear: ${err?.message || "desconocido"}`, "error");
+  }
 };
 
 window.clearOldLogs = async function() {
@@ -3180,10 +3247,17 @@ window.clearOldLogs = async function() {
     "Limpiar", "danger"
   );
   if (!ok) return;
-  const snap = await getDocs(collection(db, "access_logs"));
-  await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-  toast("Registros eliminados", "success");
-  renderSecurityTab();
+  try {
+    const { error } = await supabase
+      .from("access_logs")
+      .delete()
+      .gte("id", "00000000-0000-0000-0000-000000000000");
+    if (error) throw error;
+    toast("Registros eliminados", "success");
+    renderSecurityTab();
+  } catch (err) {
+    toast(`Error al limpiar: ${err?.message || "desconocido"}`, "error");
+  }
 };
 
 // =====================================================================
@@ -3588,7 +3662,11 @@ window.deletePotionFromInventory = async function(id) {
 
   delete allInventory[id];
   try {
-    await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+    const { error } = await supabase
+      .from("potions")
+      .update({ qty: 0 })
+      .eq("id", id);
+    if (error) throw error;
     toast(`${potion.name} eliminado del inventario`, "success");
     renderInventory();
   } catch (err) {
