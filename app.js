@@ -623,7 +623,7 @@ let currentStudent = null;
 let pendingChanges = {};
 
 let currentScreen = "scSearch";
-function show(id) {
+window.show = function(id) {
   const prev = currentScreen;
   ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras","scBlocked","scDirectory","scPersonas"].forEach(s => {
     const el = document.getElementById(s);
@@ -643,7 +643,7 @@ function show(id) {
   document.querySelectorAll(".app-nav-btn[data-screen]").forEach(b =>
     b.classList.toggle("active", b.dataset.screen === id));
   if (id !== prev) window.scrollTo({ top: 0 });
-}
+};
 
 // =====================================================================
 //  NAVIGATION HEADER
@@ -922,7 +922,7 @@ function renderBitCount(name) {
   </div>`;
 }
 
-function openProfile(name) {
+window.openProfile = function(name) {
   currentStudent = name;
   pendingChanges = JSON.parse(JSON.stringify(allStudents[name]));
   renderProfile();
