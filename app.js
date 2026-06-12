@@ -794,48 +794,101 @@ window.studentLogin = async function() {
     }
 
     // Si falló, intentar legacy-login (usuarios no migrados aún)
-    console.log(`[studentLogin] Legacy-login block reached`);
+    console.log(`[studentLogin] Intentando login legacy para: ${user}`);
     try {
-      console.log(`[studentLogin] A: Intentando para ${user}`);
-      const url = `${SUPABASE_SERVICE_FUNCTION_URL}/legacy-login`;
-      console.log(`[studentLogin] B: URL = ${url}`);
+      // 1. Buscar credenciales legacy en tabla pública
+      const { data: legacyCreds, error: credError } = await supabase
+        .from("legacy_credentials")
+        .select("*")
+        .eq("username", user.toLowerCase())
+        .single();
 
-      const opts = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({ username: user, password: pwd })
-      };
-      console.log(`[studentLogin] C: Options ready`);
+      if (credError || !legacyCreds) {
+        console.log(`[studentLogin] Credenciales no encontradas para ${user}`);
+        throw new Error("Credenciales inválidas");
+      }
 
-      const res = await fetch(url, opts);
-      console.log(`[studentLogin] D: Response received, status=${res.status}`);
+      // 2. Calcular hash SHA-256 de la contraseña (mismo que frontend)
+      const salt = atob("bWVkaW1hZ2lh") + atob("X3N0dWRlbnRf") + atob("djFf");
+      const hashInput = salt + pwd;
+      const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(hashInput));
+      const receivedHash = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
 
-      const text = await res.text();
-      console.log(`[studentLogin] E: Text=${text}`);
+      // 3. Comparar hashes (timing-safe)
+      if (receivedHash !== legacyCreds.password_hash_sha256) {
+        console.log(`[studentLogin] Hash incorrecto para ${user}`);
+        throw new Error("Credenciales inválidas");
+      }
 
-      const data = JSON.parse(text);
-      console.log(`[studentLogin] F: Parsed, success=${data.success}`);
+      console.log(`[studentLogin] ✅ Credenciales válidas para ${user}`);
 
-      if (data.success) {
-        console.log(`[studentLogin] ✅ Login exitoso para ${user}`);
+      // 4. Si ya está migrado, login directo
+      if (legacyCreds.auth_user_id) {
+        console.log(`[studentLogin] Usuario ya migrado, login directo`);
         loggedInStudent = user;
         clearLoginLock("mm_sl");
         pEl.value = "";
         const remember = document.getElementById("loginRemember");
-        if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: data.userId });
+        if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: legacyCreds.auth_user_id });
         else clearSession();
         updateAppHeader();
         await loadAllStudents();
         openProfile(user);
         return;
-      } else {
-        console.log(`[studentLogin] Legacy-login falló:`, data.error);
       }
+
+      // 5. Migrar a Supabase Auth (crear usuario)
+      console.log(`[studentLogin] Migrando usuario a Supabase Auth...`);
+      const emailSynthetic = `${user.replace(/[^a-z0-9.]/g, "_")}@medimagia.local`;
+
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: emailSynthetic,
+        password: pwd,
+        email_confirm: true,
+        user_metadata: { username: user, student_id: legacyCreds.student_id, role: "student", migrated_from: "firestore_sha256" }
+      });
+
+      if (authError) {
+        if (authError.message?.includes("already exists")) {
+          console.log(`[studentLogin] Usuario auth ya existe`);
+        } else {
+          throw authError;
+        }
+      }
+
+      const authUserId = authData?.user?.id || legacyCreds.auth_user_id;
+      if (authUserId) {
+        // Actualizar legacy_credentials
+        await supabase
+          .from("legacy_credentials")
+          .update({ auth_user_id: authUserId, migrated_at: new Date().toISOString() })
+          .eq("id", legacyCreds.id);
+
+        // Actualizar student
+        await supabase.from("students").update({ profile_id: authUserId }).eq("id", legacyCreds.student_id);
+
+        // Crear profile
+        await supabase.from("profiles").upsert(
+          { id: authUserId, username: user, display_name: user, role: "student" },
+          { onConflict: "id" }
+        );
+      }
+
+      console.log(`[studentLogin] ✅ Login exitoso y migrado para ${user}`);
+      loggedInStudent = user;
+      clearLoginLock("mm_sl");
+      pEl.value = "";
+      const remember = document.getElementById("loginRemember");
+      if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: authUserId });
+      else clearSession();
+      updateAppHeader();
+      await loadAllStudents();
+      openProfile(user);
+      return;
     } catch (legacyErr) {
-      console.error("[studentLogin] CATCH ERROR:", legacyErr.message || String(legacyErr));
+      console.error("[studentLogin] Legacy login error:", legacyErr.message || String(legacyErr));
     }
 
     // Ambos fallaron: credenciales incorrectas
