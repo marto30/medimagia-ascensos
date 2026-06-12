@@ -794,16 +794,20 @@ window.studentLogin = async function() {
 
     // Si falló, intentar legacy-login (usuarios no migrados aún)
     try {
+      console.log(`[studentLogin] Intentando legacy-login para: ${user}`);
       const legacyRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/legacy-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: user, password: pwd })
       });
 
+      console.log(`[studentLogin] Legacy-login status: ${legacyRes.status}`);
       const legacyData = await legacyRes.json();
+      console.log(`[studentLogin] Legacy-login response:`, legacyData);
 
       if (legacyData.success) {
         // Usuario fue migrado, ahora está en Supabase Auth
+        console.log(`[studentLogin] ✅ Login exitoso para ${user}`);
         loggedInStudent = user;
         clearLoginLock("mm_sl");
         pEl.value = "";
@@ -814,9 +818,11 @@ window.studentLogin = async function() {
         await loadAllStudents();
         openProfile(user);
         return;
+      } else {
+        console.log(`[studentLogin] Legacy-login falló:`, legacyData.error);
       }
     } catch (legacyErr) {
-      console.error("Legacy login error:", legacyErr);
+      console.error("[studentLogin] Legacy login error:", legacyErr);
     }
 
     // Ambos fallaron: credenciales incorrectas
