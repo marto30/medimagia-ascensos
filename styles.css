@@ -1911,3 +1911,13 @@ textarea:focus-visible,
 @media (min-width: 1700px) {
   .wrap { max-width: 1560px; }
 }
+
+/* ── 18. SKIP LINK (accesibilidad por teclado) ─────────────────── */
+.skip-link {
+  position: absolute; top: -100px; left: 1rem; z-index: 10000;
+  background: var(--ink-soft); color: var(--gold-light);
+  border: 1px solid rgba(201,162,39,.5); border-radius: var(--r-sm);
+  padding: .6rem 1.1rem; font-family: var(--font-h); font-size: .8rem;
+  text-decoration: none; transition: top .2s ease;
+}
+.skip-link:focus { top: 1rem; }

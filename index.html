@@ -4,38 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Medimagia — Registro de ascensos del Colegio: consulta tu progreso, hechizos y bitácoras.">
+  <meta name="theme-color" content="#07071a">
+  <meta name="color-scheme" content="dark">
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
-                 script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://esm.sh;
-                 connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://api.ipify.org https://api64.ipify.org https://*.supabase.co https://esm.sh;
+                 script-src 'self' 'unsafe-inline' https://esm.sh;
+                 connect-src 'self' https://api.ipify.org https://api64.ipify.org https://*.supabase.co https://esm.sh;
                  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                  font-src 'self' https://fonts.gstatic.com;
-                 img-src 'self' data: https://www.gstatic.com;
+                 img-src 'self' data:;
                  object-src 'none';
                  base-uri 'self';
                  form-action 'self';
                  upgrade-insecure-requests;">
   <title>Medimagia — Registro de Ascensos</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.92em' font-size='86'%3E%E2%9A%95%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260612d">
+  <link rel="stylesheet" href="styles.css?v=20260613a">
 </head>
 <body>
-<div class="bg"></div>
-<div class="wrap">
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
+<div class="bg" aria-hidden="true"></div>
+<noscript>
+  <p style="text-align:center;padding:2rem;color:#ede5d8;font-family:Georgia,serif">
+    Esta aplicación necesita JavaScript para funcionar. Actívalo en tu navegador.
+  </p>
+</noscript>
+<main class="wrap" id="contenido">
 
   <!-- CABECERA -->
-  <div class="header">
-    <div class="crest">⚕</div>
+  <header class="header">
+    <div class="crest" aria-hidden="true">⚕</div>
     <h1>Registro de Ascensos</h1>
     <p class="subtitle">Medimagia — Consulta y actualiza tu progreso</p>
-  </div>
+  </header>
 
   <!-- BARRA DE NAVEGACIÓN (visible cuando hay sesión iniciada) -->
   <div id="appHeader" style="display:none">
-    <div id="appHeaderUser" class="app-header-bar"></div>
-    <div id="adminQuickBar" class="admin-quick-bar" style="display:none">
+    <nav id="appHeaderUser" class="app-header-bar" aria-label="Navegación principal"></nav>
+    <nav id="adminQuickBar" class="admin-quick-bar" style="display:none" aria-label="Atajos de administración">
       <span class="admin-quick-label">Ir a:</span>
       <button class="admin-quick-btn" onclick="showTab('tabList')">🧑‍🎓 Alumnos</button>
       <button class="admin-quick-btn" onclick="showTab('tabAscensos')">⬆ Ascensos</button>
@@ -44,13 +54,13 @@
       <button class="admin-quick-btn" onclick="showTab('tabGrad')">🎓 Graduados</button>
       <button class="admin-quick-btn" onclick="showTab('tabAdd')">➕ Nuevo alumno</button>
       <button class="admin-quick-btn" onclick="showTab('tabInventory')">🧪 Inventario</button>
-    </div>
+    </nav>
   </div>
 
   <!-- ── PANTALLA: BLOQUEADO ──────────────────────────────────── -->
-  <div id="scBlocked" style="display:none">
+  <div id="scBlocked" style="display:none" role="alert">
     <div class="card blocked-card">
-      <div class="blocked-icon">🚫</div>
+      <div class="blocked-icon" aria-hidden="true">🚫</div>
       <p class="card-title" style="color:var(--red)">Acceso restringido</p>
       <p class="blocked-msg">Tu acceso ha sido restringido por el administrador.<br>Si crees que es un error, contacta con él.</p>
     </div>
@@ -75,7 +85,7 @@
         <input type="password" id="loginPwd" placeholder="••••••••••"
                autocomplete="current-password" maxlength="100"
                onkeydown="if(event.key==='Enter')studentLogin()"/>
-        <p class="err" id="loginErr">Usuario o contraseña incorrectos.</p>
+        <p class="err" id="loginErr" role="alert">Usuario o contraseña incorrectos.</p>
       </div>
       <label class="remember-row">
         <input type="checkbox" id="loginRemember" checked/>
@@ -86,8 +96,8 @@
       </button>
     </div>
 
-    <div id="loadingIndicator" class="loading" style="display:none">
-      <span class="spinner"></span>Conectando con la base de datos…
+    <div id="loadingIndicator" class="loading" style="display:none" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>Conectando con la base de datos…
     </div>
 
     <!-- Navegación secundaria -->
@@ -124,7 +134,7 @@
       </div>
 
       <div class="field">
-        <label>¿Quién le atendió?
+        <label for="attendantSearch">¿Quién le atendió?
           <span style="font-size:.74rem;color:#4a4540">(puede ser más de uno)</span>
         </label>
         <input type="text" id="attendantSearch" class="attendant-search"
@@ -153,6 +163,7 @@
     <div class="bitacora-search-wrap">
       <input type="text" id="bitacoraSearch"
              placeholder="Buscar por paciente, diagnóstico o medimago…"
+             aria-label="Buscar bitácoras por paciente, diagnóstico o medimago"
              maxlength="120" oninput="filterBitacorasD()"/>
       <button class="bitacora-search-clear" id="bitacoraSearchClear"
               onclick="clearBitacoraSearch()" style="display:none"
@@ -206,6 +217,7 @@
       <div class="field" style="margin-bottom:0">
         <input type="text" id="personasSearch"
                placeholder="Buscar persona por nombre…"
+               aria-label="Buscar persona por nombre"
                maxlength="80" oninput="filterPersonasD()"/>
       </div>
     </div>
@@ -248,7 +260,7 @@
         <input type="password" id="adminPwd" placeholder="••••••••••" maxlength="100"
                autocomplete="current-password"
                onkeydown="if(event.key==='Enter')loginAdmin()"/>
-        <p class="err" id="adminErr">Contraseña incorrecta.</p>
+        <p class="err" id="adminErr" role="alert">Contraseña incorrecta.</p>
       </div>
       <label class="remember-row">
         <input type="checkbox" id="adminRemember" checked/>
@@ -264,7 +276,7 @@
   <!-- ── PANTALLA: PANEL ADMIN ────────────────────────────────── -->
   <div id="scAdmin" style="display:none">
 
-    <div class="admin-tabs">
+    <nav class="admin-tabs" aria-label="Secciones del panel de administración">
       <button class="tab active"       data-tab="tabList"     onclick="showTab('tabList')">🧑‍🎓 Alumnos</button>
       <button class="tab"              data-tab="tabAscensos" onclick="showTab('tabAscensos')">⬆ Ascensos</button>
       <button class="tab"              data-tab="tabStats"    onclick="showTab('tabStats')">📊 Estadísticas</button>
@@ -277,12 +289,12 @@
       <button class="tab tab-security" data-tab="tabSecurity" id="tabSecurityBtn"
               onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
       <button class="tab"              data-tab="tabConfig"   onclick="showTab('tabConfig')">⚙ Configuración</button>
-    </div>
+    </nav>
 
     <!-- Tab: lista de alumnos -->
     <div class="admin-section show" id="tabList">
       <div class="search-admin">
-        <input type="text" id="adminSearch" placeholder="Buscar por nombre…" maxlength="80" oninput="renderListD()"/>
+        <input type="text" id="adminSearch" placeholder="Buscar por nombre…" aria-label="Buscar alumno por nombre" maxlength="80" oninput="renderListD()"/>
       </div>
       <div id="adminListWrap">
         <div class="loading"><span class="spinner"></span>Cargando…</div>
@@ -370,7 +382,7 @@
     <div class="admin-section" id="tabInventory">
       <p class="notice">Gestiona el <strong>inventario de pociones</strong>. Edita las cantidades directamente y guarda todos los cambios de una vez.</p>
       <div class="inventory-controls">
-        <input type="text" id="invSearch" placeholder="Buscar poción…" maxlength="100" oninput="filterInventory()"/>
+        <input type="text" id="invSearch" placeholder="Buscar poción…" aria-label="Buscar poción por nombre o categoría" maxlength="100" oninput="filterInventory()"/>
       </div>
       <div id="inventoryWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
       <div class="inventory-actions" style="margin-top:1.5rem;display:none" id="inventoryActions">
@@ -464,11 +476,11 @@
           aria-label="Volver arriba" title="Volver arriba">↑</button>
 
   <!-- TOASTS -->
-  <div class="toast-wrap" id="toastWrap"></div>
+  <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
 
   <!-- MODAL DE CREDENCIALES -->
   <div class="modal-overlay" id="credModal">
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="credModalTitle">
       <div class="modal-title" id="credModalTitle">Credenciales de acceso</div>
       <div class="modal-body" id="credModalBody" style="text-align:left;padding-top:.4rem"></div>
       <div class="modal-actions">
@@ -480,8 +492,8 @@
 
   <!-- MODAL DE EDICIÓN DE BITÁCORA -->
   <div class="modal-overlay" id="editBitacoraModal">
-    <div class="modal edit-bitacora-modal">
-      <div class="modal-title">Editar Bitácora</div>
+    <div class="modal edit-bitacora-modal" role="dialog" aria-modal="true" aria-labelledby="editBitModalTitle">
+      <div class="modal-title" id="editBitModalTitle">Editar Bitácora</div>
 
       <div class="field">
         <label for="editBitPatient">Nombre del paciente</label>
@@ -500,7 +512,7 @@
       </div>
 
       <div class="field">
-        <label>¿Quién le atendió?</label>
+        <label for="editAttendantSearch">¿Quién le atendió?</label>
         <input type="text" id="editAttendantSearch" class="attendant-search"
                placeholder="Buscar medimago…" maxlength="80" oninput="filterEditAttendantsD()"/>
         <div class="attendants-list" id="editAttendantsList"></div>
@@ -527,8 +539,9 @@
 
   <!-- MODAL: Seleccionar pociones para bitácora -->
   <div class="modal-overlay" id="potionSelectorModal">
-    <div class="modal edit-bitacora-modal" style="max-width:600px;max-height:80vh;overflow-y:auto">
-      <div class="modal-title">Seleccionar pociones usadas</div>
+    <div class="modal edit-bitacora-modal" style="max-width:600px;max-height:80vh;overflow-y:auto"
+         role="dialog" aria-modal="true" aria-labelledby="potionSelTitle">
+      <div class="modal-title" id="potionSelTitle">Seleccionar pociones usadas</div>
 
       <div style="margin-bottom:1rem">
         <input type="text" id="potionSelectorSearch" placeholder="Buscar poción…" maxlength="100"
@@ -546,8 +559,9 @@
 
   <!-- MODAL: Seleccionar pociones para editar bitácora -->
   <div class="modal-overlay" id="editPotionSelectorModal">
-    <div class="modal edit-bitacora-modal" style="max-width:600px;max-height:80vh;overflow-y:auto">
-      <div class="modal-title">Seleccionar pociones usadas</div>
+    <div class="modal edit-bitacora-modal" style="max-width:600px;max-height:80vh;overflow-y:auto"
+         role="dialog" aria-modal="true" aria-labelledby="editPotionSelTitle">
+      <div class="modal-title" id="editPotionSelTitle">Seleccionar pociones usadas</div>
 
       <div style="margin-bottom:1rem">
         <input type="text" id="editPotionSelectorSearch" placeholder="Buscar poción…" maxlength="100"
@@ -565,7 +579,7 @@
 
   <!-- MODAL DE CONFIRMACIÓN -->
   <div class="modal-overlay" id="confirmModal">
-    <div class="modal">
+    <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalBody">
       <div class="modal-title" id="modalTitle"></div>
       <div class="modal-body"  id="modalBody"></div>
       <div class="modal-actions">
@@ -575,10 +589,10 @@
     </div>
   </div>
 
-  <div class="footer">
+  <footer class="footer">
     Los datos se guardan en la nube · Solo tú puedes ver tu progreso
-  </div>
-</div>
+  </footer>
+</main>
 
 <datalist id="patientsList"></datalist>
 <script type="module" src="app.js?v=20260612a6"></script>
