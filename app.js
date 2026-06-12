@@ -266,11 +266,11 @@ let allRanks       = {};   // name → stored rank (manual, set by admin)
 let allCredentials = {};   // name → { username, passwordHash }
 let allInfractions = {};   // name → [{ reason, date }]
 let usernameIndex  = {};   // lowercase_username → name
-var isAdmin        = false;
-var isSuperAdmin   = false;
-var loggedInStudent = null;
-var adminPwdHash   = null;
-var superAdminHash = null;
+window.isAdmin        = false;
+window.isSuperAdmin   = false;
+window.loggedInStudent = null;
+window.adminPwdHash   = null;
+window.superAdminHash = null;
 let visitorIP      = null;
 let allInventory   = {};   // potion_id → { name, category, quantity }
 
