@@ -1,1 +1,0 @@
-# medimagia-ascensos
