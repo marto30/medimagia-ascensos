@@ -313,11 +313,14 @@ const POTIONS_CATALOG = [
 
 async function loadAdminConfig() {
   try {
-    const ref  = doc(db, "config", "admin");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      adminPwdHash   = snap.data().passwordHash || null;
-      superAdminHash = snap.data().superPasswordHash || null;
+    const { data } = await supabase
+      .from("app_config")
+      .select("value")
+      .eq("key", "admin_config")
+      .single();
+    if (data?.value) {
+      adminPwdHash   = data.value.passwordHash || null;
+      superAdminHash = data.value.superPasswordHash || null;
     }
   } catch {
     adminPwdHash = null;
@@ -326,20 +329,26 @@ async function loadAdminConfig() {
 
 async function loadRanksConfig() {
   try {
-    const ref  = doc(db, "config", "ranks");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const data = snap.data();
-      if (Array.isArray(data.order) && data.order.length && data.spells) {
-        RANKS_ORDER = data.order;
-        RANKS       = data.spells;
+    const { data } = await supabase
+      .from("app_config")
+      .select("value")
+      .eq("key", "ranks_config")
+      .single();
+    if (data?.value) {
+      const { order, spells } = data.value;
+      if (Array.isArray(order) && order.length && spells) {
+        RANKS_ORDER = order;
+        RANKS = spells;
       }
     }
   } catch { /* se mantienen los rangos por defecto */ }
 }
 
 async function saveRanksConfig() {
-  await setDoc(doc(db, "config", "ranks"), { order: RANKS_ORDER, spells: RANKS }, { merge: true });
+  const { error } = await supabase
+    .from("app_config")
+    .upsert({ key: "ranks_config", value: { order: RANKS_ORDER, spells: RANKS } }, { onConflict: "key" });
+  if (error) throw error;
 }
 
 // =====================================================================
@@ -1021,7 +1030,13 @@ window.applyManualRank = async function() {
   if (!ok) { sel.value = oldRank; return; }
 
   try {
-    await setDoc(doc(db, "alumnos", docId(name)), { currentRank: newRank }, { merge: true });
+    const student = allStudents[name];
+    if (!student) throw new Error("Estudiante no encontrado");
+    const { error } = await supabase
+      .from("students")
+      .update({ current_rank: newRank })
+      .eq("id", student.id);
+    if (error) throw error;
   } catch (err) {
     toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
     sel.value = oldRank;
@@ -1080,15 +1095,23 @@ window.addInfraction = async function() {
     errEl.style.display = "block";
     return;
   }
-  const entry = { reason, date: new Date().toISOString() };
-  const list  = [...(allInfractions[name] || []), entry];
   try {
-    await setDoc(doc(db, "alumnos", docId(name)), { infractions: list }, { merge: true });
+    const student = allStudents[name];
+    if (!student) throw new Error("Estudiante no encontrado");
+    const { error } = await supabase
+      .from("infractions")
+      .insert({
+        student_id: student.id,
+        reason: reason,
+        infraction_date: new Date().toISOString()
+      });
+    if (error) throw error;
   } catch (err) {
     errEl.textContent = `Error al guardar: ${err?.code || err?.message || "desconocido"}`;
     errEl.style.display = "block";
     return;
   }
+  const list = [...(allInfractions[name] || []), { reason, date: new Date().toISOString() }];
   allInfractions[name] = list;
   input.value = "";
   renderInfractions(name);
@@ -1104,13 +1127,23 @@ window.removeInfraction = async function(idx) {
     "Eliminar", "danger"
   );
   if (!ok) return;
-  const list = (allInfractions[name] || []).filter((_, i) => i !== idx);
+  const infraList = allInfractions[name] || [];
+  const infraToDelete = infraList[idx];
+  if (!infraToDelete || !infraToDelete.id) {
+    toast("Error: infracción no identificada", "error");
+    return;
+  }
   try {
-    await setDoc(doc(db, "alumnos", docId(name)), { infractions: list }, { merge: true });
+    const { error } = await supabase
+      .from("infractions")
+      .delete()
+      .eq("id", infraToDelete.id);
+    if (error) throw error;
   } catch (err) {
     toast(`Error al eliminar: ${err?.code || err?.message || "desconocido"}`, "error");
     return;
   }
+  const list = infraList.filter((_, i) => i !== idx);
   allInfractions[name] = list;
   renderInfractions(name);
   toast("Infracción eliminada");
@@ -1545,10 +1578,24 @@ window.migrateAllRanks = async function() {
     const correct  = calcCorrectRank(allStudents[name]);
     const current  = allRanks[name] || RANKS_ORDER[0];
     if (correct !== current) {
-      await setDoc(doc(db, "alumnos", docId(name)), { currentRank: correct }, { merge: true });
-      changes.push(`${name}: ${current} → ${correct}`);
-      allRanks[name] = correct;
-      corrected++;
+      try {
+        const { data: student } = await supabase
+          .from("students")
+          .select("id")
+          .eq("name", name)
+          .single();
+        if (student?.id) {
+          await supabase
+            .from("students")
+            .update({ current_rank: correct })
+            .eq("id", student.id);
+          changes.push(`${name}: ${current} → ${correct}`);
+          allRanks[name] = correct;
+          corrected++;
+        }
+      } catch (err) {
+        console.error(`Error actualizando ${name}:`, err);
+      }
     } else {
       unchanged++;
     }
@@ -1721,7 +1768,17 @@ window.adminAscend = async function(name) {
   );
   if (!ok) return;
   try {
-    await setDoc(doc(db, "alumnos", docId(name)), { currentRank: nextRank }, { merge: true });
+    const { data: student } = await supabase
+      .from("students")
+      .select("id")
+      .eq("name", name)
+      .single();
+    if (!student?.id) throw new Error("Estudiante no encontrado");
+    const { error } = await supabase
+      .from("students")
+      .update({ current_rank: nextRank })
+      .eq("id", student.id);
+    if (error) throw error;
   } catch (err) {
     toast(`Error al ascender: ${err?.code || err?.message || "desconocido"}`, "error");
     return;
@@ -2025,8 +2082,17 @@ window.doGenerateCredentials = async function() {
   const passwordHash = await hashStudentPwd(password);
 
   try {
-    await setDoc(doc(db, "alumnos", docId(name)),
-      { username, studentPasswordHash: passwordHash }, { merge: true });
+    const { data: student } = await supabase
+      .from("students")
+      .select("id")
+      .eq("name", name)
+      .single();
+    if (!student?.id) throw new Error("Estudiante no encontrado");
+    const { error } = await supabase
+      .from("students")
+      .update({ username })
+      .eq("id", student.id);
+    if (error) throw error;
   } catch (err) {
     console.error("Error guardando credenciales:", err);
     toast(`Error al guardar en la base de datos: ${err?.code || err?.message || "desconocido"}`, "error");
@@ -3469,7 +3535,12 @@ window.savePotionToInventory = async function() {
   allInventory[id] = (allInventory[id] || 0) + qty;
 
   try {
-    await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+    const newQty = allInventory[id];
+    const { error } = await supabase
+      .from("potions")
+      .update({ qty: newQty })
+      .eq("id", id);
+    if (error) throw error;
     toast(`${qty} unidad${qty !== 1 ? "es" : ""} añadidas al inventario`, "success");
     closeAddPotionModal();
     renderInventory();
@@ -3493,7 +3564,11 @@ window.editPotionQuantity = async function(id) {
 
   allInventory[id] = parsedQty;
   try {
-    await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+    const { error } = await supabase
+      .from("potions")
+      .update({ qty: parsedQty })
+      .eq("id", id);
+    if (error) throw error;
     toast(`${potion.name} actualizado a ${parsedQty} unidades`, "success");
     renderInventory();
   } catch (err) {
