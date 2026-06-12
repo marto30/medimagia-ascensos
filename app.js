@@ -1213,38 +1213,80 @@ window.loginAdmin = async function() {
   }
   const btn = document.querySelector("#scAdminLogin .btn");
   if (btn) { btn.disabled = true; btn.textContent = "Verificando…"; }
-  const hash = await sha256(document.getElementById("adminPwd").value);
 
-  if (superAdminHash && hash === superAdminHash) {
-    isAdmin = true; isSuperAdmin = true;
-  } else if (hash === adminPwdHash) {
-    isAdmin = true; isSuperAdmin = false;
-  } else {
+  const password = document.getElementById("adminPwd").value;
+
+  try {
+    // Intentar admin-legacy-login para superadmin
+    let loginSuccess = false;
+    let adminRole = "admin";
+
+    // Probar superadmin primero
+    const superRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/admin-legacy-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password, role: "superadmin" })
+    });
+
+    const superData = await superRes.json();
+    if (superData.success) {
+      loginSuccess = true;
+      isSuperAdmin = true;
+      isAdmin = true;
+    } else {
+      // Probar admin
+      const adminRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/admin-legacy-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, role: "admin" })
+      });
+
+      const adminData = await adminRes.json();
+      if (adminData.success) {
+        loginSuccess = true;
+        isAdmin = true;
+        isSuperAdmin = false;
+      }
+    }
+
+    if (!loginSuccess) {
+      recordFailedLogin();
+      const left = loginLockRemaining();
+      const errEl = document.getElementById("adminErr");
+      errEl.textContent = left > 0
+        ? `Contraseña incorrecta. Cuenta bloqueada ${left} min.`
+        : "Contraseña incorrecta.";
+      errEl.style.display = "block";
+      if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
+      return;
+    }
+
+    clearLoginLock();
+    document.getElementById("adminPwd").value = "";
+    const rememberAdmin = document.getElementById("adminRemember");
+    if (rememberAdmin && rememberAdmin.checked) {
+      saveSession({ kind: "admin", role: isSuperAdmin ? "superadmin" : "admin" });
+    } else {
+      clearSession();
+    }
+
+    applyAdminRole();
+    updateAppHeader();
+    show("scAdmin");
+    renderList(); renderAscensos(); renderGraduados();
+    resetSessionTimer();
+    if (!bitacorasLoaded) {
+      loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
+    }
+    if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
+  } catch (err) {
+    console.error("Admin login error:", err);
     recordFailedLogin();
-    const left = loginLockRemaining();
     const errEl = document.getElementById("adminErr");
-    errEl.textContent = left > 0
-      ? `Contraseña incorrecta. Cuenta bloqueada ${left} min.`
-      : "Contraseña incorrecta.";
+    errEl.textContent = "Error al verificar credenciales.";
     errEl.style.display = "block";
     if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
-    return;
   }
-
-  clearLoginLock();
-  document.getElementById("adminPwd").value = "";
-  const rememberAdmin = document.getElementById("adminRemember");
-  if (rememberAdmin && rememberAdmin.checked) saveSession({ kind: "admin", hash, super: isSuperAdmin });
-  else clearSession();
-  applyAdminRole();
-  updateAppHeader();
-  show("scAdmin");
-  renderList(); renderAscensos(); renderGraduados();
-  resetSessionTimer();
-  if (!bitacorasLoaded) {
-    loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
-  }
-  if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
 };
 
 // =====================================================================
@@ -2144,11 +2186,39 @@ window.backFromBitacoras = function() {
 };
 
 async function loadBitacoras() {
-  const snap = await getDocs(collection(db, "bitacoras"));
-  allBitacoras = [];
-  snap.forEach(d => allBitacoras.push({ id: d.id, ...d.data() }));
-  allBitacoras.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  updatePatientDatalist();
+  try {
+    const { data: bitacoras, error } = await supabase
+      .from("bitacoras")
+      .select(`
+        *,
+        bitacora_attendants(attendant_name),
+        bitacora_potions(potion_id),
+        bitacora_edit_history(editor, edited_at, edit_number)
+      `)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error cargando bitácoras:", error);
+      return;
+    }
+
+    allBitacoras = (bitacoras || []).map(b => ({
+      id: b.id,
+      patient: b.patient,
+      diagnosis: b.diagnosis,
+      procedure: b.procedure,
+      createdAt: b.created_at,
+      createdBy: b.created_by,
+      attendants: (b.bitacora_attendants || []).map(a => a.attendant_name),
+      potionsUsed: (b.bitacora_potions || []).map(p => p.potion_id),
+      editHistory: b.bitacora_edit_history || [],
+      ...b
+    }));
+
+    updatePatientDatalist();
+  } catch (err) {
+    console.error("Error en loadBitacoras:", err);
+  }
 }
 
 function updatePatientDatalist() {
@@ -2243,7 +2313,6 @@ window.saveBitacoraEntry = async function() {
   const patient    = document.getElementById("bitPatient").value.trim();
   const diagnosis  = document.getElementById("bitDiag").value.trim();
   const procedure  = document.getElementById("bitProc").value.trim();
-  // Selección desde memoria: incluye marcados que el filtro de búsqueda oculta
   const attendants = [...selectedAttendants].filter(n => allStudents[n]);
   if (loggedInStudent && !attendants.includes(loggedInStudent)) attendants.push(loggedInStudent);
   const potionsUsed = [...selectedPotions];
@@ -2261,33 +2330,66 @@ window.saveBitacoraEntry = async function() {
   }
 
   const now = new Date().toISOString();
-  const entry = {
-    patient, diagnosis, procedure, attendants, potionsUsed,
-    createdAt: now,
-    createdBy: loggedInStudent || "Sistema",
-    editHistory: [
-      { editor: loggedInStudent || "Sistema", editedAt: now, editNumber: 1 }
-    ]
-  };
-  if (!potionsUsed.length) delete entry.potionsUsed;
 
   try {
-    const ref = await addDoc(collection(db, "bitacoras"), entry);
-    allBitacoras.unshift({ id: ref.id, ...entry });
+    // Insertar bitácora
+    const { data: bitacora, error: bitError } = await supabase
+      .from("bitacoras")
+      .insert({
+        patient, diagnosis, procedure,
+        created_at: now,
+        created_by: loggedInStudent || "Sistema"
+      })
+      .select()
+      .single();
 
-    // Restar pociones del inventario
-    if (potionsUsed.length) {
-      for (const potionId of potionsUsed) {
-        if (allInventory[potionId]) {
-          allInventory[potionId] = Math.max(0, allInventory[potionId] - 1);
-        }
-      }
-      try {
-        await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
-      } catch (invErr) {
-        console.error("Error actualizando inventario:", invErr);
-      }
+    if (bitError || !bitacora) throw bitError || new Error("No se pudo crear bitácora");
+
+    // Insertar attendants
+    for (const attendantName of attendants) {
+      await supabase
+        .from("bitacora_attendants")
+        .insert({
+          bitacora_id: bitacora.id,
+          attendant_name: attendantName,
+          student_id: null
+        });
     }
+
+    // Insertar potions y actualizar cantidad
+    for (const potionId of potionsUsed) {
+      await supabase
+        .from("bitacora_potions")
+        .insert({
+          bitacora_id: bitacora.id,
+          potion_id: potionId
+        });
+
+      // Restar del inventario
+      await supabase
+        .from("potions")
+        .update({ qty: Math.max(0, (allInventory[potionId] || 1) - 1) })
+        .eq("id", potionId);
+    }
+
+    // Insertar edit history
+    await supabase
+      .from("bitacora_edit_history")
+      .insert({
+        bitacora_id: bitacora.id,
+        editor: loggedInStudent || "Sistema",
+        edited_at: now,
+        edit_number: 1
+      });
+
+    allBitacoras.unshift({
+      id: bitacora.id,
+      patient, diagnosis, procedure,
+      createdAt: now,
+      createdBy: loggedInStudent || "Sistema",
+      attendants, potionsUsed,
+      editHistory: []
+    });
 
     bitacorasPage = 0;
     toast("Bitácora guardada", "success");
@@ -2297,7 +2399,8 @@ window.saveBitacoraEntry = async function() {
     updatePatientDatalist();
     renderBitacoraList();
   } catch (err) {
-    toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
+    console.error("Error guardando bitácora:", err);
+    toast(`Error al guardar: ${err?.message || "desconocido"}`, "error");
   }
 };
 
@@ -2306,10 +2409,22 @@ window.deleteBitacora = async function(id) {
     "¿Seguro que quieres eliminar esta bitácora? No se puede deshacer.",
     "Eliminar", "danger");
   if (!ok) return;
-  await deleteDoc(doc(db, "bitacoras", id));
-  allBitacoras = allBitacoras.filter(b => b.id !== id);
-  toast("Bitácora eliminada");
-  renderBitacoraList();
+
+  try {
+    const { error } = await supabase
+      .from("bitacoras")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+
+    allBitacoras = allBitacoras.filter(b => b.id !== id);
+    toast("Bitácora eliminada");
+    renderBitacoraList();
+  } catch (err) {
+    console.error("Error eliminando bitácora:", err);
+    toast("Error al eliminar", "error");
+  }
 };
 
 function formatDate(iso) {
@@ -3172,15 +3287,24 @@ loadRanksConfig()
 // =====================================================================
 async function loadInventory() {
   try {
-    const ref = doc(db, "config", "inventory");
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      allInventory = snap.data() || {};
-    } else {
+    const { data: potions, error } = await supabase
+      .from("potions")
+      .select("id, qty");
+
+    if (error) {
+      console.error("Error cargando inventario:", error);
       allInventory = {};
+      return;
+    }
+
+    allInventory = {};
+    if (potions) {
+      potions.forEach(p => {
+        allInventory[p.id] = p.qty;
+      });
     }
   } catch (err) {
-    console.error("Error cargando inventario:", err);
+    console.error("Error en loadInventory:", err);
     allInventory = {};
   }
 }
@@ -3264,11 +3388,19 @@ window.saveAllInventory = async function() {
     return;
   }
 
-  // Aplicar los cambios al inventario
   Object.assign(allInventory, pendingInventoryChanges);
 
   try {
-    await setDoc(doc(db, "config", "inventory"), allInventory, { merge: true });
+    // Actualizar cada poción en Supabase
+    for (const [potionId, qty] of Object.entries(pendingInventoryChanges)) {
+      const { error } = await supabase
+        .from("potions")
+        .update({ qty: Math.max(0, qty) })
+        .eq("id", potionId);
+
+      if (error) throw error;
+    }
+
     toast("Inventario guardado correctamente", "success");
 
     // Limpiar cambios pendientes
@@ -3278,7 +3410,7 @@ window.saveAllInventory = async function() {
 
     renderInventory();
   } catch (err) {
-    const errMsg = err?.code || err?.message || "desconocido";
+    const errMsg = err?.message || "desconocido";
     document.getElementById("invErr").textContent = `Error: ${errMsg}`;
     document.getElementById("invErr").style.display = "block";
     toast(`Error al guardar: ${errMsg}`, "error");
