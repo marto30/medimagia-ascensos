@@ -839,35 +839,44 @@ window.studentLogin = async function() {
         return;
       }
 
-      // 5. Hacer login con el email ya creado en Supabase Auth
-      console.log(`[studentLogin] Haciendo login con Supabase Auth...`);
-      const emailSynthetic = `${user.replace(/[^a-z0-9]/g, "")}@medimagia.test`;
+      // 5. Credenciales validadas - cambiar contraseña en auth.users
+      console.log(`[studentLogin] ✅ Hash válido, sincronizando con Supabase Auth...`);
 
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      // Llamar RPC function para cambiar la contraseña en auth.users
+      const { data: resetData, error: resetError } = await supabase
+        .rpc("reset_auth_password", { p_username: user, p_new_password: pwd });
+
+      if (resetError || !resetData?.success) {
+        console.log(`[studentLogin] Error al sincronizar:`, resetError?.message || resetData?.error);
+        throw new Error("Error al sincronizar contraseña");
+      }
+
+      const authUserId = resetData.auth_user_id;
+      console.log(`[studentLogin] Contraseña sincronizada, haciendo login...`);
+
+      // Ahora hacer login con la contraseña que acabamos de establecer
+      const emailSynthetic = `${user.replace(/[^a-z0-9]/g, "")}@medimagia.test`;
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
         email: emailSynthetic,
         password: pwd
       });
 
-      if (authError) {
-        console.log(`[studentLogin] Login con email ${emailSynthetic} falló:`, authError.message);
-        throw new Error("Error en login de Supabase Auth");
+      if (loginError) {
+        console.log(`[studentLogin] Login falló:`, loginError.message);
+        throw new Error("Error en login");
       }
 
-      if (authData?.user?.id) {
-        console.log(`[studentLogin] ✅ Login exitoso para ${user}`);
-        loggedInStudent = user;
-        clearLoginLock("mm_sl");
-        pEl.value = "";
-        const remember = document.getElementById("loginRemember");
-        if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: authData.user.id });
-        else clearSession();
-        updateAppHeader();
-        await loadAllStudents();
-        openProfile(user);
-        return;
-      } else {
-        throw new Error("No user returned from auth");
-      }
+      console.log(`[studentLogin] ✅ Login exitoso para ${user}`);
+      loggedInStudent = user;
+      clearLoginLock("mm_sl");
+      pEl.value = "";
+      const remember = document.getElementById("loginRemember");
+      if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: authUserId });
+      else clearSession();
+      updateAppHeader();
+      await loadAllStudents();
+      openProfile(user);
+      return;
     } catch (legacyErr) {
       console.error("[studentLogin] Legacy login error:", legacyErr.message || String(legacyErr));
     }
