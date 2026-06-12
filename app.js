@@ -763,11 +763,12 @@ window.studentLogin = async function() {
   eEl.textContent = "Usuario o contraseña incorrectos.";
 
   // Rate limit: 5 intentos fallidos → bloqueo 15 min
-  const lockLeft = loginLockRemaining("mm_sl");
-  if (lockLeft > 0) {
-    eEl.textContent = `Demasiados intentos. Espera ${lockLeft} minuto${lockLeft !== 1 ? "s" : ""}.`;
-    eEl.style.display = "block"; return;
-  }
+  // TEMPORALMENTE DESHABILITADO PARA DEBUG
+  // const lockLeft = loginLockRemaining("mm_sl");
+  // if (lockLeft > 0) {
+  //   eEl.textContent = `Demasiados intentos. Espera ${lockLeft} minuto${lockLeft !== 1 ? "s" : ""}.`;
+  //   eEl.style.display = "block"; return;
+  // }
 
   if (!user || !pwd) { eEl.style.display = "block"; return; }
 
