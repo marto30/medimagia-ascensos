@@ -2495,7 +2495,8 @@ window.saveBitacoraEntry = async function() {
       .insert({
         patient, diagnosis, procedure,
         created_at: now,
-        created_by: loggedInStudent || "Sistema"
+        created_by: loggedInStudent || "Sistema",
+        source_firestore_id: `bit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       })
       .select()
       .single();
