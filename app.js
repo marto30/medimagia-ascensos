@@ -3700,21 +3700,6 @@ window.reloadInventoryView = function() {
   toast("Cambios descartados", "info");
 };
 
-window.showAddPotionModal = function() {
-  const select = document.getElementById("potionSelect");
-  select.innerHTML = '<option value="">-- Seleccionar --</option>' +
-    POTIONS_CATALOG.map(p => `<option value="${p.id}">${escHtml(p.name)} (${escHtml(p.category)})</option>`).join("");
-  document.getElementById("potionSelect").value = "";
-  document.getElementById("potionQuantity").value = "1";
-  document.getElementById("potionErr").style.display = "none";
-  document.getElementById("potionDetailsWrap").style.display = "none";
-  document.getElementById("addPotionModal").style.display = "block";
-};
-
-window.closeAddPotionModal = function() {
-  document.getElementById("addPotionModal").style.display = "none";
-};
-
 window.updatePotionDetails = function() {
   const id = document.getElementById("potionSelect").value;
   const potion = POTIONS_CATALOG.find(p => p.id === id);
@@ -3727,38 +3712,6 @@ window.updatePotionDetails = function() {
   }
 };
 
-window.savePotionToInventory = async function() {
-  const id = document.getElementById("potionSelect").value;
-  const qty = parseInt(document.getElementById("potionQuantity").value) || 0;
-  const errEl = document.getElementById("potionErr");
-
-  if (!id) {
-    errEl.textContent = "Selecciona una poción.";
-    errEl.style.display = "block";
-    return;
-  }
-  if (qty < 1) {
-    errEl.textContent = "La cantidad debe ser al menos 1.";
-    errEl.style.display = "block";
-    return;
-  }
-
-  allInventory[id] = (allInventory[id] || 0) + qty;
-
-  try {
-    const newQty = allInventory[id];
-    const { error } = await supabase
-      .from("potions")
-      .update({ qty: newQty })
-      .eq("id", id);
-    if (error) throw error;
-    toast(`${qty} unidad${qty !== 1 ? "es" : ""} añadidas al inventario`, "success");
-    closeAddPotionModal();
-    renderInventory();
-  } catch (err) {
-    toast(`Error al guardar: ${err?.message || "desconocido"}`, "error");
-  }
-};
 
 window.editPotionQuantity = async function(id) {
   const potion = POTIONS_CATALOG.find(p => p.id === id);
