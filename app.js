@@ -1336,7 +1336,7 @@ window.loginAdmin = async function() {
     const tryAdminLogin = async (role) => {
       // 1. Buscar credenciales legacy
       const { data: creds, error: credError } = await supabase
-        .from("admin_legacy_credentials")
+        .from("admin_creds")
         .select("*")
         .eq("role", role)
         .single();
@@ -1350,7 +1350,7 @@ window.loginAdmin = async function() {
         .map(b => b.toString(16).padStart(2, "0"))
         .join("");
 
-      if (receivedHash !== creds.password_hash_sha256) return false;
+      if (receivedHash !== creds.hash) return false;
 
       // 3. Cambiar contraseña en auth.users via RPC
       const { data: resetData, error: resetError } = await supabase
