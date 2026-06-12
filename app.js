@@ -3549,30 +3549,26 @@ function tryAutoLogin() {
   const blk = document.getElementById("scBlocked");
   if (currentScreen === "scBlocked" || (blk && blk.style.display === "block")) return;
 
-  if (d.kind === "student") {
-    const cred = allCredentials[d.name];
-    if (cred && cred.passwordHash && cred.passwordHash === d.hash && allStudents[d.name]) {
-      loggedInStudent = d.name;
-      updateAppHeader();
-      openProfile(d.name);
-    } else {
-      clearSession();   // credenciales cambiadas o alumno eliminado
-    }
+  if (d.kind === "student" && d.name && allStudents[d.name]) {
+    window.loggedInStudent = d.name;
+    updateAppHeader();
+    openProfile(d.name);
     return;
   }
 
   if (d.kind === "admin") {
-    if (d.super && superAdminHash && d.hash === superAdminHash) { isAdmin = true; isSuperAdmin = true; }
-    else if (adminPwdHash && d.hash === adminPwdHash)          { isAdmin = true; isSuperAdmin = false; }
-    else { clearSession(); return; }   // contraseña cambiada
+    window.isAdmin = true;
+    window.isSuperAdmin = d.role === "superadmin";
     applyAdminRole();
     updateAppHeader();
     show("scAdmin");
-    renderList(); renderAscensos(); renderGraduados();
-    resetSessionTimer();
-    if (!bitacorasLoaded) {
-      loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
-    }
+    loadAllStudents().then(() => {
+      renderList(); renderAscensos(); renderGraduados();
+      resetSessionTimer();
+      if (!bitacorasLoaded) {
+        loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
+      }
+    });
   }
 }
 
