@@ -584,6 +584,19 @@ async function saveStudent(name, spells) {
   }
 }
 
+async function updateStudentRank(name, rank) {
+  try {
+    const { error } = await supabase
+      .from("students")
+      .update({ current_rank: rank })
+      .eq("name", name);
+
+    if (error) throw error;
+  } catch (err) {
+    console.error("Error actualizando rango:", err);
+  }
+}
+
 async function setGraduated(name, val) {
   try {
     const { error } = await supabase
@@ -1297,9 +1310,14 @@ window.guardarCambios = async function() {
   btn.disabled = true; btn.textContent = "Guardando…";
   try {
     await saveStudent(currentStudent, pendingChanges);
+    // Recalcular y actualizar el rango después de guardar hechizos
+    const newRank = calcRankLegacy(pendingChanges);
+    await updateStudentRank(currentStudent, newRank);
+    window.allRanks[currentStudent] = newRank;
     document.getElementById("savedMsg").style.display = "inline";
     setTimeout(() => document.getElementById("savedMsg").style.display = "none", 2500);
     updateDirtyState();
+    renderProfile();
     toast("Cambios guardados", "success");
   } catch {
     toast("Error al guardar. Comprueba tu conexión.", "error");
