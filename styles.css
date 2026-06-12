@@ -1415,19 +1415,19 @@ button.list-summary-chip:hover { border-color: rgba(201,162,39,.4); transform: t
   /* — Bitácoras: formulario a la izquierda (fijo al hacer scroll), lista a la derecha — */
   #scBitacoras {
     display: grid;
-    grid-template-columns: 440px minmax(0, 1fr);
+    grid-template-columns: 460px minmax(0, 1fr);
     gap: 1.6rem;
     align-items: start;
   }
-  #scBitacoras > .card {
+  #scBitacoras > .bit-form-card {
     grid-column: 1; grid-row: 1 / span 2;
     position: sticky; top: 1.2rem;
     max-height: calc(100vh - 2.4rem); overflow-y: auto;
     margin-bottom: 0 !important;
   }
-  #scBitacoras > .bitacora-search-wrap { grid-column: 2; grid-row: 1; }
-  #scBitacoras > #bitacoraListWrap     { grid-column: 2; grid-row: 2; }
-  #scBitacoras > .back-btn             { grid-column: 1 / -1; grid-row: 3; }
+  #scBitacoras > .bit-list-head    { grid-column: 2; grid-row: 1; }
+  #scBitacoras > #bitacoraListWrap { grid-column: 2; grid-row: 2; }
+  #scBitacoras > .back-btn         { grid-column: 1 / -1; grid-row: 3; }
 
   /* — Personas: lista a la izquierda, detalle de bitácoras a la derecha — */
   #scPersonas {
@@ -1921,3 +1921,170 @@ textarea:focus-visible,
   text-decoration: none; transition: top .2s ease;
 }
 .skip-link:focus { top: 1rem; }
+
+/* ── 19. BITÁCORAS: EXPEDIENTE MÉDICO MÁGICO ───────────────────── */
+
+/* Formulario por secciones */
+.bit-form-card .card-title { color: var(--gold); }
+.bit-form-section {
+  background: rgba(8,7,22,.3);
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r);
+  padding: 1rem 1.1rem .9rem;
+  margin-bottom: .9rem;
+}
+.bit-section-label {
+  font-family: var(--font-h);
+  font-size: .62rem; color: rgba(201,162,39,.75);
+  text-transform: uppercase; letter-spacing: .14em;
+  margin-bottom: .75rem;
+  display: flex; align-items: center; gap: .5rem;
+}
+.bit-section-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(201,162,39,.2), transparent);
+}
+.bit-label-hint { font-size: .74rem; color: #4a4540; text-transform: none; letter-spacing: 0; }
+.bit-form-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem;
+}
+@media (max-width: 1480px) { .bit-form-row { grid-template-columns: 1fr; } }
+@media (max-width: 1099px) {
+  .bit-form-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) { .bit-form-row { grid-template-columns: 1fr; } }
+
+/* Cabecera de la lista: título + búsqueda destacada */
+.bit-list-head { margin-bottom: 1rem; }
+.bit-list-title {
+  margin-bottom: .7rem !important;
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
+  color: var(--gold) !important;
+  font-size: .76rem !important;
+}
+.bitacora-search-wrap { margin-bottom: 0; }
+.bitacora-search-wrap::before {
+  content: '🔍'; position: absolute; left: 1rem; top: 50%;
+  transform: translateY(-50%); font-size: .82rem;
+  opacity: .45; pointer-events: none;
+}
+.bitacora-search-wrap input {
+  padding: .82rem 2.6rem .82rem 2.6rem;
+  border-radius: 999px;
+  background: rgba(8,7,22,.55);
+  border-color: rgba(201,162,39,.28);
+  font-size: .95rem;
+}
+.bitacora-search-wrap input:focus {
+  background: rgba(8,7,22,.75);
+  border-color: rgba(201,162,39,.55);
+}
+.bitacora-search-clear { right: .9rem; }
+
+/* Tarjeta de bitácora: expediente con sello y separadores */
+.bitacora-card {
+  background: linear-gradient(165deg, rgba(255,250,240,.055) 0%, rgba(255,250,240,.022) 60%, rgba(201,162,39,.025) 100%);
+  border: 1px solid rgba(201,162,39,.18);
+  border-left: 3px solid rgba(201,162,39,.5);
+  border-radius: var(--r-lg);
+  padding: 1.15rem 1.3rem 1rem;
+  margin-bottom: 1rem;
+}
+.bitacora-card:hover {
+  border-color: rgba(201,162,39,.34);
+  border-left-color: var(--gold);
+  box-shadow: 0 6px 24px rgba(0,0,0,.4), 0 0 18px rgba(201,162,39,.06);
+}
+.bitacora-top {
+  align-items: center;
+  padding-bottom: .8rem;
+  margin-bottom: .95rem;
+  border-bottom: 1px dashed rgba(201,162,39,.2);
+}
+.bitacora-patient {
+  font-size: 1.04rem;
+  color: var(--gold-light);
+  display: flex; align-items: center; gap: .45rem;
+}
+.bitacora-patient::before {
+  content: '⚕';
+  font-size: .9rem;
+  color: rgba(201,162,39,.6);
+}
+.bitacora-date {
+  display: inline-block;
+  margin-top: .35rem;
+  font-size: .72rem;
+  color: var(--text-muted);
+  background: rgba(255,255,255,.045);
+  border: 1px solid var(--border-sub);
+  border-radius: 999px;
+  padding: .1rem .65rem;
+}
+.bitacora-field { margin-bottom: .85rem; }
+.bitacora-label { color: rgba(201,162,39,.55); }
+.bitacora-value { color: #c6baa6; }
+.bitacora-proc {
+  background: rgba(0,0,0,.3);
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r-sm);
+  padding: .65rem .85rem;
+  margin-top: .2rem;
+  font-size: .87rem;
+  line-height: 1.65;
+}
+.att-badge {
+  background: linear-gradient(180deg, rgba(201,162,39,.12), rgba(201,162,39,.05));
+  border-color: rgba(201,162,39,.3);
+  color: var(--gold-light);
+  padding: .22rem .75rem;
+}
+
+/* Historial de ediciones: línea de tiempo discreta */
+.bitacora-edit-entry {
+  background: rgba(201,162,39,.045);
+  border-left: 2px solid rgba(201,162,39,.4);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-size: .78rem;
+  padding: .35rem .65rem;
+}
+.edit-num { color: var(--gold); font-size: .76rem; }
+.edit-info { color: var(--text-muted); }
+
+/* Contador de resultados y paginación */
+.bitacora-count-line {
+  font-size: .78rem; color: var(--text-muted);
+  padding: .3rem .2rem .6rem;
+}
+.pagination { margin-top: 1.2rem; gap: .35rem; }
+.page-btn {
+  border-radius: 999px;
+  min-width: 2.4rem;
+  padding: .42rem .8rem;
+  background: rgba(8,7,22,.5);
+  border-color: rgba(201,162,39,.18);
+}
+.page-btn.active {
+  background: linear-gradient(180deg, rgba(201,162,39,.22), rgba(201,162,39,.1));
+  border-color: rgba(201,162,39,.5);
+  color: var(--gold-light);
+}
+
+/* Lista de asistentes del formulario más cómoda */
+.attendants-list {
+  background: rgba(8,7,22,.4);
+  border-color: rgba(201,162,39,.14);
+  max-height: 215px;
+}
+
+/* Móvil: el formulario respira y la lista no se pega */
+@media (max-width: 1099px) {
+  .bit-form-card { margin-bottom: 1.6rem; }
+  .bit-list-head { margin-top: .4rem; }
+}
+@media (max-width: 560px) {
+  .bit-form-section { padding: .85rem .8rem .7rem; }
+  .bitacora-card { padding: .95rem 1rem .85rem; }
+  .bitacora-top { flex-wrap: wrap; gap: .5rem; }
+}

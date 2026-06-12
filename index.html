@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260613a">
+  <link rel="stylesheet" href="styles.css?v=20260613b">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -113,61 +113,73 @@
   <!-- ── PANTALLA: BITÁCORAS (pública) ────────────────────────── -->
   <div id="scBitacoras" style="display:none">
 
-    <div class="card" style="margin-bottom:1.4rem">
-      <p class="card-title">Nueva bitácora</p>
+    <section class="card bit-form-card" aria-label="Nueva bitácora">
+      <p class="card-title">📖 Nueva bitácora</p>
 
-      <div class="field">
-        <label for="bitPatient">Nombre del paciente</label>
-        <input type="text" id="bitPatient" list="patientsList" maxlength="80" placeholder="Nombre completo del paciente o busca uno existente…"/>
+      <div class="bit-form-section">
+        <p class="bit-section-label">Paciente</p>
+        <div class="bit-form-row">
+          <div class="field">
+            <label for="bitPatient">Nombre del paciente</label>
+            <input type="text" id="bitPatient" list="patientsList" maxlength="80" placeholder="Nombre completo o busca uno existente…"/>
+          </div>
+          <div class="field">
+            <label for="bitDiag">Diagnóstico</label>
+            <input type="text" id="bitDiag" maxlength="200" placeholder="Ej: Fractura en el brazo derecho"/>
+          </div>
+        </div>
       </div>
 
-      <div class="field">
-        <label for="bitDiag">Diagnóstico</label>
-        <input type="text" id="bitDiag" maxlength="200" placeholder="Ej: Fractura en el brazo derecho"/>
+      <div class="bit-form-section">
+        <p class="bit-section-label">Tratamiento</p>
+        <div class="field">
+          <label for="bitProc">Procedimiento</label>
+          <textarea id="bitProc" rows="4" maxlength="5000"
+            placeholder="Describe el procedimiento realizado…"></textarea>
+          <div class="spell-inserter" id="spellInserter"></div>
+        </div>
+        <div class="field">
+          <label>Pociones usadas
+            <span class="bit-label-hint">(opcional)</span>
+          </label>
+          <button class="btn-potion-selector" onclick="showPotionSelectorModal()">
+            🧪 Seleccionar pociones
+          </button>
+          <div class="potions-selected" id="potionsSelected"></div>
+        </div>
       </div>
 
-      <div class="field">
-        <label for="bitProc">Procedimiento</label>
-        <textarea id="bitProc" rows="4" maxlength="5000"
-          placeholder="Describe el procedimiento realizado…"></textarea>
-        <div class="spell-inserter" id="spellInserter"></div>
-      </div>
-
-      <div class="field">
-        <label for="attendantSearch">¿Quién le atendió?
-          <span style="font-size:.74rem;color:#4a4540">(puede ser más de uno)</span>
-        </label>
-        <input type="text" id="attendantSearch" class="attendant-search"
-               placeholder="Buscar medimago…" maxlength="80" oninput="filterAttendantsD()"/>
-        <div class="attendants-list" id="attendantsList"></div>
-      </div>
-
-      <div class="field">
-        <label>Pociones usadas
-          <span style="font-size:.74rem;color:#4a4540">(opcional)</span>
-        </label>
-        <button class="btn-potion-selector" onclick="showPotionSelectorModal()">
-          🧪 Seleccionar pociones
-        </button>
-        <div class="potions-selected" id="potionsSelected"></div>
+      <div class="bit-form-section">
+        <p class="bit-section-label">Equipo médico</p>
+        <div class="field">
+          <label for="attendantSearch">¿Quién le atendió?
+            <span class="bit-label-hint">(puede ser más de uno)</span>
+          </label>
+          <input type="text" id="attendantSearch" class="attendant-search"
+                 placeholder="Buscar medimago…" maxlength="80" oninput="filterAttendantsD()"/>
+          <div class="attendants-list" id="attendantsList"></div>
+        </div>
       </div>
 
       <div class="btn-row">
-        <button class="btn success" onclick="saveBitacoraEntry()">Guardar bitácora</button>
+        <button class="btn success" onclick="saveBitacoraEntry()">💾 Guardar bitácora</button>
         <button class="btn ghost"   onclick="resetBitacoraForm()">Limpiar</button>
       </div>
-      <p class="err"    id="bitErr"></p>
+      <p class="err"    id="bitErr" role="alert"></p>
       <p class="ok-msg" id="bitOk">✓ Bitácora guardada</p>
-    </div>
+    </section>
 
-    <div class="bitacora-search-wrap">
-      <input type="text" id="bitacoraSearch"
-             placeholder="Buscar por paciente, diagnóstico o medimago…"
-             aria-label="Buscar bitácoras por paciente, diagnóstico o medimago"
-             maxlength="120" oninput="filterBitacorasD()"/>
-      <button class="bitacora-search-clear" id="bitacoraSearchClear"
-              onclick="clearBitacoraSearch()" style="display:none"
-              aria-label="Limpiar búsqueda">✕</button>
+    <div class="bit-list-head">
+      <p class="card-title bit-list-title">🗂 Registro de bitácoras</p>
+      <div class="bitacora-search-wrap">
+        <input type="text" id="bitacoraSearch"
+               placeholder="Buscar por paciente, diagnóstico o medimago…"
+               aria-label="Buscar bitácoras por paciente, diagnóstico o medimago"
+               maxlength="120" oninput="filterBitacorasD()"/>
+        <button class="bitacora-search-clear" id="bitacoraSearchClear"
+                onclick="clearBitacoraSearch()" style="display:none"
+                aria-label="Limpiar búsqueda">✕</button>
+      </div>
     </div>
 
     <div id="bitacoraListWrap"></div>
