@@ -925,6 +925,19 @@ function renderBitCount(name) {
 
 window.openProfile = function(name) {
   currentStudent = name;
+  if (!allStudents[name]) {
+    console.warn(`Datos no encontrados para ${name}. Recargando...`);
+    loadAllStudents().then(() => {
+      if (!allStudents[name]) {
+        alert("No se pudieron cargar los datos del estudiante");
+        return;
+      }
+      pendingChanges = JSON.parse(JSON.stringify(allStudents[name]));
+      renderProfile();
+      show("scProfile");
+    });
+    return;
+  }
   pendingChanges = JSON.parse(JSON.stringify(allStudents[name]));
   renderProfile();
   show("scProfile");
