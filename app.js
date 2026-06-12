@@ -839,57 +839,35 @@ window.studentLogin = async function() {
         return;
       }
 
-      // 5. Migrar a Supabase Auth (crear usuario)
-      console.log(`[studentLogin] Migrando usuario a Supabase Auth...`);
-      // Email: basado en username + random para unicidad
-      const random = Math.random().toString(36).substring(7);
-      const emailSynthetic = `${user.replace(/[^a-z0-9]/g, "")}${random}@medimagia.test`;
+      // 5. Hacer login con el email ya creado en Supabase Auth
+      console.log(`[studentLogin] Haciendo login con Supabase Auth...`);
+      const emailSynthetic = `${user.replace(/[^a-z0-9]/g, "")}@medimagia.test`;
 
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: emailSynthetic,
-        password: pwd,
-        options: {
-          data: { username: user, student_id: legacyCreds.student_id, role: "student", migrated_from: "firestore_sha256" }
-        }
+        password: pwd
       });
 
       if (authError) {
-        if (authError.message?.includes("already exists")) {
-          console.log(`[studentLogin] Usuario auth ya existe`);
-        } else {
-          throw authError;
-        }
+        console.log(`[studentLogin] Login con email ${emailSynthetic} falló:`, authError.message);
+        throw new Error("Error en login de Supabase Auth");
       }
 
-      const authUserId = authData?.user?.id;
-      if (authUserId) {
-        // Actualizar legacy_credentials
-        await supabase
-          .from("legacy_credentials")
-          .update({ auth_user_id: authUserId, migrated_at: new Date().toISOString() })
-          .eq("id", legacyCreds.id);
-
-        // Actualizar student
-        await supabase.from("students").update({ profile_id: authUserId }).eq("id", legacyCreds.student_id);
-
-        // Crear profile
-        await supabase.from("profiles").upsert(
-          { id: authUserId, username: user, display_name: user, role: "student" },
-          { onConflict: "id" }
-        );
+      if (authData?.user?.id) {
+        console.log(`[studentLogin] ✅ Login exitoso para ${user}`);
+        loggedInStudent = user;
+        clearLoginLock("mm_sl");
+        pEl.value = "";
+        const remember = document.getElementById("loginRemember");
+        if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: authData.user.id });
+        else clearSession();
+        updateAppHeader();
+        await loadAllStudents();
+        openProfile(user);
+        return;
+      } else {
+        throw new Error("No user returned from auth");
       }
-
-      console.log(`[studentLogin] ✅ Login exitoso y migrado para ${user}`);
-      loggedInStudent = user;
-      clearLoginLock("mm_sl");
-      pEl.value = "";
-      const remember = document.getElementById("loginRemember");
-      if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: authUserId });
-      else clearSession();
-      updateAppHeader();
-      await loadAllStudents();
-      openProfile(user);
-      return;
     } catch (legacyErr) {
       console.error("[studentLogin] Legacy login error:", legacyErr.message || String(legacyErr));
     }
