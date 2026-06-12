@@ -1,30 +1,13 @@
-import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-         doc, getDoc, setDoc, getDocs, collection, deleteDoc, addDoc, updateDoc }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 // =====================================================================
-//  FIREBASE CONFIG
+//  SUPABASE CONFIG
 // =====================================================================
-const firebaseConfig = {
-  apiKey:            "AIzaSyAFeEm4gJv8qcmhWeMnipcmk-Wpwi5I1G4",
-  authDomain:        "medimagia-ascensos.firebaseapp.com",
-  projectId:         "medimagia-ascensos",
-  storageBucket:     "medimagia-ascensos.firebasestorage.app",
-  messagingSenderId: "508815684624",
-  appId:             "1:508815684624:web:988d28cf27268deedc4695"
-};
-const app = initializeApp(firebaseConfig);
-// Caché local persistente (IndexedDB): cargas casi instantáneas en visitas
-// repetidas y lectura sin conexión. Si el navegador no lo soporta, cae al modo normal.
-let db;
-try {
-  db = initializeFirestore(app, {
-    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-  });
-} catch {
-  db = getFirestore(app);
-}
+const SUPABASE_URL = "https://znuleryreishpfmtvhby.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpudWxlcnlyZWlzaHBmbXR2aGJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTA0NDEsImV4cCI6MjA5Njc4NjQ0MX0.1UE_DlCo23MhgMfFV9L0419haTMq2BSU971MeHmqGCw";
+const SUPABASE_SERVICE_FUNCTION_URL = "https://znuleryreishpfmtvhby.supabase.co/functions/v1";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // =====================================================================
 //  CONSTANTS
@@ -492,43 +475,110 @@ window.saveRanksChanges = async function() {
 };
 
 async function loadAllStudents() {
-  const snap = await getDocs(collection(db, "alumnos"));
   allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {};
-  if (snap.empty) {
-    for (const [name, spells] of Object.entries(BASE_DATA)) {
-      await setDoc(doc(db, "alumnos", docId(name)), { name, spells, graduated: false }, { merge: true });
-      allStudents[name]    = spells;
-      allGraduated[name]   = false;
-      allRanks[name]       = calcRankLegacy(spells);
-      allInfractions[name] = [];
+
+  try {
+    // Cargar estudiantes desde Supabase
+    const { data: students, error } = await supabase
+      .from("students")
+      .select("*");
+
+    if (error) {
+      console.error("Error cargando estudiantes:", error);
+      toast("Error al cargar estudiantes", "error");
+      return;
     }
-  } else {
-    snap.forEach(d => {
-      const data = d.data();
-      allStudents[data.name]    = data.spells;
-      allGraduated[data.name]   = data.graduated || false;
-      allRanks[data.name]       = data.currentRank || calcRankLegacy(data.spells);
-      allInfractions[data.name] = Array.isArray(data.infractions) ? data.infractions : [];
-      if (data.username) {
-        allCredentials[data.name] = {
-          username:     data.username,
-          passwordHash: data.studentPasswordHash || null
-        };
-        usernameIndex[data.username.toLowerCase()] = data.name;
+
+    if (!students || students.length === 0) return;
+
+    // Cargar spells por estudiante
+    for (const student of students) {
+      const { data: spells } = await supabase
+        .from("student_spells")
+        .select("source_spell_name, learned")
+        .eq("student_id", student.id);
+
+      const spellsObj = {};
+      if (spells) {
+        spells.forEach(s => {
+          spellsObj[s.source_spell_name] = s.learned;
+        });
       }
-    });
+
+      // Cargar infracciones
+      const { data: infractions } = await supabase
+        .from("infractions")
+        .select("*")
+        .eq("student_id", student.id);
+
+      allStudents[student.name] = spellsObj;
+      allGraduated[student.name] = student.graduated || false;
+      allRanks[student.name] = student.current_rank || calcRankLegacy(spellsObj);
+      allInfractions[student.name] = infractions || [];
+
+      if (student.username) {
+        allCredentials[student.name] = {
+          username: student.username,
+          passwordHash: null // En Supabase no almacenamos el hash
+        };
+        usernameIndex[student.username.toLowerCase()] = student.name;
+      }
+    }
+  } catch (err) {
+    console.error("Error en loadAllStudents:", err);
+    toast("Error al cargar estudiantes", "error");
   }
 }
 
 async function saveStudent(name, spells) {
-  await setDoc(doc(db, "alumnos", docId(name)),
-    { name, spells, graduated: allGraduated[name] || false }, { merge: true });
-  allStudents[name] = spells;
+  try {
+    const { data: student } = await supabase
+      .from("students")
+      .select("id")
+      .eq("name", name)
+      .single();
+
+    if (student) {
+      // Actualizar cada spell
+      for (const [spellName, learned] of Object.entries(spells)) {
+        const { data: spell } = await supabase
+          .from("spells")
+          .select("id")
+          .eq("name", spellName)
+          .single();
+
+        if (spell) {
+          await supabase
+            .from("student_spells")
+            .upsert({
+              student_id: student.id,
+              spell_id: spell.id,
+              learned: learned,
+              source_spell_name: spellName
+            }, { onConflict: "student_id,spell_id" });
+        }
+      }
+      allStudents[name] = spells;
+    }
+  } catch (err) {
+    console.error("Error guardando estudiante:", err);
+    toast("Error al guardar cambios", "error");
+  }
 }
 
 async function setGraduated(name, val) {
-  allGraduated[name] = val;
-  await setDoc(doc(db, "alumnos", docId(name)), { graduated: val }, { merge: true });
+  try {
+    const { error } = await supabase
+      .from("students")
+      .update({ graduated: val })
+      .eq("name", name);
+
+    if (error) throw error;
+    allGraduated[name] = val;
+  } catch (err) {
+    console.error("Error actualizando graduado:", err);
+    toast("Error al guardar cambios", "error");
+  }
 }
 
 async function deleteStudent(name) {
@@ -696,26 +746,67 @@ window.studentLogin = async function() {
     eEl.style.display = "block"; return;
   }
 
-  if (!user || !pwd) { eEl.style.display = "block"; return;  }
+  if (!user || !pwd) { eEl.style.display = "block"; return; }
 
-  const name = usernameIndex[user];
-  const hash = await hashStudentPwd(pwd);   // hash siempre: mismo tiempo exista o no el usuario
-  if (!name || !allCredentials[name] || !allCredentials[name].passwordHash ||
-      hash !== allCredentials[name].passwordHash) {
+  try {
+    // Intentar login con Supabase Auth normal (usuarios ya migrados)
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: `${user}@medimagia.local`,
+      password: pwd
+    });
+
+    if (data?.user) {
+      // Login exitoso en Supabase Auth
+      loggedInStudent = user;
+      clearLoginLock("mm_sl");
+      pEl.value = "";
+      const remember = document.getElementById("loginRemember");
+      if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: data.user.id });
+      else clearSession();
+      updateAppHeader();
+      await loadAllStudents();
+      openProfile(user);
+      return;
+    }
+
+    // Si falló, intentar legacy-login (usuarios no migrados aún)
+    try {
+      const legacyRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/legacy-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: user, password: pwd })
+      });
+
+      const legacyData = await legacyRes.json();
+
+      if (legacyData.success) {
+        // Usuario fue migrado, ahora está en Supabase Auth
+        loggedInStudent = user;
+        clearLoginLock("mm_sl");
+        pEl.value = "";
+        const remember = document.getElementById("loginRemember");
+        if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: legacyData.userId });
+        else clearSession();
+        updateAppHeader();
+        await loadAllStudents();
+        openProfile(user);
+        return;
+      }
+    } catch (legacyErr) {
+      console.error("Legacy login error:", legacyErr);
+    }
+
+    // Ambos fallaron: credenciales incorrectas
     recordFailedLogin("mm_sl");
     const left = loginLockRemaining("mm_sl");
     if (left > 0) eEl.textContent = `Usuario o contraseña incorrectos. Cuenta bloqueada ${left} min.`;
-    eEl.style.display = "block"; return;
+    eEl.style.display = "block";
+  } catch (err) {
+    console.error("Login error:", err);
+    recordFailedLogin("mm_sl");
+    eEl.textContent = "Error al iniciar sesión. Intenta de nuevo.";
+    eEl.style.display = "block";
   }
-
-  clearLoginLock("mm_sl");
-  pEl.value = "";
-  loggedInStudent = name;
-  const remember = document.getElementById("loginRemember");
-  if (remember && remember.checked) saveSession({ kind: "student", name, hash });
-  else clearSession();
-  updateAppHeader();
-  openProfile(name);
 };
 
 // =====================================================================
@@ -3450,3 +3541,4 @@ window.removeEditSelectedPotion = function(id) {
   editSelectedPotions.delete(id);
   renderEditSelectedPotions();
 };
+                                                                          
