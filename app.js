@@ -1985,7 +1985,7 @@ function renderPocaActividad() {
     ct: bitCntMonth(n, ty, tm),
     cl: bitCntMonth(n, ly, lm)
   }))
-  .filter(s => s.cl < 3)
+  .filter(s => s.cl < 3 && !allGraduated[s.name])
   .sort((a, b) => a.cl - b.cl || norm(a.name).localeCompare(norm(b.name)));
 
   if (!students.length) {
