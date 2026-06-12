@@ -2088,3 +2088,84 @@ textarea:focus-visible,
   .bitacora-card { padding: .95rem 1rem .85rem; }
   .bitacora-top { flex-wrap: wrap; gap: .5rem; }
 }
+
+/* ── 20. MODAL DE EDITAR BITÁCORA ──────────────────────────────── */
+.edit-bitacora-modal {
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: linear-gradient(165deg, #13112a 0%, #0e0c22 100%);
+  border: 1px solid rgba(201,162,39,.22);
+}
+.edit-bitacora-modal .modal-title {
+  color: var(--gold-light);
+  font-size: .95rem;
+}
+.modal-close {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  color: var(--text-muted);
+  width: 32px; height: 32px;
+  padding: 0;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all var(--t);
+}
+.modal-close:hover {
+  background: rgba(255,255,255,.15);
+  color: var(--gold);
+  border-color: rgba(201,162,39,.3);
+}
+
+/* Secciones en el modal */
+.edit-bit-section {
+  background: rgba(0,0,0,.3);
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r);
+  padding: .95rem 1rem .85rem;
+  margin-bottom: .8rem;
+}
+.edit-bit-section .bit-section-label {
+  margin-bottom: .6rem;
+  color: rgba(201,162,39,.7);
+}
+
+/* Attendants más cómodos en modal */
+.edit-bitacora-modal .attendants-list {
+  max-height: 200px;
+  background: rgba(0,0,0,.5);
+  border-color: rgba(201,162,39,.1);
+}
+.edit-bitacora-modal .attendant-item {
+  font-size: .84rem;
+  padding: .4rem .5rem;
+}
+
+/* Errores en modal */
+.edit-bitacora-modal .err {
+  background: rgba(176,69,69,.12);
+  border: 1px solid rgba(176,69,69,.2);
+  border-radius: var(--r-sm);
+  padding: .65rem .85rem;
+  margin-top: .8rem;
+}
+
+/* Actions en modal: botones lado a lado */
+.edit-bitacora-modal .modal-actions {
+  display: flex;
+  gap: .6rem;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-sub);
+}
+
+@media (max-width: 600px) {
+  .edit-bitacora-modal { max-width: 100%; }
+  .edit-bit-section { padding: .8rem .75rem .7rem; }
+  .bit-form-row { grid-template-columns: 1fr; }
+  .edit-bitacora-modal .modal-actions {
+    flex-direction: column-reverse;
+  }
+  .edit-bitacora-modal .modal-actions .btn { width: 100%; justify-content: center; }
+}

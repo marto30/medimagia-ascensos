@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260613b">
+  <link rel="stylesheet" href="styles.css?v=20260613c">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -505,46 +505,58 @@
   <!-- MODAL DE EDICIÓN DE BITÁCORA -->
   <div class="modal-overlay" id="editBitacoraModal">
     <div class="modal edit-bitacora-modal" role="dialog" aria-modal="true" aria-labelledby="editBitModalTitle">
-      <div class="modal-title" id="editBitModalTitle">Editar Bitácora</div>
-
-      <div class="field">
-        <label for="editBitPatient">Nombre del paciente</label>
-        <input type="text" id="editBitPatient" list="patientsList" maxlength="80" placeholder="Nombre completo del paciente"/>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div class="modal-title" id="editBitModalTitle">📖 Editar Bitácora</div>
+        <button class="modal-close" onclick="cancelEditBitacora()" aria-label="Cerrar modal">✕</button>
       </div>
 
-      <div class="field">
-        <label for="editBitDiag">Diagnóstico</label>
-        <input type="text" id="editBitDiag" maxlength="200" placeholder="Ej: Fractura en el brazo derecho"/>
+      <div class="edit-bit-section">
+        <p class="bit-section-label">Información del paciente</p>
+        <div class="bit-form-row">
+          <div class="field">
+            <label for="editBitPatient">Nombre del paciente</label>
+            <input type="text" id="editBitPatient" list="patientsList" maxlength="80" placeholder="Nombre completo…"/>
+          </div>
+          <div class="field">
+            <label for="editBitDiag">Diagnóstico</label>
+            <input type="text" id="editBitDiag" maxlength="200" placeholder="Ej: Fractura…"/>
+          </div>
+        </div>
       </div>
 
-      <div class="field">
-        <label for="editBitProc">Procedimiento</label>
-        <textarea id="editBitProc" rows="4" maxlength="5000" placeholder="Describe el procedimiento realizado…"></textarea>
-        <div class="spell-inserter" id="editSpellInserter"></div>
+      <div class="edit-bit-section">
+        <p class="bit-section-label">Procedimiento y medicinas</p>
+        <div class="field">
+          <label for="editBitProc">Procedimiento</label>
+          <textarea id="editBitProc" rows="4" maxlength="5000" placeholder="Describe lo realizado…"></textarea>
+          <div class="spell-inserter" id="editSpellInserter"></div>
+        </div>
+        <div class="field">
+          <label>Pociones usadas
+            <span class="bit-label-hint">(opcional)</span>
+          </label>
+          <button class="btn-potion-selector" onclick="showEditPotionSelectorModal()">
+            🧪 Seleccionar pociones
+          </button>
+          <div class="potions-selected" id="editPotionsSelected"></div>
+        </div>
       </div>
 
-      <div class="field">
-        <label for="editAttendantSearch">¿Quién le atendió?</label>
-        <input type="text" id="editAttendantSearch" class="attendant-search"
-               placeholder="Buscar medimago…" maxlength="80" oninput="filterEditAttendantsD()"/>
-        <div class="attendants-list" id="editAttendantsList"></div>
+      <div class="edit-bit-section">
+        <p class="bit-section-label">Equipo médico</p>
+        <div class="field">
+          <label for="editAttendantSearch">¿Quién le atendió?</label>
+          <input type="text" id="editAttendantSearch" class="attendant-search"
+                 placeholder="Buscar medimago…" maxlength="80" oninput="filterEditAttendantsD()"/>
+          <div class="attendants-list" id="editAttendantsList"></div>
+        </div>
       </div>
 
-      <div class="field">
-        <label>Pociones usadas
-          <span style="font-size:.74rem;color:#4a4540">(opcional)</span>
-        </label>
-        <button class="btn-potion-selector" onclick="showEditPotionSelectorModal()">
-          🧪 Seleccionar pociones
-        </button>
-        <div class="potions-selected" id="editPotionsSelected"></div>
-      </div>
+      <p class="err" id="editBitErr" role="alert"></p>
 
-      <p class="err" id="editBitErr"></p>
-
-      <div class="modal-actions" style="margin-top:1rem">
+      <div class="modal-actions">
         <button class="btn ghost sm" onclick="cancelEditBitacora()">Cancelar</button>
-        <button class="btn sm success" onclick="saveEditBitacora()">Guardar cambios</button>
+        <button class="btn sm success" onclick="saveEditBitacora()">💾 Guardar cambios</button>
       </div>
     </div>
   </div>
