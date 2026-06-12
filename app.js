@@ -1344,6 +1344,11 @@ window.loginAdmin = async function() {
         .map(b => b.toString(16).padStart(2, "0"))
         .join("");
 
+      console.log(`[admin] Role: ${role}, Pass: ${password}, Salt: "${salt}"`);
+      console.log(`[admin] Calculated: ${receivedHash}`);
+      console.log(`[admin] Expected: ${creds.hash}`);
+      console.log(`[admin] Match: ${receivedHash === creds.hash}`);
+
       if (receivedHash !== creds.hash) return false;
 
       // 3. Cambiar contraseña en auth.users via RPC
