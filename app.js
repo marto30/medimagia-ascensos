@@ -782,15 +782,16 @@ window.studentLogin = async function() {
 
     if (data?.user) {
       // Login exitoso en Supabase Auth
-      loggedInStudent = user;
+      await loadAllStudents();
+      const studentName = usernameIndex[user.toLowerCase()] || user;
+      window.loggedInStudent = studentName;
       clearLoginLock("mm_sl");
       pEl.value = "";
       const remember = document.getElementById("loginRemember");
-      if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: data.user.id });
+      if (remember && remember.checked) saveSession({ kind: "student", name: studentName, userId: data.user.id });
       else clearSession();
       updateAppHeader();
-      await loadAllStudents();
-      openProfile(user);
+      openProfile(studentName);
       return;
     }
 
@@ -825,15 +826,16 @@ window.studentLogin = async function() {
       // 4. Si ya está migrado, login directo
       if (legacyCreds.auth_user_id) {
         console.log(`[studentLogin] Usuario ya migrado, login directo`);
-        loggedInStudent = user;
+        await loadAllStudents();
+        const studentName = usernameIndex[user.toLowerCase()] || user;
+        window.loggedInStudent = studentName;
         clearLoginLock("mm_sl");
         pEl.value = "";
         const remember = document.getElementById("loginRemember");
-        if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: legacyCreds.auth_user_id });
+        if (remember && remember.checked) saveSession({ kind: "student", name: studentName, userId: legacyCreds.auth_user_id });
         else clearSession();
         updateAppHeader();
-        await loadAllStudents();
-        openProfile(user);
+        openProfile(studentName);
         return;
       }
 
@@ -865,15 +867,16 @@ window.studentLogin = async function() {
       }
 
       console.log(`[studentLogin] ✅ Login exitoso para ${user}`);
-      loggedInStudent = user;
+      await loadAllStudents();
+      const studentName = usernameIndex[user.toLowerCase()] || user;
+      window.loggedInStudent = studentName;
       clearLoginLock("mm_sl");
       pEl.value = "";
       const remember = document.getElementById("loginRemember");
-      if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: authUserId });
+      if (remember && remember.checked) saveSession({ kind: "student", name: studentName, userId: authUserId });
       else clearSession();
       updateAppHeader();
-      await loadAllStudents();
-      openProfile(user);
+      openProfile(studentName);
       return;
     } catch (legacyErr) {
       console.error("[studentLogin] Legacy login error:", legacyErr.message || String(legacyErr));
