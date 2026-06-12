@@ -485,52 +485,52 @@ async function loadAllStudents() {
   allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {};
 
   try {
-    // Cargar estudiantes desde Supabase
-    const { data: students, error } = await supabase
-      .from("students")
-      .select("*");
+    // Cargar todo en paralelo: estudiantes, hechizos, infracciones
+    const [{ data: students, error: studentsErr }, { data: allSpells, error: spellsErr }, { data: allInfr, error: infErr }] = await Promise.all([
+      supabase.from("students").select("*"),
+      supabase.from("student_spells").select("student_id, source_spell_name, learned"),
+      supabase.from("infractions").select("*")
+    ]);
 
-    if (error) {
-      console.error("Error cargando estudiantes:", error);
+    if (studentsErr || spellsErr || infErr) {
+      console.error("Error cargando datos:", studentsErr || spellsErr || infErr);
       toast("Error al cargar estudiantes", "error");
       return;
     }
 
     if (!students || students.length === 0) return;
 
-    // Cargar spells por estudiante
-    for (const student of students) {
-      const { data: spells } = await supabase
-        .from("student_spells")
-        .select("source_spell_name, learned")
-        .eq("student_id", student.id);
+    // Mapear hechizos por student_id
+    const spellsByStudent = {};
+    if (allSpells) {
+      allSpells.forEach(s => {
+        if (!spellsByStudent[s.student_id]) spellsByStudent[s.student_id] = {};
+        spellsByStudent[s.student_id][s.source_spell_name] = s.learned;
+      });
+    }
 
-      const spellsObj = {};
-      if (spells) {
-        spells.forEach(s => {
-          spellsObj[s.source_spell_name] = s.learned;
-        });
-      }
+    // Mapear infracciones por student_id
+    const infrByStudent = {};
+    if (allInfr) {
+      allInfr.forEach(inf => {
+        if (!infrByStudent[inf.student_id]) infrByStudent[inf.student_id] = [];
+        infrByStudent[inf.student_id].push(inf);
+      });
+    }
 
-      // Cargar infracciones
-      const { data: infractions } = await supabase
-        .from("infractions")
-        .select("*")
-        .eq("student_id", student.id);
-
+    // Procesar estudiantes
+    students.forEach(student => {
+      const spellsObj = spellsByStudent[student.id] || {};
       allStudents[student.name] = spellsObj;
       allGraduated[student.name] = student.graduated || false;
       allRanks[student.name] = student.current_rank || calcRankLegacy(spellsObj);
-      allInfractions[student.name] = infractions || [];
+      allInfractions[student.name] = infrByStudent[student.id] || [];
 
       if (student.username) {
-        allCredentials[student.name] = {
-          username: student.username,
-          passwordHash: null // En Supabase no almacenamos el hash
-        };
+        allCredentials[student.name] = { username: student.username, passwordHash: null };
         usernameIndex[student.username.toLowerCase()] = student.name;
       }
-    }
+    });
   } catch (err) {
     console.error("Error en loadAllStudents:", err);
     toast("Error al cargar estudiantes", "error");
