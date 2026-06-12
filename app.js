@@ -591,7 +591,23 @@ async function setGraduated(name, val) {
 }
 
 async function deleteStudent(name) {
-  await deleteDoc(doc(db, "alumnos", docId(name)));
+  try {
+    const { data: student } = await supabase
+      .from("students")
+      .select("id")
+      .eq("name", name)
+      .single();
+    if (student?.id) {
+      const { error } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", student.id);
+      if (error) throw error;
+    }
+  } catch (err) {
+    console.error("Error eliminando estudiante:", err);
+    throw err;
+  }
   delete allStudents[name];
   delete allGraduated[name];
   delete allRanks[name];
@@ -2716,8 +2732,53 @@ window.saveEditBitacora = async function() {
       { editor: loggedInStudent || "Sistema", editedAt: now, editNumber: newEditNumber }
     ];
 
-    await updateDoc(doc(db, "bitacoras", editingBitacoraId), updateData);
-    if (idx >= 0) Object.assign(allBitacoras[idx], updateData);
+    // Actualizar bitácora en Supabase
+    const { error: bitError } = await supabase
+      .from("bitacoras")
+      .update({ patient, diagnosis, procedure })
+      .eq("id", editingBitacoraId);
+    if (bitError) throw bitError;
+
+    // Eliminar y recrear attendants
+    await supabase.from("bitacora_attendants").delete().eq("bitacora_id", editingBitacoraId);
+    if (attendants.length > 0) {
+      const attendantRecords = attendants.map(name => ({
+        bitacora_id: editingBitacoraId,
+        attendant_name: name,
+        student_id: null
+      }));
+      const { error: attErr } = await supabase
+        .from("bitacora_attendants")
+        .insert(attendantRecords);
+      if (attErr) throw attErr;
+    }
+
+    // Eliminar y recrear pociones
+    await supabase.from("bitacora_potions").delete().eq("bitacora_id", editingBitacoraId);
+    if (potionsUsed.length > 0) {
+      const potionRecords = potionsUsed.map(pid => ({
+        bitacora_id: editingBitacoraId,
+        potion_id: pid,
+        qty: 1
+      }));
+      const { error: potErr } = await supabase
+        .from("bitacora_potions")
+        .insert(potionRecords);
+      if (potErr) throw potErr;
+    }
+
+    // Crear entrada en historial de ediciones
+    const { error: histErr } = await supabase
+      .from("bitacora_edit_history")
+      .insert({
+        bitacora_id: editingBitacoraId,
+        editor: loggedInStudent || "Sistema",
+        edited_at: now,
+        edit_number: newEditNumber
+      });
+    if (histErr) throw histErr;
+
+    if (idx >= 0) Object.assign(allBitacoras[idx], { patient, diagnosis, procedure, attendants, potionsUsed });
 
     // Ajustar inventario si hay cambios en pociones
     const oldPotions = (allBitacoras[idx]?.potionsUsed || []);
