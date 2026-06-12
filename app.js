@@ -539,37 +539,48 @@ async function loadAllStudents() {
 
 async function saveStudent(name, spells) {
   try {
-    const { data: student } = await supabase
+    const { data: student, error: studentError } = await supabase
       .from("students")
       .select("id")
       .eq("name", name)
       .single();
 
-    if (student) {
-      // Actualizar cada spell
-      for (const [spellName, learned] of Object.entries(spells)) {
-        const { data: spell } = await supabase
-          .from("spells")
-          .select("id")
-          .eq("name", spellName)
-          .single();
+    if (studentError) throw studentError;
+    if (!student) throw new Error("Estudiante no encontrado");
 
-        if (spell) {
-          await supabase
-            .from("student_spells")
-            .upsert({
-              student_id: student.id,
-              spell_id: spell.id,
-              learned: learned,
-              source_spell_name: spellName
-            }, { onConflict: "student_id,spell_id" });
+    // Actualizar cada spell
+    for (const [spellName, learned] of Object.entries(spells)) {
+      const { data: spell, error: spellError } = await supabase
+        .from("spells")
+        .select("id")
+        .eq("name", spellName)
+        .single();
+
+      if (spellError) {
+        console.warn(`Spell no encontrado: ${spellName}`);
+        continue;
+      }
+
+      if (spell) {
+        const { error: upsertError } = await supabase
+          .from("student_spells")
+          .upsert({
+            student_id: student.id,
+            spell_id: spell.id,
+            learned: learned,
+            source_spell_name: spellName
+          }, { onConflict: "student_id,spell_id" });
+
+        if (upsertError) {
+          console.error(`Error guardando spell ${spellName}:`, upsertError);
+          throw upsertError;
         }
       }
-      allStudents[name] = spells;
     }
+    allStudents[name] = spells;
   } catch (err) {
     console.error("Error guardando estudiante:", err);
-    toast("Error al guardar cambios", "error");
+    throw err;
   }
 }
 
