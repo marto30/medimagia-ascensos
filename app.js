@@ -644,6 +644,7 @@ window.show = function(id) {
     b.classList.toggle("active", b.dataset.screen === id));
   if (id !== prev) window.scrollTo({ top: 0 });
 };
+const show = window.show;
 
 // =====================================================================
 //  NAVIGATION HEADER
