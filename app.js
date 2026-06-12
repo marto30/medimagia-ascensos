@@ -843,11 +843,12 @@ window.studentLogin = async function() {
       console.log(`[studentLogin] Migrando usuario a Supabase Auth...`);
       const emailSynthetic = `${user.replace(/[^a-z0-9.]/g, "_")}@medimagia.local`;
 
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: emailSynthetic,
         password: pwd,
-        email_confirm: true,
-        user_metadata: { username: user, student_id: legacyCreds.student_id, role: "student", migrated_from: "firestore_sha256" }
+        options: {
+          data: { username: user, student_id: legacyCreds.student_id, role: "student", migrated_from: "firestore_sha256" }
+        }
       });
 
       if (authError) {
@@ -858,7 +859,7 @@ window.studentLogin = async function() {
         }
       }
 
-      const authUserId = authData?.user?.id || legacyCreds.auth_user_id;
+      const authUserId = authData?.user?.id;
       if (authUserId) {
         // Actualizar legacy_credentials
         await supabase
@@ -892,13 +893,14 @@ window.studentLogin = async function() {
     }
 
     // Ambos fallaron: credenciales incorrectas
-    recordFailedLogin("mm_sl");
-    const left = loginLockRemaining("mm_sl");
-    if (left > 0) eEl.textContent = `Usuario o contraseña incorrectos. Cuenta bloqueada ${left} min.`;
+    // recordFailedLogin("mm_sl"); // Rate limiting deshabilitado
+    // const left = loginLockRemaining("mm_sl");
+    // if (left > 0) eEl.textContent = `Usuario o contraseña incorrectos. Cuenta bloqueada ${left} min.`;
+    eEl.textContent = "Usuario o contraseña incorrectos.";
     eEl.style.display = "block";
   } catch (err) {
     console.error("Login error:", err);
-    recordFailedLogin("mm_sl");
+    // recordFailedLogin("mm_sl"); // Rate limiting deshabilitado
     eEl.textContent = "Error al iniciar sesión. Intenta de nuevo.";
     eEl.style.display = "block";
   }
@@ -1323,13 +1325,13 @@ function applyAdminRole() {
 }
 
 window.loginAdmin = async function() {
-  const remaining = loginLockRemaining();
-  if (remaining > 0) {
-    document.getElementById("adminErr").textContent =
-      `Demasiados intentos. Espera ${remaining} minuto${remaining !== 1 ? "s" : ""}.`;
-    document.getElementById("adminErr").style.display = "block";
-    return;
-  }
+  // const remaining = loginLockRemaining(); // Rate limiting deshabilitado
+  // if (remaining > 0) {
+  //   document.getElementById("adminErr").textContent =
+  //     `Demasiados intentos. Espera ${remaining} minuto${remaining !== 1 ? "s" : ""}.`;
+  //   document.getElementById("adminErr").style.display = "block";
+  //   return;
+  // }
   const btn = document.querySelector("#scAdminLogin .btn");
   if (btn) { btn.disabled = true; btn.textContent = "Verificando…"; }
 
@@ -1375,12 +1377,10 @@ window.loginAdmin = async function() {
     }
 
     if (!loginSuccess) {
-      recordFailedLogin();
-      const left = loginLockRemaining();
+      // recordFailedLogin(); // Rate limiting deshabilitado
+      // const left = loginLockRemaining();
       const errEl = document.getElementById("adminErr");
-      errEl.textContent = left > 0
-        ? `Contraseña incorrecta. Cuenta bloqueada ${left} min.`
-        : "Contraseña incorrecta.";
+      errEl.textContent = "Contraseña incorrecta."; // Siempre mostrar sin bloqueo
       errEl.style.display = "block";
       if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
       return;
@@ -1406,7 +1406,7 @@ window.loginAdmin = async function() {
     if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
   } catch (err) {
     console.error("Admin login error:", err);
-    recordFailedLogin();
+    // recordFailedLogin(); // Rate limiting deshabilitado
     const errEl = document.getElementById("adminErr");
     errEl.textContent = "Error al verificar credenciales.";
     errEl.style.display = "block";
