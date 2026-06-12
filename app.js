@@ -1441,6 +1441,7 @@ window.loginAdmin = async function() {
     applyAdminRole();
     updateAppHeader();
     show("scAdmin");
+    await loadAllStudents();
     renderList(); renderAscensos(); renderGraduados();
     resetSessionTimer();
     if (!bitacorasLoaded) {
