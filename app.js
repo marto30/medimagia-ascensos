@@ -1829,7 +1829,7 @@ window.backFromDirectory = function() {
 // =====================================================================
 function renderAscensos() {
   const candidates = Object.keys(allStudents)
-    .filter(n => !allGraduated[n] && RANKS_ORDER.indexOf(getStudentRank(n)) < RANKS_ORDER.length - 1)
+    .filter(n => RANKS_ORDER.indexOf(getStudentRank(n)) < RANKS_ORDER.length - 1)
     .sort((a, b) => {
       const aReady = RANKS[getStudentRank(a)].filter(s => !allStudents[a][s]).length <= ASCENSO_MISSING;
       const bReady = RANKS[getStudentRank(b)].filter(s => !allStudents[b][s]).length <= ASCENSO_MISSING;
