@@ -797,23 +797,33 @@ window.studentLogin = async function() {
     try {
       console.log(`[studentLogin] Intentando legacy-login para: ${user}`);
       console.log(`[studentLogin] URL: ${SUPABASE_SERVICE_FUNCTION_URL}/legacy-login`);
+      console.log(`[studentLogin] Body:`, { username: user, password: "***" });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.error("[studentLogin] ⏱️ TIMEOUT: legacy-login no respondió en 10 segundos");
+        controller.abort();
+      }, 10000);
 
       const legacyRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/legacy-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: user, password: pwd })
+        body: JSON.stringify({ username: user, password: pwd }),
+        signal: controller.signal
       });
 
-      console.log(`[studentLogin] Legacy-login status: ${legacyRes.status}`);
+      clearTimeout(timeoutId);
+
+      console.log(`[studentLogin] ✅ Respuesta recibida. Status: ${legacyRes.status}`);
       const legacyText = await legacyRes.text();
-      console.log(`[studentLogin] Legacy-login raw response:`, legacyText);
+      console.log(`[studentLogin] Raw response:`, legacyText);
 
       const legacyData = JSON.parse(legacyText);
-      console.log(`[studentLogin] Legacy-login parsed:`, legacyData);
+      console.log(`[studentLogin] Parsed:`, legacyData);
 
       if (legacyData.success) {
         // Usuario fue migrado, ahora está en Supabase Auth
-        console.log(`[studentLogin] ✅ Login exitoso para ${user}`);
+        console.log(`[studentLogin] ✅✅ Login exitoso para ${user}`);
         loggedInStudent = user;
         clearLoginLock("mm_sl");
         pEl.value = "";
@@ -828,8 +838,9 @@ window.studentLogin = async function() {
         console.log(`[studentLogin] Legacy-login falló:`, legacyData.error);
       }
     } catch (legacyErr) {
-      console.error("[studentLogin] Legacy login catch error:", legacyErr);
-      console.error("[studentLogin] Error stack:", legacyErr.stack);
+      console.error("[studentLogin] 🔴 Legacy login error:", legacyErr.message);
+      console.error("[studentLogin] Error name:", legacyErr.name);
+      console.error("[studentLogin] Error:", legacyErr);
     }
 
     // Ambos fallaron: credenciales incorrectas
