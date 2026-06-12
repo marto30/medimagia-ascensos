@@ -1,21 +1,31 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
 # Environment variables
 .env
 .env.local
 .env.*.local
+.env.*.private
 
-# Credentials
-*.key
-credentials.json
-firebase-key.json
+# Scripts sensibles
+*.cjs
+gen-hash.js
+reset-passwords.js
+scripts/migration/
+create-*.js
+hash-*.js
+upgrade-*.js
 
-# Node modules
-node_modules/
-npm-debug.log
-yarn-error.log
+# Backups y datos
+*.json.bak
+*.backup
+migration_backups/
 
-# OS
-.DS_Store
-Thumbs.db
+# Supabase
+supabase/.temp/
+.supabase/
 
 # IDE
 .vscode/
@@ -23,14 +33,11 @@ Thumbs.db
 *.swp
 *.swo
 
-# Logs
-logs/
-*.log
+# OS
+.DS_Store
+Thumbs.db
 
-# Temp
-.temp/
-tmp/
-
-# Database dumps
-*.sql.gz
-migration_backups/2026*
+# Build
+dist/
+build/
+.next/
