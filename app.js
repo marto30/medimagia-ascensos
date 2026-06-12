@@ -1145,19 +1145,18 @@ window.applyManualRank = async function() {
   if (!ok) { sel.value = oldRank; return; }
 
   try {
-    const student = allStudents[name];
-    if (!student) throw new Error("Estudiante no encontrado");
     const { error } = await supabase
       .from("students")
       .update({ current_rank: newRank })
-      .eq("id", student.id);
+      .eq("name", name);
     if (error) throw error;
   } catch (err) {
+    console.error("Error al cambiar rango:", err);
     toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
     sel.value = oldRank;
     return;
   }
-  allRanks[name] = newRank;
+  window.allRanks[name] = newRank;
   renderProfile();
   toast(`Rango de ${name} cambiado a ${newRank}`, "success");
 };
