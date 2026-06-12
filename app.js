@@ -647,6 +647,9 @@ let currentStudent = null;
 let pendingChanges = {};
 
 let currentScreen = "scSearch";
+// Pantallas con layout de rejilla en escritorio (styles.css >=1100px);
+// un display:block inline anularía ese grid.
+const SCREEN_DISPLAY = { scBitacoras: "grid", scPersonas: "grid" };
 window.show = function(id) {
   const prev = currentScreen;
   ["scSearch","scProfile","scAdminLogin","scAdmin","scBitacoras","scBlocked","scDirectory","scPersonas"].forEach(s => {
@@ -655,7 +658,7 @@ window.show = function(id) {
   });
   const target = document.getElementById(id);
   if (target) {
-    target.style.display = "block";
+    target.style.display = SCREEN_DISPLAY[id] || "block";
     if (id !== prev) {
       target.classList.remove("screen-anim");
       void target.offsetWidth;              // reinicia la animación
