@@ -1327,49 +1327,64 @@ window.loginAdmin = async function() {
   const password = document.getElementById("adminPwd").value;
 
   try {
-    // Intentar admin-legacy-login para superadmin
+    // Probar superadmin y admin con credenciales legacy
     let loginSuccess = false;
-    let adminRole = "admin";
+    let selectedRole = "admin";
+    const salt = atob("bWVkaW1hZ2lh") + atob("X3N0dWRlbnRf") + atob("djFf");
+
+    // Función para validar hash y hacer login
+    const tryAdminLogin = async (role) => {
+      // 1. Buscar credenciales legacy
+      const { data: creds, error: credError } = await supabase
+        .from("admin_legacy_credentials")
+        .select("*")
+        .eq("role", role)
+        .single();
+
+      if (credError || !creds) return false;
+
+      // 2. Validar hash SHA-256
+      const hashInput = salt + password;
+      const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(hashInput));
+      const receivedHash = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      if (receivedHash !== creds.password_hash_sha256) return false;
+
+      // 3. Cambiar contraseña en auth.users via RPC
+      const { data: resetData, error: resetError } = await supabase
+        .rpc("reset_admin_password", { p_role: role, p_new_password: password });
+
+      if (resetError || !resetData?.success) return false;
+
+      // 4. Hacer login con Supabase Auth
+      const emailSynthetic = `${role}@medimagia.test`;
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: emailSynthetic,
+        password: password
+      });
+
+      return !loginError;
+    };
 
     // Probar superadmin primero
-    const superRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/admin-legacy-login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({ password, role: "superadmin" })
-    });
-
-    const superData = await superRes.json();
-    if (superData.success) {
+    if (await tryAdminLogin("superadmin")) {
       loginSuccess = true;
       isSuperAdmin = true;
       isAdmin = true;
-    } else {
-      // Probar admin
-      const adminRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/admin-legacy-login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({ password, role: "admin" })
-      });
-
-      const adminData = await adminRes.json();
-      if (adminData.success) {
-        loginSuccess = true;
-        isAdmin = true;
-        isSuperAdmin = false;
-      }
+      selectedRole = "superadmin";
+    } else if (await tryAdminLogin("admin")) {
+      // Luego probar admin
+      loginSuccess = true;
+      isAdmin = true;
+      isSuperAdmin = false;
+      selectedRole = "admin";
     }
 
     if (!loginSuccess) {
-      // recordFailedLogin(); // Rate limiting deshabilitado
-      // const left = loginLockRemaining();
       const errEl = document.getElementById("adminErr");
-      errEl.textContent = "Contraseña incorrecta."; // Siempre mostrar sin bloqueo
+      errEl.textContent = "Contraseña incorrecta.";
       errEl.style.display = "block";
       if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
       return;
