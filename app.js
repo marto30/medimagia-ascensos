@@ -796,12 +796,9 @@ window.studentLogin = async function() {
     // Si falló, intentar legacy-login (usuarios no migrados aún)
     console.log(`[studentLogin] Intentando login legacy para: ${user}`);
     try {
-      // 1. Buscar credenciales legacy en tabla pública
+      // 1. Buscar credenciales legacy via RPC
       const { data: legacyCreds, error: credError } = await supabase
-        .from("legacy_credentials")
-        .select("*")
-        .eq("username", user.toLowerCase())
-        .single();
+        .rpc("get_student_hash", { p_username: user });
 
       if (credError || !legacyCreds) {
         console.log(`[studentLogin] Credenciales no encontradas para ${user}`);
@@ -817,7 +814,7 @@ window.studentLogin = async function() {
         .join("");
 
       // 3. Comparar hashes (timing-safe)
-      if (receivedHash !== legacyCreds.password_hash_sha256) {
+      if (receivedHash !== legacyCreds.hash) {
         console.log(`[studentLogin] Hash incorrecto para ${user}`);
         throw new Error("Credenciales inválidas");
       }
@@ -1334,12 +1331,9 @@ window.loginAdmin = async function() {
 
     // Función para validar hash y hacer login
     const tryAdminLogin = async (role) => {
-      // 1. Buscar credenciales legacy
+      // 1. Buscar credenciales legacy via RPC
       const { data: creds, error: credError } = await supabase
-        .from("admin_creds")
-        .select("*")
-        .eq("role", role)
-        .single();
+        .rpc("get_admin_hash", { p_role: role });
 
       if (credError || !creds) return false;
 
