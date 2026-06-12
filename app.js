@@ -1351,10 +1351,13 @@ window.loginAdmin = async function() {
 
       if (receivedHash !== creds.hash) return false;
 
+      console.log(`[admin] Hash valid, resetting password...`);
+
       // 3. Cambiar contraseña en auth.users via RPC
       const { data: resetData, error: resetError } = await supabase
         .rpc("reset_admin_password", { p_role: role, p_new_password: password });
 
+      console.log(`[admin] Reset response:`, resetData, resetError);
       if (resetError || !resetData?.success) return false;
 
       // 4. Hacer login con Supabase Auth
