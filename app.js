@@ -316,11 +316,10 @@ async function loadAdminConfig() {
     const { data } = await supabase
       .from("app_config")
       .select("value")
-      .eq("key", "admin_config")
-      .single();
-    if (data?.value) {
-      adminPwdHash   = data.value.passwordHash || null;
-      superAdminHash = data.value.superPasswordHash || null;
+      .eq("key", "admin_config");
+    if (data && data.length > 0 && data[0]?.value) {
+      adminPwdHash   = data[0].value.passwordHash || null;
+      superAdminHash = data[0].value.superPasswordHash || null;
     }
   } catch {
     adminPwdHash = null;
@@ -332,10 +331,9 @@ async function loadRanksConfig() {
     const { data } = await supabase
       .from("app_config")
       .select("value")
-      .eq("key", "ranks_config")
-      .single();
-    if (data?.value) {
-      const { order, spells } = data.value;
+      .eq("key", "ranks_config");
+    if (data && data.length > 0 && data[0]?.value) {
+      const { order, spells } = data[0].value;
       if (Array.isArray(order) && order.length && spells) {
         RANKS_ORDER = order;
         RANKS = spells;
@@ -3478,9 +3476,9 @@ loadRanksConfig()
   })
   .catch(err => {
     const code = err?.code || err?.message || String(err);
-    console.error("Firebase init error:", err);
+    console.error("Error durante inicialización:", err);
     loadingEl.innerHTML =
-      `<span style="color:var(--red)">Error al conectar con Firebase.<br><small style="opacity:.7">${escHtml(code)}</small><br><small>Abre la consola (F12) para ver más detalles.</small></span>`;
+      `<span style="color:var(--red)">Error al cargar la aplicación.<br><small style="opacity:.7">${escHtml(code)}</small><br><small>Abre la consola (F12) para ver más detalles.</small></span>`;
   });
 
 // =====================================================================
