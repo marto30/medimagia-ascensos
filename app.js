@@ -841,8 +841,8 @@ window.studentLogin = async function() {
 
       // 5. Migrar a Supabase Auth (crear usuario)
       console.log(`[studentLogin] Migrando usuario a Supabase Auth...`);
-      // Email válido basado en student_id para evitar caracteres inválidos
-      const emailSynthetic = `user${legacyCreds.student_id.substring(0, 8)}@medimagia.local`;
+      // Email: basado en username, escapando caracteres problemáticos
+      const emailSynthetic = `${user.replace(/[^a-z0-9]/g, "")}@medimagia.test`;
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: emailSynthetic,
