@@ -65,7 +65,14 @@ export default async (req: Request): Promise<Response> => {
   try {
     // CORS
     if (req.method === "OPTIONS") {
-      return new Response("ok", { headers: { "Access-Control-Allow-Origin": "*" } });
+      return new Response("ok", {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Max-Age": "86400"
+        }
+      });
     }
 
     if (req.method !== "POST") {
