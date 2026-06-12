@@ -802,7 +802,10 @@ window.studentLogin = async function() {
 
       const opts = {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_ANON_KEY
+        },
         body: JSON.stringify({ username: user, password: pwd })
       };
       console.log(`[studentLogin] C: Options ready`);
@@ -1287,7 +1290,10 @@ window.loginAdmin = async function() {
     // Probar superadmin primero
     const superRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/admin-legacy-login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY
+      },
       body: JSON.stringify({ password, role: "superadmin" })
     });
 
@@ -1300,7 +1306,10 @@ window.loginAdmin = async function() {
       // Probar admin
       const adminRes = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/admin-legacy-login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_ANON_KEY
+        },
         body: JSON.stringify({ password, role: "admin" })
       });
 
