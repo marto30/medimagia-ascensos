@@ -794,55 +794,45 @@ window.studentLogin = async function() {
     }
 
     // Si falló, intentar legacy-login (usuarios no migrados aún)
+    console.log(`[studentLogin] Legacy-login block reached`);
     try {
-      console.log(`[studentLogin] Intentando legacy-login para: ${user}`);
-      console.log(`[studentLogin] URL: ${SUPABASE_SERVICE_FUNCTION_URL}/legacy-login`);
+      console.log(`[studentLogin] A: Intentando para ${user}`);
+      const url = `${SUPABASE_SERVICE_FUNCTION_URL}/legacy-login`;
+      console.log(`[studentLogin] B: URL = ${url}`);
 
-      const fetchUrl = `${SUPABASE_SERVICE_FUNCTION_URL}/legacy-login`;
-      const fetchBody = JSON.stringify({ username: user, password: pwd });
-      console.log(`[studentLogin] Calling fetch...`);
-
-      const legacyRes = await fetch(fetchUrl, {
+      const opts = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: fetchBody
-      });
+        body: JSON.stringify({ username: user, password: pwd })
+      };
+      console.log(`[studentLogin] C: Options ready`);
 
-      console.log(`[studentLogin] Fetch completed. Status: ${legacyRes.status}`);
-      console.log(`[studentLogin] Response ok: ${legacyRes.ok}`);
+      const res = await fetch(url, opts);
+      console.log(`[studentLogin] D: Response received, status=${res.status}`);
 
-      const legacyText = await legacyRes.text();
-      console.log(`[studentLogin] Response text:`, legacyText);
+      const text = await res.text();
+      console.log(`[studentLogin] E: Text=${text}`);
 
-      let legacyData;
-      try {
-        legacyData = JSON.parse(legacyText);
-      } catch (parseErr) {
-        console.error("[studentLogin] JSON parse error:", parseErr.message);
-        console.error("[studentLogin] Raw text was:", legacyText);
-        throw parseErr;
-      }
+      const data = JSON.parse(text);
+      console.log(`[studentLogin] F: Parsed, success=${data.success}`);
 
-      console.log(`[studentLogin] Parsed response:`, legacyData);
-
-      if (legacyData.success) {
-        // Usuario fue migrado, ahora está en Supabase Auth
+      if (data.success) {
         console.log(`[studentLogin] ✅ Login exitoso para ${user}`);
         loggedInStudent = user;
         clearLoginLock("mm_sl");
         pEl.value = "";
         const remember = document.getElementById("loginRemember");
-        if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: legacyData.userId });
+        if (remember && remember.checked) saveSession({ kind: "student", name: user, userId: data.userId });
         else clearSession();
         updateAppHeader();
         await loadAllStudents();
         openProfile(user);
         return;
       } else {
-        console.log(`[studentLogin] Legacy-login falló:`, legacyData.error);
+        console.log(`[studentLogin] Legacy-login falló:`, data.error);
       }
     } catch (legacyErr) {
-      console.error("[studentLogin] ERROR en legacy-login:", legacyErr.message || legacyErr);
+      console.error("[studentLogin] CATCH ERROR:", legacyErr.message || String(legacyErr));
     }
 
     // Ambos fallaron: credenciales incorrectas
