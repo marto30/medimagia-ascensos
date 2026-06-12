@@ -159,38 +159,51 @@ export default async (req: Request): Promise<Response> => {
 
     let authUserId: string;
 
-    // Buscar si ya existe en auth.users
-    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-    const userExists = existingUser?.users?.find(u => u.email === emailSynthetic);
+    // Intentar crear usuario directamente (más rápido que listUsers)
+    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: emailSynthetic,
+      password: password, // Usar la contraseña en claro recibida
+      email_confirm: true, // Ya confirmar el email
+      user_metadata: {
+        username: username,
+        student_id: legacyCreds.student_id,
+        role: "student",
+        migrated_from: "firestore_sha256"
+      }
+    });
 
-    if (userExists) {
-      authUserId = userExists.id;
-      console.log(`[legacy-login] Usuario auth ya existe: ${authUserId}`);
-    } else {
-      // Crear nuevo usuario en auth
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: emailSynthetic,
-        password: password, // Usar la contraseña en claro recibida
-        email_confirm: true, // Ya confirmar el email
-        user_metadata: {
-          username: username,
-          student_id: legacyCreds.student_id,
-          role: "student",
-          migrated_from: "firestore_sha256"
-        }
-      });
-
-      if (createError || !newUser?.user?.id) {
-        console.error(`[legacy-login] Error creando auth user:`, createError);
+    if (createError) {
+      // Si el usuario ya existe (email duplicate), es ok
+      if (createError.message?.includes("already exists") || createError.message?.includes("duplicate")) {
+        console.log(`[legacy-login] Usuario auth ya existe`);
+        // No podemos obtener el ID fácilmente, usar el student_id como aproximación
+        // En este caso, el usuario ya está migrado
         return new Response(
-          JSON.stringify({ error: "Error en migración de usuario" }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
+          JSON.stringify({
+            success: true,
+            studentId: legacyCreds.student_id,
+            message: "Usuario ya migrado"
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
         );
       }
 
-      authUserId = newUser.user.id;
-      console.log(`[legacy-login] Nuevo usuario auth creado: ${authUserId}`);
+      console.error(`[legacy-login] Error creando auth user:`, createError);
+      return new Response(
+        JSON.stringify({ error: "Error en migración de usuario" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
     }
+
+    if (!newUser?.user?.id) {
+      return new Response(
+        JSON.stringify({ error: "Error en migración de usuario" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    authUserId = newUser.user.id;
+    console.log(`[legacy-login] Nuevo usuario auth creado: ${authUserId}`);
 
     // Actualizar legacy_credentials con auth_user_id
     const { error: updateError } = await supabaseAdmin
