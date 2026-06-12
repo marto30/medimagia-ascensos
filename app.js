@@ -3213,12 +3213,12 @@ async function renderSecurityTab() {
 
     // Los hashes de IP son hex seguros — no necesitan escapeHtml
     // — IPs bloqueadas —
-    const blockedList = Object.values(blocked);
-    const blockedHtml = !blockedList.length
+    const blockedRows = Object.values(blocked);
+    const blockedHtml = !blockedRows.length
       ? '<p class="empty-state">No hay IPs bloqueadas.</p>'
       : `<table class="student-table">
           <thead><tr><th>Hash IP</th><th>Bloqueada</th><th></th></tr></thead>
-          <tbody>${blockedList.map(b => `<tr class="blocked-row">
+          <tbody>${blockedRows.map(b => `<tr class="blocked-row">
             <td class="ip-cell">${b.ip_hash.substring(0,16)}…${b.ip_hash === visitorIP ? ' <span class="ip-you-badge">tú</span>' : ""}</td>
             <td>${formatDate(b.blocked_at)}</td>
             <td><button class="btn sm success" onclick="unblockIP('${b.ip_hash}')">Desbloquear</button></td>
@@ -3249,7 +3249,7 @@ async function renderSecurityTab() {
 
     wrap.innerHTML = `
       <div class="sec-section">
-        <p class="sec-title">🚫 IPs bloqueadas <span class="sec-count">${blockedList.length}</span></p>
+        <p class="sec-title">🚫 IPs bloqueadas <span class="sec-count">${blockedRows.length}</span></p>
         ${blockedHtml}
       </div>
       <div class="sec-section" style="margin-top:1.6rem">
