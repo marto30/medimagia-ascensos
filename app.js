@@ -670,7 +670,7 @@ function updateAppHeader() {
         <span class="app-header-rank rank-badge ${rankClass("rk", rank)}">${escHtml(rank)}</span>
       </div>
       <nav class="app-header-nav">
-        <button class="app-nav-btn" data-screen="scProfile" onclick="show('scProfile')">👤 Perfil</button>
+        <button class="app-nav-btn" data-screen="scProfile" onclick="openProfile(loggedInStudent)">👤 Perfil</button>
         <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('profile')">📋 Bitácoras</button>
         <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('profile')">👥 Personas</button>
         <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('profile')">🗺 Directorio</button>
