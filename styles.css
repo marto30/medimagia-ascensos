@@ -722,6 +722,12 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
   color: var(--text); margin-bottom: .18rem;
 }
 .attendant-item-sel:hover { background: rgba(201,162,39,.15); }
+.attendant-item-missing {
+  background: rgba(210,66,48,.08); border: 1px solid rgba(210,66,48,.2);
+  color: var(--potion-red); opacity: .85;
+}
+.attendant-item-missing:hover { background: rgba(210,66,48,.13); }
+.att-missing { font-size: .68rem; color: var(--potion-red); margin-left: .3rem; }
 .bitacora-card {
   background: var(--bg-card);
   border: 1px solid var(--border-sub);

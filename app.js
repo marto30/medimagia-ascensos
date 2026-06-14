@@ -2905,19 +2905,28 @@ window.openEditBitacora = function(id) {
 
 function buildEditAttendantsList(filterQ = "") {
   const names = Object.keys(allStudents).sort();
-  const item = (n, checked) =>
-    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
+  const item = (n, checked, missing = false) =>
+    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${missing ? " attendant-item-missing" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
       <input type="checkbox" class="edit-att-chk" value="${safeAttr(n)}" ${checked ? "checked" : ""}
              onchange="toggleEditAttendant(this.value, this.checked)"/>
-      ${escHtml(n)}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
+      ${escHtml(n)}${missing ? ' <span class="att-missing">⚠️ usuario no existe</span>' : ''}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
     </label>`;
-  // Marcados siempre visibles arriba; el resto respeta el filtro de búsqueda
+  // Asistentes seleccionados que NO existen en la BD (aparecen siempre al principio)
+  const missingAttendants = [...editSelectedAttendants].filter(n => !allStudents[n]).sort();
+  // Asistentes que existen en la BD
   const checkedNames = names.filter(n => editSelectedAttendants.has(n));
   const others = names.filter(n =>
     !editSelectedAttendants.has(n) && (!filterQ || norm(n).includes(norm(filterQ)))
   );
-  return checkedNames.map(n => item(n, true)).join("") +
-         others.map(n => item(n, false)).join("");
+
+  const missingHtml = missingAttendants.map(n => item(n, true, true)).join("");
+  const existingHtml = checkedNames.map(n => item(n, true)).join("") +
+                       others.map(n => item(n, false)).join("");
+
+  if (!missingAttendants.length && !checkedNames.length && !others.length)
+    return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
+
+  return missingHtml + existingHtml;
 }
 
 window.toggleEditAttendant = function(name, checked) {
