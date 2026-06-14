@@ -2094,7 +2094,8 @@ function renderStats() {
     const d = new Date(b.createdAt);
     return d.getFullYear() === ty && d.getMonth() === tm;
   }).length;
-  const lowAct = names.filter(n => bitCntMonth(n, ly, lm) < 3).length;
+  // Excluir graduados (igual que en los reportes de baja actividad)
+  const lowAct = names.filter(n => !allGraduated[n] && bitCntMonth(n, ly, lm) < 3).length;
 
   // Bitácoras por mes — últimos 6 meses
   const months = [];
@@ -2525,8 +2526,10 @@ async function loadBitacoras() {
       procedure: b.procedure,
       createdAt: b.created_at,
       createdBy: b.created_by,
-      attendants: (b.bitacora_attendants || []).map(a => a.attendant_name),
-      potionsUsed: (b.bitacora_potions || []).map(p => p.potion_id),
+      // Dedup defensivo: si la BD tuviera filas de asistente duplicadas no
+      // deben inflar el conteo por medimago (cada uno cuenta una vez por bitácora)
+      attendants: [...new Set((b.bitacora_attendants || []).map(a => a.attendant_name))],
+      potionsUsed: [...new Set((b.bitacora_potions || []).map(p => p.potion_id))],
       editHistory: (b.bitacora_edit_history || [])
         .map(e => ({ editor: e.editor, editedAt: e.edited_at, editNumber: e.edit_number }))
         .sort((x, y) => x.editNumber - y.editNumber)
@@ -3004,8 +3007,10 @@ window.saveEditBitacora = async function() {
       .eq("id", editingBitacoraId);
     if (bitError) throw bitError;
 
-    // Eliminar y recrear attendants
-    await supabase.from("bitacora_attendants").delete().eq("bitacora_id", editingBitacoraId);
+    // Eliminar y recrear attendants (comprobar el delete evita filas duplicadas
+    // que inflarían el conteo por medimago si la inserción tiene éxito tras un delete fallido)
+    const { error: delAttErr } = await supabase.from("bitacora_attendants").delete().eq("bitacora_id", editingBitacoraId);
+    if (delAttErr) throw delAttErr;
     if (attendants.length > 0) {
       const attendantRecords = attendants.map(name => ({
         bitacora_id: editingBitacoraId,
@@ -3019,7 +3024,8 @@ window.saveEditBitacora = async function() {
     }
 
     // Eliminar y recrear pociones
-    await supabase.from("bitacora_potions").delete().eq("bitacora_id", editingBitacoraId);
+    const { error: delPotErr } = await supabase.from("bitacora_potions").delete().eq("bitacora_id", editingBitacoraId);
+    if (delPotErr) throw delPotErr;
     if (potionsUsed.length > 0) {
       const potionRecords = potionsUsed.map(pid => ({
         bitacora_id: editingBitacoraId,
