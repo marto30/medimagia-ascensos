@@ -2201,6 +2201,75 @@ textarea:focus-visible,
   margin: 1.8rem 0;
 }
 
+/* ── 22. TAB CREDENCIALES ──────────────────────────────────────────── */
+.creds-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.creds-stat {
+  background: linear-gradient(165deg, rgba(255,250,240,.04), rgba(255,250,240,.01));
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r-lg);
+  padding: 1.2rem;
+  text-align: center;
+}
+
+.creds-stat-num {
+  font-family: var(--font-h);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--gold-light);
+  margin-bottom: .3rem;
+}
+
+.creds-stat-label {
+  font-size: .8rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.cred-username {
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  background: rgba(0,0,0,.3);
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r-sm);
+  padding: .25rem .5rem;
+  color: var(--gold-light);
+}
+
+.cred-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: .3rem .65rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.cred-status.has-password {
+  background: rgba(77,184,122,.15);
+  border: 1px solid rgba(77,184,122,.3);
+  color: var(--green);
+}
+
+.cred-status.no-password {
+  background: rgba(176,69,69,.15);
+  border: 1px solid rgba(176,69,69,.3);
+  color: var(--red);
+}
+
+@media (max-width: 767px) {
+  .creds-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Actions en modal: botones lado a lado */
 .edit-bitacora-modal .modal-actions {
   display: flex;

@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260613e">
+  <link rel="stylesheet" href="styles.css?v=20260613f">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -298,6 +298,7 @@
       <button class="tab"              data-tab="tabAdd"      onclick="showTab('tabAdd')">➕ Crear alumno</button>
       <button class="tab"              data-tab="tabInventory" onclick="showTab('tabInventory')">🧪 Inventario</button>
       <button class="tab"              data-tab="tabRanks"    onclick="showTab('tabRanks')">📜 Rangos</button>
+      <button class="tab"              data-tab="tabCredentials" onclick="showTab('tabCredentials')">🔑 Credenciales</button>
       <button class="tab tab-security" data-tab="tabSecurity" id="tabSecurityBtn"
               onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
       <button class="tab"              data-tab="tabConfig"   onclick="showTab('tabConfig')">⚙ Configuración</button>
@@ -389,6 +390,16 @@
             <p class="ok-msg" id="ranksOk">✓ Cambios guardados en la base de datos</p>
           </div>
         </div>
+
+    <!-- Credenciales -->
+    <div class="admin-section" id="tabCredentials">
+      <div class="card" style="margin-bottom:0">
+        <p class="card-title">🔑 Estado de credenciales</p>
+        <div id="credentialsWrap">
+          <div class="loading"><span class="spinner"></span>Cargando…</div>
+        </div>
+      </div>
+    </div>
 
     <!-- Inventario -->
     <div class="admin-section" id="tabInventory">
@@ -619,6 +630,6 @@
 </main>
 
 <datalist id="patientsList"></datalist>
-<script type="module" src="app.js?v=20260613d"></script>
+<script type="module" src="app.js?v=20260613e"></script>
 </body>
 </html>

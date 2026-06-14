@@ -1474,7 +1474,7 @@ window.showTab = function(id) {
   document.getElementById(id).className = "admin-section show";
   const btn = document.querySelector(`.tab[data-tab="${id}"]`);
   if (btn) btn.className += " active";
-  if (id === "tabList")      renderList();
+  if (id === "tabList")         renderList();
   if (id === "tabAscensos") {
     // Ensure bitácoras are loaded before rendering, so stats are available
     if (!bitacorasLoaded) {
@@ -1483,13 +1483,14 @@ window.showTab = function(id) {
       renderAscensos();
     }
   }
-  if (id === "tabInventory") renderInventory();
-  if (id === "tabStats")     renderStats();
-  if (id === "tabDirectory") renderDirectoryIn("adminDirectoryContent");
-  if (id === "tabActivity")  renderPocaActividad();
-  if (id === "tabGrad")      renderGraduados();
-  if (id === "tabRanks")     renderRanksEditor();
-  if (id === "tabSecurity")  { if (isSuperAdmin) renderSecurityTab(); }
+  if (id === "tabInventory")    renderInventory();
+  if (id === "tabStats")        renderStats();
+  if (id === "tabDirectory")    renderDirectoryIn("adminDirectoryContent");
+  if (id === "tabActivity")     renderPocaActividad();
+  if (id === "tabGrad")         renderGraduados();
+  if (id === "tabRanks")        renderRanksEditor();
+  if (id === "tabCredentials")  renderCredentialsOverview();
+  if (id === "tabSecurity")     { if (isSuperAdmin) renderSecurityTab(); }
 };
 
 // =====================================================================
@@ -2178,8 +2179,68 @@ function renderStats() {
 }
 
 // =====================================================================
-//  ADMIN — EDITAR / ELIMINAR
+//  ADMIN — CREDENCIALES (resumen)
 // =====================================================================
+function renderCredentialsOverview() {
+  const wrap = document.getElementById("credentialsWrap");
+  if (!wrap) return;
+
+  const names = Object.keys(allStudents).sort((a, b) =>
+    norm(a).localeCompare(norm(b))
+  );
+
+  const withCreds = names.filter(n => allCredentials[n]?.passwordHash).length;
+  const total = names.length;
+  const pct = Math.round(withCreds / total * 100);
+
+  const rows = names.map(n => {
+    const cred = allCredentials[n];
+    const hasPassword = cred?.passwordHash ? true : false;
+    const username = cred?.username || "—";
+    const rank = getStudentRank(n);
+    const rkCls = rankClass("rk", rank);
+    const safe = safeAttr(n);
+
+    return `<tr>
+      <td>${escHtml(n)}</td>
+      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(rank)}</span></td>
+      <td><code class="cred-username">${escHtml(username)}</code></td>
+      <td style="text-align:center">
+        <span class="cred-status ${hasPassword ? "has-password" : "no-password"}">
+          ${hasPassword ? "✓ Sí" : "✗ No"}
+        </span>
+      </td>
+      <td>
+        <button class="btn sm" onclick="showCredentials('${safe}')">🔑 Ver</button>
+      </td>
+    </tr>`;
+  }).join("");
+
+  wrap.innerHTML = `
+    <div class="creds-summary">
+      <div class="creds-stat">
+        <div class="creds-stat-num">${withCreds}/${total}</div>
+        <div class="creds-stat-label">Con credenciales</div>
+      </div>
+      <div class="creds-stat">
+        <div class="creds-stat-num">${pct}%</div>
+        <div class="creds-stat-label">Cobertura</div>
+      </div>
+    </div>
+
+    <table class="student-table" style="margin-top:1.2rem">
+      <thead><tr>
+        <th>Nombre</th>
+        <th>Rango</th>
+        <th>Usuario</th>
+        <th>Contraseña</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+window.renderCredentialsOverview = renderCredentialsOverview;
 window.adminEdit   = function(name) { openProfile(name); };
 window.adminDelete = async function(name) {
   const ok = await showModal(
