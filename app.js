@@ -2585,20 +2585,26 @@ function buildAttendantsList(filterQ = "") {
   if (loggedInStudent && allStudents[loggedInStudent] && !selectedAttendants.has(loggedInStudent)) {
     selectedAttendants.add(loggedInStudent);
   }
-  const item = (n, checked) =>
-    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
+  const item = (n, checked, missing = false) =>
+    `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${missing ? " attendant-item-missing" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
       <input type="checkbox" class="att-chk" value="${safeAttr(n)}" ${checked ? "checked" : ""}
-             onchange="toggleAttendant(this.value, this.checked)"/> ${escHtml(n)}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
+             onchange="toggleAttendant(this.value, this.checked)"/> ${escHtml(n)}${missing ? ' <span class="att-missing">⚠️ usuario no existe</span>' : ''}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
     </label>`;
+  // Asistentes seleccionados que NO existen en la BD
+  const missingAttendants = [...selectedAttendants].filter(n => !allStudents[n]).sort();
   // Marcados: siempre visibles, ignoran el filtro
   const checkedNames = names.filter(n => selectedAttendants.has(n));
   const others = names.filter(n =>
     !selectedAttendants.has(n) && (!filterQ || norm(n).includes(norm(filterQ)))
   );
-  if (!checkedNames.length && !others.length)
+
+  const missingHtml = missingAttendants.map(n => item(n, true, true)).join("");
+  const existingHtml = checkedNames.map(n => item(n, true)).join("") +
+                       others.map(n => item(n, false)).join("");
+
+  if (!missingAttendants.length && !checkedNames.length && !others.length)
     return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
-  return checkedNames.map(n => item(n, true)).join("") +
-    others.map(n => item(n, false)).join("");
+  return missingHtml + existingHtml;
 }
 
 window.toggleAttendant = function(name, checked) {
