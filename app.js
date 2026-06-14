@@ -2650,13 +2650,26 @@ window.saveBitacoraEntry = async function() {
     if (saveBtn) saveBtn.disabled = false;
   }
 };
+// Devuelve solo las pociones que existen en la tabla `potions` (la FK
+// bitacora_potions.potion_id las exige). Comprueba EXISTENCIA, no verdad:
+// qty puede ser 0 (falsy) y la poción seguir existiendo. Si el inventario
+// no está cargado lo carga; si no se puede cargar, no filtra (confía en el
+// seed de BD) para no descartar pociones válidas por error.
+async function filterExistingPotions(ids) {
+  if (!ids.length) return { valid: [], dropped: 0 };
+  if (!Object.keys(allInventory).length) { try { await loadInventory(); } catch {} }
+  if (!Object.keys(allInventory).length) return { valid: [...ids], dropped: 0 };
+  const valid = ids.filter(id => id in allInventory);
+  return { valid, dropped: ids.length - valid.length };
+}
+
 async function doSaveBitacoraEntry() {
   const patient    = document.getElementById("bitPatient").value.trim();
   const diagnosis  = document.getElementById("bitDiag").value.trim();
   const procedure  = document.getElementById("bitProc").value.trim();
   const attendants = [...selectedAttendants].filter(n => allStudents[n]);
   if (loggedInStudent && !attendants.includes(loggedInStudent)) attendants.push(loggedInStudent);
-  const potionsUsed = [...selectedPotions];
+  let potionsUsed = [...selectedPotions];
   const errEl = document.getElementById("bitErr");
   const okEl  = document.getElementById("bitOk");
   errEl.style.display = "none"; okEl.style.display = "none";
@@ -2673,6 +2686,16 @@ async function doSaveBitacoraEntry() {
   if (patient.length > 80 || diagnosis.length > 200 || procedure.length > 5000) {
     errEl.textContent = "Texto demasiado largo (paciente ≤80, diagnóstico ≤200, procedimiento ≤5000 caracteres).";
     errEl.style.display = "block"; return;
+  }
+  // Descartar pociones que no existen en la tabla `potions` (evita FK 23503)
+  {
+    const { valid, dropped } = await filterExistingPotions(potionsUsed);
+    potionsUsed = valid;
+    if (dropped) {
+      errEl.textContent = `⚠️ ${dropped} poción(es) no están en el inventario y se omitirán. Pide a un admin que las añada.`;
+      errEl.style.display = "block";
+      await new Promise(r => setTimeout(r, 1500));
+    }
   }
 
   const now = new Date().toISOString();
@@ -3018,7 +3041,7 @@ async function doSaveEditBitacora() {
   const procedure = document.getElementById("editBitProc").value.trim();
   // Filtra asistentes que ya no existen en la base de datos (estudiantes eliminados)
   const attendants = [...editSelectedAttendants].filter(n => allStudents[n]);
-  const potionsUsed = [...editSelectedPotions];
+  let potionsUsed = [...editSelectedPotions];
 
   if (!patient)            { errEl.textContent = "El nombre del paciente es obligatorio."; errEl.style.display = "block"; return; }
   if (!diagnosis)          { errEl.textContent = "El diagnóstico es obligatorio.";          errEl.style.display = "block"; return; }
@@ -3032,6 +3055,16 @@ async function doSaveEditBitacora() {
   if (patient.length > 80 || diagnosis.length > 200 || procedure.length > 5000) {
     errEl.textContent = "Texto demasiado largo (paciente ≤80, diagnóstico ≤200, procedimiento ≤5000 caracteres).";
     errEl.style.display = "block"; return;
+  }
+  // Descartar pociones que no existen en la tabla `potions` (evita FK 23503)
+  {
+    const { valid, dropped } = await filterExistingPotions(potionsUsed);
+    potionsUsed = valid;
+    if (dropped) {
+      errEl.textContent = `⚠️ ${dropped} poción(es) no están en el inventario y se omitirán. Pide a un admin que las añada.`;
+      errEl.style.display = "block";
+      await new Promise(r => setTimeout(r, 1500));
+    }
   }
 
   try {
