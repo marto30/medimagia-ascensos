@@ -1959,6 +1959,47 @@ function renderGraduados() {
 // =====================================================================
 //  ADMIN — POCA ACTIVIDAD
 // =====================================================================
+function buildActivityReport(year, month) {
+  const monthName = capitalize(new Date(year, month, 1).toLocaleDateString("es-ES", { month: "long" }));
+
+  const students = Object.keys(allStudents).map(n => ({
+    name: n,
+    rank: getStudentRank(n),
+    count: bitCntMonth(n, year, month)
+  }))
+  .filter(s => s.count < 3 && !allGraduated[s.name])
+  .sort((a, b) => a.count - b.count || norm(a.name).localeCompare(norm(b.name)));
+
+  if (!students.length) {
+    return `<div class="activity-empty"><p class="empty-state">✓ Todos tienen 3+ bitácoras en ${monthName}</p></div>`;
+  }
+
+  const rows = students.map(s => {
+    const safe  = safeAttr(s.name);
+    const rkCls = rankClass("rk", s.rank);
+    return `<tr>
+      <td>${escHtml(s.name)}</td>
+      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(s.rank)}</span></td>
+      <td style="text-align:center"><span class="bit-count-badge bit-count-warn">${s.count}</span></td>
+      <td><button class="btn sm" onclick="adminEdit('${safe}')">Ver</button></td>
+    </tr>`;
+  }).join("");
+
+  return `
+    <div class="activity-section">
+      <div class="activity-notice">
+        <strong>${students.length}</strong> medimago${students.length !== 1 ? "s" : ""}
+        con menos de 3 bitácoras en <strong>${monthName}</strong>
+      </div>
+      <table class="student-table">
+        <thead><tr>
+          <th>Nombre</th><th>Rango</th><th>📋 Bitácoras</th><th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
 function renderPocaActividad() {
   const wrap = document.getElementById("activityWrap");
   if (!wrap) return;
@@ -1973,52 +2014,18 @@ function renderPocaActividad() {
     return;
   }
 
-  const now = new Date();
-  const ty = now.getFullYear(), tm = now.getMonth();
-  const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
-  const mThisName = capitalize(new Date(ty, tm, 1).toLocaleDateString("es-ES", { month: "long" }));
-  const mLastName = capitalize(new Date(ly, lm, 1).toLocaleDateString("es-ES", { month: "long" }));
-
-  const students = Object.keys(allStudents).map(n => ({
-    name: n,
-    rank: getStudentRank(n),
-    ct: bitCntMonth(n, ty, tm),
-    cl: bitCntMonth(n, ly, lm)
-  }))
-  .filter(s => s.cl < 3 && !allGraduated[s.name])
-  .sort((a, b) => a.cl - b.cl || norm(a.name).localeCompare(norm(b.name)));
-
-  if (!students.length) {
-    wrap.innerHTML = '<p class="empty-state">✓ Todos los medimagos tienen 3 o más bitácoras el mes pasado.</p>';
-    return;
-  }
-
-  const rows = students.map(s => {
-    const safe  = safeAttr(s.name);
-    const rkCls = rankClass("rk", s.rank);
-    return `<tr>
-      <td>${escHtml(s.name)}</td>
-      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(s.rank)}</span></td>
-      <td style="text-align:center"><span class="bit-count-badge bit-count-warn">${s.cl}</span></td>
-      <td style="text-align:center"><span class="bit-count-badge${s.ct < 3 ? " bit-count-warn" : ""}">${s.ct}</span></td>
-      <td><button class="btn sm" onclick="adminEdit('${safe}')">Ver</button></td>
-    </tr>`;
-  }).join("");
+  // Reportes para mayo (mes 4) y junio (mes 5) del año actual
+  const year = new Date().getFullYear();
+  const mayoReport = buildActivityReport(year, 4);    // May = month 4 (0-indexed)
+  const junioReport = buildActivityReport(year, 5);   // June = month 5
 
   wrap.innerHTML = `
-    <div class="activity-notice">
-      <strong>${students.length}</strong> medimago${students.length !== 1 ? "s" : ""}
-      con menos de 3 bitácoras en ${mLastName}.
+    <div class="activity-header">
+      <p class="activity-title">⚠️ Medimagos con baja actividad</p>
+      <p style="font-size:.85rem;color:var(--text-muted);margin-top:.4rem">Estudiantes con menos de 3 bitácoras en cada mes (excluye graduados)</p>
     </div>
-    <table class="student-table">
-      <thead><tr>
-        <th>Nombre</th><th>Rango</th>
-        <th>📋 ${mLastName} (pasado)</th>
-        <th>📋 ${mThisName} (actual)</th>
-        <th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+    ${mayoReport}
+    ${junioReport}`;
 }
 
 // =====================================================================

@@ -2151,6 +2151,50 @@ textarea:focus-visible,
   margin-top: .8rem;
 }
 
+/* ── 21. TAB ACTIVIDAD: REPORTES POR MES ────────────────────────── */
+.activity-header {
+  margin-bottom: 1.6rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border);
+}
+.activity-title {
+  font-family: var(--font-h);
+  font-size: .95rem;
+  color: var(--gold-light);
+  margin: 0;
+}
+
+.activity-section {
+  background: linear-gradient(165deg, rgba(255,250,240,.03) 0%, rgba(255,250,240,.01) 100%);
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r-lg);
+  padding: 1.3rem;
+  margin-bottom: 1.8rem;
+}
+
+.activity-section:last-child {
+  margin-bottom: 0;
+}
+
+.activity-empty {
+  padding: 1rem 0;
+}
+
+.activity-notice {
+  background: rgba(176,69,69,.08);
+  border-left: 3px solid var(--red);
+  border-radius: var(--r-sm);
+  padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: .9rem;
+  color: var(--text-muted);
+}
+
+.activity-notice strong {
+  color: var(--red);
+  font-weight: 600;
+}
+
 /* Actions en modal: botones lado a lado */
 .edit-bitacora-modal .modal-actions {
   display: flex;
