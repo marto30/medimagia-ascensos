@@ -2640,6 +2640,11 @@ window.saveBitacoraEntry = async function() {
   if (!diagnosis)         { errEl.textContent = "El diagnóstico es obligatorio.";          errEl.style.display = "block"; return; }
   if (!procedure)         { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length) { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
+  if (attendants.length < selectedAttendants.size) {
+    errEl.textContent = `⚠️ ${selectedAttendants.size - attendants.length} asistente(s) no existen. Se guardarán solo los que existen.`;
+    errEl.style.display = "block";
+    await new Promise(r => setTimeout(r, 1500));
+  }
   if (patient.length > 80 || diagnosis.length > 200 || procedure.length > 5000) {
     errEl.textContent = "Texto demasiado largo (paciente ≤80, diagnóstico ≤200, procedimiento ≤5000 caracteres).";
     errEl.style.display = "block"; return;
@@ -2936,7 +2941,7 @@ window.saveEditBitacora = async function() {
   const patient   = document.getElementById("editBitPatient").value.trim();
   const diagnosis = document.getElementById("editBitDiag").value.trim();
   const procedure = document.getElementById("editBitProc").value.trim();
-  // Selección desde memoria: incluye marcados ocultos por el filtro de búsqueda
+  // Filtra asistentes que ya no existen en la base de datos (estudiantes eliminados)
   const attendants = [...editSelectedAttendants].filter(n => allStudents[n]);
   const potionsUsed = [...editSelectedPotions];
   const errEl = document.getElementById("editBitErr");
@@ -2946,6 +2951,11 @@ window.saveEditBitacora = async function() {
   if (!diagnosis)          { errEl.textContent = "El diagnóstico es obligatorio.";          errEl.style.display = "block"; return; }
   if (!procedure)          { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length)  { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
+  if (attendants.length < editSelectedAttendants.size) {
+    errEl.textContent = `⚠️ ${editSelectedAttendants.size - attendants.length} asistente(s) no existen. Se guardarán solo los que existen.`;
+    errEl.style.display = "block";
+    await new Promise(r => setTimeout(r, 1500));
+  }
   if (patient.length > 80 || diagnosis.length > 200 || procedure.length > 5000) {
     errEl.textContent = "Texto demasiado largo (paciente ≤80, diagnóstico ≤200, procedimiento ≤5000 caracteres).";
     errEl.style.display = "block"; return;
