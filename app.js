@@ -272,7 +272,7 @@ window.loggedInStudent = null;
 window.adminPwdHash   = null;
 window.superAdminHash = null;
 let visitorIP      = null;
-let allInventory   = {};   // potion_id → { name, category, quantity }
+let allInventory   = {};   // potion_id → qty (número)
 
 // Catálogo completo de pociones
 const POTIONS_CATALOG = [
@@ -2527,8 +2527,9 @@ async function loadBitacoras() {
       createdBy: b.created_by,
       attendants: (b.bitacora_attendants || []).map(a => a.attendant_name),
       potionsUsed: (b.bitacora_potions || []).map(p => p.potion_id),
-      editHistory: b.bitacora_edit_history || [],
-      ...b
+      editHistory: (b.bitacora_edit_history || [])
+        .map(e => ({ editor: e.editor, editedAt: e.edited_at, editNumber: e.edit_number }))
+        .sort((x, y) => x.editNumber - y.editNumber)
     }));
 
     updatePatientDatalist();
@@ -2673,35 +2674,39 @@ window.saveBitacoraEntry = async function() {
 
     if (bitError || !bitacora) throw bitError || new Error("No se pudo crear bitácora");
 
-    // Insertar attendants
-    for (const attendantName of attendants) {
-      await supabase
+    // Insertar attendants (en lote, con control de error)
+    if (attendants.length) {
+      const { error: attErr } = await supabase
         .from("bitacora_attendants")
-        .insert({
+        .insert(attendants.map(name => ({
           bitacora_id: bitacora.id,
-          attendant_name: attendantName,
+          attendant_name: name,
           student_id: null
-        });
+        })));
+      if (attErr) throw attErr;
     }
 
-    // Insertar potions y actualizar cantidad
-    for (const potionId of potionsUsed) {
-      await supabase
+    // Insertar potions (en lote, con control de error)
+    if (potionsUsed.length) {
+      const { error: potErr } = await supabase
         .from("bitacora_potions")
-        .insert({
+        .insert(potionsUsed.map(pid => ({
           bitacora_id: bitacora.id,
-          potion_id: potionId
-        });
+          potion_id: pid,
+          qty: 1
+        })));
+      if (potErr) throw potErr;
 
-      // Restar del inventario
-      await supabase
-        .from("potions")
-        .update({ qty: Math.max(0, (allInventory[potionId] || 1) - 1) })
-        .eq("id", potionId);
+      // Restar del inventario (BD + memoria local)
+      for (const potionId of potionsUsed) {
+        const newQty = Math.max(0, (allInventory[potionId] || 0) - 1);
+        allInventory[potionId] = newQty;
+        await supabase.from("potions").update({ qty: newQty }).eq("id", potionId);
+      }
     }
 
-    // Insertar edit history
-    await supabase
+    // Insertar edit history (entrada #1)
+    const { error: histErr } = await supabase
       .from("bitacora_edit_history")
       .insert({
         bitacora_id: bitacora.id,
@@ -2709,6 +2714,7 @@ window.saveBitacoraEntry = async function() {
         edited_at: now,
         edit_number: 1
       });
+    if (histErr) throw histErr;
 
     allBitacoras.unshift({
       id: bitacora.id,
@@ -2716,7 +2722,7 @@ window.saveBitacoraEntry = async function() {
       createdAt: now,
       createdBy: loggedInStudent || "Sistema",
       attendants, potionsUsed,
-      editHistory: []
+      editHistory: [{ editor: loggedInStudent || "Sistema", editedAt: now, editNumber: 1 }]
     });
 
     bitacorasPage = 0;
@@ -2754,6 +2760,25 @@ window.deleteBitacora = async function(id) {
     toast("Error al eliminar", "error");
   }
 };
+
+// Sección "Ediciones" de una tarjeta de bitácora.
+// Solo muestra ediciones reales (la entrada #1 corresponde a la creación).
+function editHistoryField(b) {
+  const edits = (b.editHistory || []).filter(e => e.editNumber > 1);
+  if (!edits.length) return "";
+  return `
+      <div class="bitacora-field">
+        <span class="bitacora-label">Ediciones</span>
+        <div class="bitacora-edits">
+          ${edits.map(edit => `
+            <div class="bitacora-edit-entry">
+              <span class="edit-num">Edición ${edit.editNumber - 1}:</span>
+              <span class="edit-info">${escHtml(edit.editor)} · ${formatDate(edit.editedAt)}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>`;
+}
 
 function formatDate(iso) {
   const d = new Date(iso);
@@ -2816,19 +2841,7 @@ function renderBitacoraList() {
         <div class="bitacora-attendants">${(b.attendants || []).map(a =>
           `<span class="att-badge">${escHtml(a)}</span>`).join("")}</div>
       </div>
-      ${b.editHistory && b.editHistory.length > 0 ? `
-      <div class="bitacora-field">
-        <span class="bitacora-label">Ediciones</span>
-        <div class="bitacora-edits">
-          ${b.editHistory.map((edit, idx) => `
-            <div class="bitacora-edit-entry">
-              <span class="edit-num">Edición ${edit.editNumber}:</span>
-              <span class="edit-info">${escHtml(edit.editor)} · ${formatDate(edit.editedAt)}</span>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-      ` : ""}
+      ${editHistoryField(b)}
     </div>`;
   }).join("");
 
@@ -2981,16 +2994,8 @@ window.saveEditBitacora = async function() {
     const idx = allBitacoras.findIndex(x => x.id === editingBitacoraId);
     const existingHistory = allBitacoras[idx]?.editHistory || [];
     const newEditNumber = existingHistory.length + 1;
-
-    const updateData = { patient, diagnosis, procedure, attendants };
-    if (potionsUsed.length) updateData.potionsUsed = potionsUsed;
-    else updateData.potionsUsed = [];
-
-    // Agregar entrada al historial de ediciones
-    updateData.editHistory = [
-      ...existingHistory,
-      { editor: loggedInStudent || "Sistema", editedAt: now, editNumber: newEditNumber }
-    ];
+    // Capturar las pociones anteriores ANTES de mutar el registro en memoria
+    const oldPotions = [...(allBitacoras[idx]?.potionsUsed || [])];
 
     // Actualizar bitácora en Supabase
     const { error: bitError } = await supabase
@@ -3038,13 +3043,18 @@ window.saveEditBitacora = async function() {
       });
     if (histErr) throw histErr;
 
-    if (idx >= 0) Object.assign(allBitacoras[idx], { patient, diagnosis, procedure, attendants, potionsUsed });
+    // Actualizar registro en memoria (incluye el nuevo historial de ediciones)
+    if (idx >= 0) Object.assign(allBitacoras[idx], {
+      patient, diagnosis, procedure, attendants, potionsUsed,
+      editHistory: [
+        ...existingHistory,
+        { editor: loggedInStudent || "Sistema", editedAt: now, editNumber: newEditNumber }
+      ]
+    });
 
-    // Ajustar inventario si hay cambios en pociones
-    const oldPotions = (allBitacoras[idx]?.potionsUsed || []);
-    const newPotions = potionsUsed;
+    // Ajustar inventario si hay cambios en pociones (oldPotions capturado antes de mutar)
     const oldSet = new Set(oldPotions);
-    const newSet = new Set(newPotions);
+    const newSet = new Set(potionsUsed);
 
     // Devolver al inventario las pociones que se quitaron
     for (const potionId of oldSet) {
@@ -3267,19 +3277,7 @@ function renderPersonaBitacoras() {
         <div class="bitacora-attendants">${(b.attendants || []).map(a =>
           `<span class="att-badge">${escHtml(a)}</span>`).join("")}</div>
       </div>
-      ${b.editHistory && b.editHistory.length > 0 ? `
-      <div class="bitacora-field">
-        <span class="bitacora-label">Ediciones</span>
-        <div class="bitacora-edits">
-          ${b.editHistory.map((edit, idx) => `
-            <div class="bitacora-edit-entry">
-              <span class="edit-num">Edición ${edit.editNumber}:</span>
-              <span class="edit-info">${escHtml(edit.editor)} · ${formatDate(edit.editedAt)}</span>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-      ` : ""}
+      ${editHistoryField(b)}
     </div>`;
   }).join("");
 
