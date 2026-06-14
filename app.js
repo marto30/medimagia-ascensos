@@ -2635,7 +2635,22 @@ window.resetBitacoraForm = function() {
   document.getElementById("potionsSelected").innerHTML = "";
 };
 
+// Guard de reentrada: evita guardados duplicados por doble clic o latencia
+// (el clic durante la espera de 1500 ms o durante el insert crearía 2 bitácoras)
+let bitacoraSaving = false;
 window.saveBitacoraEntry = async function() {
+  if (bitacoraSaving) return;
+  bitacoraSaving = true;
+  const saveBtn = document.getElementById("saveBitBtn");
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    await doSaveBitacoraEntry();
+  } finally {
+    bitacoraSaving = false;
+    if (saveBtn) saveBtn.disabled = false;
+  }
+};
+async function doSaveBitacoraEntry() {
   const patient    = document.getElementById("bitPatient").value.trim();
   const diagnosis  = document.getElementById("bitDiag").value.trim();
   const procedure  = document.getElementById("bitProc").value.trim();
@@ -2739,7 +2754,7 @@ window.saveBitacoraEntry = async function() {
     console.error("Error guardando bitácora:", err);
     toast(`Error al guardar: ${err?.message || "desconocido"}`, "error");
   }
-};
+}
 
 window.deleteBitacora = async function(id) {
   const ok = await showModal("Eliminar bitácora",
@@ -2758,6 +2773,14 @@ window.deleteBitacora = async function(id) {
     allBitacoras = allBitacoras.filter(b => b.id !== id);
     toast("Bitácora eliminada");
     renderBitacoraList();
+    // Refrescar la vista de Personas si la eliminación se lanzó desde ahí
+    if (currentScreen === "scPersonas") {
+      renderPersonasList();
+      if (selectedPersona) {
+        if (getPersonaBitacoras(selectedPersona).length) renderPersonaBitacoras();
+        else { selectedPersona = null; document.getElementById("personaBitacorasWrap").style.display = "none"; }
+      }
+    }
   } catch (err) {
     console.error("Error eliminando bitácora:", err);
     toast("Error al eliminar", "error");
@@ -2765,17 +2788,21 @@ window.deleteBitacora = async function(id) {
 };
 
 // Sección "Ediciones" de una tarjeta de bitácora.
-// Solo muestra ediciones reales (la entrada #1 corresponde a la creación).
+// La primera entrada del historial es la línea base (creación) y no se muestra;
+// el resto son ediciones reales, renumeradas desde 1 para mostrar.
+// Se omite la base por posición (no por número) para soportar datos migrados
+// que no tengan una entrada de creación.
 function editHistoryField(b) {
-  const edits = (b.editHistory || []).filter(e => e.editNumber > 1);
+  const sorted = [...(b.editHistory || [])].sort((x, y) => (x.editNumber || 0) - (y.editNumber || 0));
+  const edits = sorted.slice(1); // descartar la línea base
   if (!edits.length) return "";
   return `
       <div class="bitacora-field">
         <span class="bitacora-label">Ediciones</span>
         <div class="bitacora-edits">
-          ${edits.map(edit => `
+          ${edits.map((edit, i) => `
             <div class="bitacora-edit-entry">
-              <span class="edit-num">Edición ${edit.editNumber - 1}:</span>
+              <span class="edit-num">Edición ${i + 1}:</span>
               <span class="edit-info">${escHtml(edit.editor)} · ${formatDate(edit.editedAt)}</span>
             </div>
           `).join("")}
@@ -2968,15 +2995,30 @@ window.cancelEditBitacora = function() {
   document.getElementById("editBitacoraModal").classList.remove("show");
 };
 
+let bitacoraEditSaving = false;
 window.saveEditBitacora = async function() {
+  if (bitacoraEditSaving) return;
+  bitacoraEditSaving = true;
+  const saveBtn = document.getElementById("saveEditBitBtn");
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    await doSaveEditBitacora();
+  } finally {
+    bitacoraEditSaving = false;
+    if (saveBtn) saveBtn.disabled = false;
+  }
+};
+async function doSaveEditBitacora() {
+  const errEl = document.getElementById("editBitErr");
+  errEl.style.display = "none";
+  // Guard: el modal pudo perder su estado (p.ej. tras cancelar)
+  if (!editingBitacoraId) { errEl.textContent = "No hay ninguna bitácora en edición."; errEl.style.display = "block"; return; }
   const patient   = document.getElementById("editBitPatient").value.trim();
   const diagnosis = document.getElementById("editBitDiag").value.trim();
   const procedure = document.getElementById("editBitProc").value.trim();
   // Filtra asistentes que ya no existen en la base de datos (estudiantes eliminados)
   const attendants = [...editSelectedAttendants].filter(n => allStudents[n]);
   const potionsUsed = [...editSelectedPotions];
-  const errEl = document.getElementById("editBitErr");
-  errEl.style.display = "none";
 
   if (!patient)            { errEl.textContent = "El nombre del paciente es obligatorio."; errEl.style.display = "block"; return; }
   if (!diagnosis)          { errEl.textContent = "El diagnóstico es obligatorio.";          errEl.style.display = "block"; return; }
@@ -2996,7 +3038,9 @@ window.saveEditBitacora = async function() {
     const now = new Date().toISOString();
     const idx = allBitacoras.findIndex(x => x.id === editingBitacoraId);
     const existingHistory = allBitacoras[idx]?.editHistory || [];
-    const newEditNumber = existingHistory.length + 1;
+    // Basado en el máximo número existente (no en length) para evitar colisiones
+    // si hubiera huecos en el historial (p.ej. una entrada borrada)
+    const newEditNumber = existingHistory.reduce((m, e) => Math.max(m, e.editNumber || 0), 0) + 1;
     // Capturar las pociones anteriores ANTES de mutar el registro en memoria
     const oldPotions = [...(allBitacoras[idx]?.potionsUsed || [])];
 
@@ -3096,10 +3140,15 @@ window.saveEditBitacora = async function() {
     toast("Bitácora actualizada", "success");
     updatePatientDatalist();
     renderBitacoraList();
+    // Refrescar la vista de Personas si la edición se lanzó desde ahí
+    if (currentScreen === "scPersonas") {
+      renderPersonasList();
+      if (selectedPersona) renderPersonaBitacoras();
+    }
   } catch (err) {
     toast(`Error al guardar: ${err?.code || err?.message || "desconocido"}`, "error");
   }
-};
+}
 
 // =====================================================================
 //  PERSONAS EN BITÁCORAS
