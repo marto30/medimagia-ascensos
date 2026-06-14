@@ -2014,18 +2014,52 @@ function renderPocaActividad() {
     return;
   }
 
-  // Reportes para mayo (mes 4) y junio (mes 5) del año actual
-  const year = new Date().getFullYear();
-  const mayoReport = buildActivityReport(year, 4);    // May = month 4 (0-indexed)
-  const junioReport = buildActivityReport(year, 5);   // June = month 5
+  const now = new Date();
+  const ty = now.getFullYear(), tm = now.getMonth();
+  const ly = tm === 0 ? ty - 1 : ty, lm = tm === 0 ? 11 : tm - 1;
+  const mThisName = capitalize(new Date(ty, tm, 1).toLocaleDateString("es-ES", { month: "long" }));
+  const mLastName = capitalize(new Date(ly, lm, 1).toLocaleDateString("es-ES", { month: "long" }));
+
+  const students = Object.keys(allStudents).map(n => ({
+    name: n,
+    rank: getStudentRank(n),
+    ct: bitCntMonth(n, ty, tm),
+    cl: bitCntMonth(n, ly, lm)
+  }))
+  .filter(s => s.cl < 3 && !allGraduated[s.name])
+  .sort((a, b) => a.cl - b.cl || norm(a.name).localeCompare(norm(b.name)));
+
+  if (!students.length) {
+    wrap.innerHTML = '<p class="empty-state">✓ Todos los medimagos tienen 3 o más bitácoras el mes pasado.</p>';
+    return;
+  }
+
+  const rows = students.map(s => {
+    const safe  = safeAttr(s.name);
+    const rkCls = rankClass("rk", s.rank);
+    return `<tr>
+      <td>${escHtml(s.name)}</td>
+      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(s.rank)}</span></td>
+      <td style="text-align:center"><span class="bit-count-badge bit-count-warn">${s.cl}</span></td>
+      <td style="text-align:center"><span class="bit-count-badge${s.ct < 3 ? " bit-count-warn" : ""}">${s.ct}</span></td>
+      <td><button class="btn sm" onclick="adminEdit('${safe}')">Ver</button></td>
+    </tr>`;
+  }).join("");
 
   wrap.innerHTML = `
-    <div class="activity-header">
-      <p class="activity-title">⚠️ Medimagos con baja actividad</p>
-      <p style="font-size:.85rem;color:var(--text-muted);margin-top:.4rem">Estudiantes con menos de 3 bitácoras en cada mes (excluye graduados)</p>
+    <div class="activity-notice">
+      <strong>${students.length}</strong> medimago${students.length !== 1 ? "s" : ""}
+      con menos de 3 bitácoras en ${mLastName}.
     </div>
-    ${mayoReport}
-    ${junioReport}`;
+    <table class="student-table">
+      <thead><tr>
+        <th>Nombre</th><th>Rango</th>
+        <th>📋 ${mLastName} (pasado)</th>
+        <th>📋 ${mThisName} (actual)</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 // =====================================================================
@@ -2131,7 +2165,16 @@ function renderStats() {
         <p class="stats-panel-title">🤕 Pacientes más atendidos</p>
         ${topPat.length ? topPat.map(([n, c]) => hbar(n, c, maxPat, "hbar-red")).join("") : '<p class="empty-state">Sin datos aún.</p>'}
       </div>
-    </div>`;
+    </div>
+
+    <div class="stats-divider"></div>
+
+    <div class="activity-header" style="margin-top:2rem">
+      <p class="activity-title">⚠️ Medimagos con baja actividad</p>
+      <p style="font-size:.85rem;color:var(--text-muted);margin-top:.4rem">Estudiantes con menos de 3 bitácoras en cada mes (excluye graduados)</p>
+    </div>
+    ${buildActivityReport(ty, 4)}
+    ${buildActivityReport(ty, 5)}`;
 }
 
 // =====================================================================

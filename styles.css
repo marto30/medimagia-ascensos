@@ -2195,6 +2195,12 @@ textarea:focus-visible,
   font-weight: 600;
 }
 
+.stats-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 1.8rem 0;
+}
+
 /* Actions en modal: botones lado a lado */
 .edit-bitacora-modal .modal-actions {
   display: flex;
