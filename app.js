@@ -491,7 +491,7 @@ async function loadAllStudents() {
   try {
     // Cargar todo en paralelo: estudiantes, hechizos, infracciones
     const [{ data: students, error: studentsErr }, { data: allSpells, error: spellsErr }, { data: allInfr, error: infErr }] = await Promise.all([
-      supabase.from("students").select("id, name, graduated, current_rank, username, auth_user_id, credentials_updated_at"),
+      supabase.from("students").select("id, name, graduated, current_rank, username"),
       supabase.from("student_spells").select("student_id, source_spell_name, learned"),
       supabase.from("infractions").select("*")
     ]);
@@ -533,9 +533,9 @@ async function loadAllStudents() {
       if (student.username) {
         allCredentials[student.name] = {
           username: student.username,
-          passwordHash: student.auth_user_id ? "auth" : "legacy",
-          authUserId: student.auth_user_id || null,
-          credentialsUpdatedAt: student.credentials_updated_at || null
+          passwordHash: "auth",
+          authUserId: null,
+          credentialsUpdatedAt: null
         };
         usernameIndex[student.username.toLowerCase()] = student.name;
       }
@@ -3593,11 +3593,14 @@ async function initSecurity() {
     const ipHash = await hashIP(ip);
     visitorIP = ipHash; // guardamos el hash, no la IP
 
-    const { data: blocked } = await supabase
+    const { data: blocked, error: blockedErr } = await supabase
       .from("blocked_ips")
       .select("*")
       .eq("ip_hash", ipHash)
-      .single();
+      .maybeSingle();
+    if (blockedErr) {
+      console.warn("No se pudo comprobar blocked_ips:", blockedErr);
+    }
     if (blocked) { show("scBlocked"); return; }
 
     // Registrar visita: solo hash + timestamp + navegador resumido (fire & forget)
