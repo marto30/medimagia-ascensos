@@ -121,6 +121,19 @@ function makeUsername(name) {
     .trim().replace(/\s+/g, ".");
 }
 
+// Genera un username a partir del nombre, añadiendo un sufijo numérico
+// si ya existe otro alumno con ese mismo username.
+function generateUniqueUsername(name) {
+  let username = makeUsername(name);
+  let suffix   = 0;
+  const base   = username;
+  while (usernameIndex[username] && usernameIndex[username] !== name) {
+    suffix++;
+    username = base + suffix;
+  }
+  return username;
+}
+
 function authEmailForUsername(username) {
   return `${String(username || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "")}@medimagia.test`;
 }
@@ -605,12 +618,16 @@ async function createStudent(name, spells) {
   if (existingError) throw existingError;
   if (existing?.id) throw new Error("Ya existe un alumno con ese nombre");
 
+  const username = generateUniqueUsername(name);
+
   const { data: student, error } = await supabase
     .from("students")
     .insert({
       name,
+      username,
       current_rank: initialRank,
-      graduated: false
+      graduated: false,
+      source_firestore_id: `manual_${crypto.randomUUID()}`
     })
     .select("id")
     .single();
@@ -624,6 +641,8 @@ async function createStudent(name, spells) {
   allGraduated[name] = false;
   allRanks[name] = initialRank;
   allInfractions[name] = [];
+  allCredentials[name] = { username, passwordHash: "auth", authUserId: null, credentialsUpdatedAt: null };
+  usernameIndex[username.toLowerCase()] = name;
 
   return student;
 }
@@ -2362,16 +2381,7 @@ window.doGenerateCredentials = async function() {
   if (!name) return;
 
   const existing = allCredentials[name];
-  let username   = existing ? existing.username : makeUsername(name);
-
-  if (!existing) {
-    let suffix = 0;
-    const base = username;
-    while (usernameIndex[username] && usernameIndex[username] !== name) {
-      suffix++;
-      username = base + suffix;
-    }
-  }
+  let username   = existing ? existing.username : generateUniqueUsername(name);
 
   const password = generatePassword();
 
