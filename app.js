@@ -121,6 +121,10 @@ function makeUsername(name) {
     .trim().replace(/\s+/g, ".");
 }
 
+function authEmailForUsername(username) {
+  return `${String(username || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "")}@medimagia.test`;
+}
+
 // =====================================================================
 //  SEGURIDAD — HTTPS · Rate limit · Session timeout
 // =====================================================================
@@ -487,7 +491,7 @@ async function loadAllStudents() {
   try {
     // Cargar todo en paralelo: estudiantes, hechizos, infracciones
     const [{ data: students, error: studentsErr }, { data: allSpells, error: spellsErr }, { data: allInfr, error: infErr }] = await Promise.all([
-      supabase.from("students").select("*"),
+      supabase.from("students").select("id, name, graduated, current_rank, username, auth_user_id, credentials_updated_at"),
       supabase.from("student_spells").select("student_id, source_spell_name, learned"),
       supabase.from("infractions").select("*")
     ]);
@@ -527,7 +531,12 @@ async function loadAllStudents() {
       allInfractions[student.name] = infrByStudent[student.id] || [];
 
       if (student.username) {
-        allCredentials[student.name] = { username: student.username, passwordHash: null };
+        allCredentials[student.name] = {
+          username: student.username,
+          passwordHash: student.auth_user_id ? "auth" : "legacy",
+          authUserId: student.auth_user_id || null,
+          credentialsUpdatedAt: student.credentials_updated_at || null
+        };
         usernameIndex[student.username.toLowerCase()] = student.name;
       }
     });
@@ -582,6 +591,41 @@ async function saveStudent(name, spells) {
     console.error("Error guardando estudiante:", err);
     throw err;
   }
+}
+
+async function createStudent(name, spells) {
+  const initialRank = selectedRank || RANKS_ORDER[0];
+
+  const { data: existing, error: existingError } = await supabase
+    .from("students")
+    .select("id")
+    .eq("name", name)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+  if (existing?.id) throw new Error("Ya existe un alumno con ese nombre");
+
+  const { data: student, error } = await supabase
+    .from("students")
+    .insert({
+      name,
+      current_rank: initialRank,
+      graduated: false
+    })
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  if (!student?.id) throw new Error("No se pudo crear el alumno");
+
+  await saveStudent(name, spells);
+
+  allStudents[name] = spells;
+  allGraduated[name] = false;
+  allRanks[name] = initialRank;
+  allInfractions[name] = [];
+
+  return student;
 }
 
 async function updateStudentRank(name, rank) {
@@ -803,7 +847,7 @@ window.studentLogin = async function() {
   try {
     // Intentar login con Supabase Auth normal (usuarios ya migrados)
     const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: `${user}@medimagia.local`,
+      email: authEmailForUsername(user),
       password: pwd
     });
 
@@ -882,7 +926,7 @@ window.studentLogin = async function() {
       console.log(`[studentLogin] Contraseña sincronizada, haciendo login...`);
 
       // Ahora hacer login con la contraseña que acabamos de establecer
-      const emailSynthetic = `${user.replace(/[^a-z0-9]/g, "")}@medimagia.test`;
+      const emailSynthetic = authEmailForUsername(user);
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
         email: emailSynthetic,
         password: pwd
@@ -2190,13 +2234,13 @@ function renderCredentialsOverview() {
     norm(a).localeCompare(norm(b))
   );
 
-  const withCreds = names.filter(n => allCredentials[n]?.passwordHash).length;
+  const withCreds = names.filter(n => allCredentials[n]?.username).length;
   const total = names.length;
   const pct = Math.round(withCreds / total * 100);
 
   const rows = names.map(n => {
     const cred = allCredentials[n];
-    const hasPassword = cred?.passwordHash ? true : false;
+    const hasPassword = cred?.username ? true : false;
     const username = cred?.username || "—";
     const rank = getStudentRank(n);
     const rkCls = rankClass("rk", rank);
@@ -2329,32 +2373,44 @@ window.doGenerateCredentials = async function() {
     }
   }
 
-  const password     = generatePassword();
-  const passwordHash = await hashStudentPwd(password);
+  const password = generatePassword();
 
   try {
-    const { data: student } = await supabase
-      .from("students")
-      .select("id")
-      .eq("name", name)
-      .single();
-    if (!student?.id) throw new Error("Estudiante no encontrado");
-    const { error } = await supabase
-      .from("students")
-      .update({ username })
-      .eq("id", student.id);
-    if (error) throw error;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) throw new Error("No hay sesión de administrador activa. Cierra sesión y vuelve a entrar como admin.");
+
+    const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/create-student-user`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ name, username, password })
+    });
+
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok || !result.success) {
+      throw new Error(result.error || `Error HTTP ${res.status}`);
+    }
+
+    username = result.username || username;
+
+    if (existing && existing.username !== username) {
+      delete usernameIndex[(existing.username || "").toLowerCase()];
+    }
+    allCredentials[name] = {
+      username,
+      passwordHash: result.password_hash || "auth",
+      authUserId: result.auth_user_id || null,
+      credentialsUpdatedAt: result.credentials_updated_at || new Date().toISOString()
+    };
+    usernameIndex[username.toLowerCase()] = name;
   } catch (err) {
     console.error("Error guardando credenciales:", err);
-    toast(`Error al guardar en la base de datos: ${err?.code || err?.message || "desconocido"}`, "error");
+    toast(`Error al crear usuario: ${err?.message || "desconocido"}`, "error");
     return;
   }
-
-  if (existing && existing.username !== username) {
-    delete usernameIndex[(existing.username || "").toLowerCase()];
-  }
-  allCredentials[name]            = { username, passwordHash };
-  usernameIndex[username.toLowerCase()] = name;
 
   const body   = document.getElementById("credModalBody");
   const genBtn = document.getElementById("credModalGenBtn");
@@ -2371,7 +2427,8 @@ window.doGenerateCredentials = async function() {
       <button class="cred-copy-btn" onclick="copyToClipboard(this,'${safeAttr(password)}')">Copiar</button>
     </div>`;
   genBtn.style.display = "none";
-  toast("✓ Credenciales guardadas en la base de datos", "success");
+  renderCredentialsOverview();
+  toast(existing ? "✓ Contraseña regenerada y guardada" : "✓ Usuario creado y contraseña guardada", "success");
 };
 
 document.getElementById("credModal")
@@ -2445,12 +2502,24 @@ window.addAlumno = async function() {
   const spells = selectedRank ? { ...addSpells } : {};
   if (!selectedRank) allSpells().forEach(s => spells[s] = false);
 
-  await saveStudent(name, spells);
+  try {
+    await createStudent(name, spells);
+  } catch (err) {
+    console.error("Error creando alumno:", err);
+    errEl.textContent = `Error al crear alumno: ${err?.code || err?.message || "desconocido"}`;
+    errEl.style.display = "block";
+    return;
+  }
+
   okEl.style.display = "block";
   toast(`Alumno "${name}" creado`, "success");
   setTimeout(() => okEl.style.display = "none", 2500);
   resetAddForm();
   renderList();
+  renderAscensos();
+  renderGraduados();
+  renderCredentialsOverview();
+  renderDirectoryIn("directoryContent");
 };
 
 // =====================================================================
