@@ -560,6 +560,29 @@ async function loadAllStudents() {
 }
 
 async function saveStudent(name, spells) {
+  if (!isAdmin) {
+    // Alumnos: guardar via edge function (usa service role, valida propiedad en servidor)
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) throw new Error("Sesión no activa. Vuelve a iniciar sesión.");
+
+    const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/save-student-spells`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ studentName: name, spells })
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok || !result.success) {
+      throw new Error(result.error || `Error HTTP ${res.status}`);
+    }
+    allStudents[name] = spells;
+    return;
+  }
+
+  // Admin: acceso directo a la BD
   try {
     const { data: student, error: studentError } = await supabase
       .from("students")
@@ -1143,7 +1166,7 @@ function renderProfile() {
     const rows = RANKS[rk].map(s => {
       const on  = sp[s];
       const key = domKey(s);
-      return `<div class="spell-row" onclick="toggleSpell('${safeAttr(s)}')">
+      return `<div class="spell-row${isAdmin ? "" : " readonly"}" ${isAdmin ? `onclick="toggleSpell('${safeAttr(s)}')"` : ""}>
         <div class="spell-dot ${on ? "on" : "off"}" id="dot_${key}"></div>
         <span class="spell-txt ${on ? "" : "off"}" id="txt_${key}">${escHtml(s)}</span>
       </div>`;
@@ -1160,6 +1183,9 @@ function renderProfile() {
       <div class="spells-list">${rows}</div>
     </div>`;
   }).join("");
+
+  const saveRow = document.querySelector("#scProfile .save-row");
+  if (saveRow) saveRow.style.display = isAdmin ? "" : "none";
 
   updateDirtyState();
 }
@@ -1330,6 +1356,7 @@ window.removeInfraction = async function(idx) {
 };
 
 window.toggleSpell = function(s) {
+  if (!isAdmin) return;
   pendingChanges[s] = !pendingChanges[s];
   const key = domKey(s);
   const dot = document.getElementById("dot_" + key);
@@ -1384,8 +1411,9 @@ window.guardarCambios = async function() {
     updateDirtyState();
     renderProfile();
     toast("Cambios guardados", "success");
-  } catch {
-    toast("Error al guardar. Comprueba tu conexión.", "error");
+  } catch (err) {
+    console.error("Error guardando cambios:", err);
+    toast(`Error al guardar: ${err?.message || "Comprueba tu conexión."}`, "error");
   }
   btn.disabled = false; btn.textContent = "Guardar cambios";
 };

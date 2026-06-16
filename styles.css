@@ -361,6 +361,8 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
   border-radius: var(--r-xs); padding: 5px 6px; transition: background .15s;
 }
 .spell-row:hover { background: rgba(255,255,255,.05); }
+.spell-row.readonly { cursor: default; }
+.spell-row.readonly:hover { background: none; }
 .spell-dot {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
   border: 1px solid rgba(255,255,255,.12); transition: background .2s, box-shadow .2s;
