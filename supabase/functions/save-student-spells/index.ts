@@ -31,13 +31,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_HEADERS });
     }
 
-    const callerEmail    = callerData.user.email || "";
-    // Normalizar igual que authEmailForUsername: solo alfanumérico minúscula.
-    // Necesario porque el email pudo crearse con otro proceso (p.ej. "juan.garcia@medimagia.test"
-    // en vez de "juangarcia@medimagia.test") mientras students.username siempre es alfanumérico puro.
-    const callerUsername = callerEmail.replace(/@medimagia\.test$/i, "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const callerRole     = (callerData.user.user_metadata as any)?.role;
-    const isAdmin        = ["admin", "superadmin"].includes(callerRole);
+    const callerEmail = callerData.user.email || "";
+    const callerRole  = (callerData.user.user_metadata as any)?.role;
+    const isAdmin     = ["admin", "superadmin"].includes(callerRole);
 
     const { studentName, spells } = await req.json();
     if (!studentName || !spells || typeof spells !== "object") {
@@ -47,7 +43,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let studentId: string;
 
     if (isAdmin) {
-      // Admins: buscar alumno por nombre (pueden guardar para cualquiera)
+      // Admins: pueden guardar para cualquier alumno
       const { data: student, error: studentErr } = await supabaseAdmin
         .from("students")
         .select("id")
@@ -58,50 +54,51 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
       studentId = student.id;
     } else {
-      // Alumnos: buscar por su propio callerUsername (derivado del email de Auth)
-      // Esto es seguro porque el JWT está validado; el alumno SOLO puede guardar sus propios datos.
-      const { data: ownStudent, error: lookupErr } = await supabaseAdmin
+      // Alumnos: deben tener email @medimagia.test
+      if (!callerEmail.toLowerCase().endsWith("@medimagia.test")) {
+        return new Response(JSON.stringify({
+          error: `Cuenta no válida. Email: ${callerEmail}`
+        }), { status: 403, headers: CORS_HEADERS });
+      }
+
+      // Buscar el alumno por nombre (el nombre viene del cliente autenticado)
+      const { data: student, error: studentErr } = await supabaseAdmin
         .from("students")
-        .select("id, name")
-        .eq("username", callerUsername)
+        .select("id, username")
+        .eq("name", studentName)
         .single();
 
-      if (lookupErr || !ownStudent) {
-        // Fallback: si students.username es NULL (alumno sin username asignado aún),
-        // vincular automáticamente el username al alumno con ese nombre.
-        // Solo se permite si studentName coincide con la búsqueda y callerUsername no está en uso.
-        const { data: studentByName } = await supabaseAdmin
-          .from("students")
-          .select("id, username")
-          .eq("name", studentName)
-          .single();
+      if (studentErr || !student) {
+        return new Response(JSON.stringify({
+          error: `Alumno no encontrado: ${studentName}`
+        }), { status: 404, headers: CORS_HEADERS });
+      }
 
-        if (!studentByName) {
-          return new Response(JSON.stringify({ error: "Tu cuenta no está vinculada a ningún perfil. Pide al administrador que genere tus credenciales." }), { status: 403, headers: CORS_HEADERS });
-        }
+      // Verificación de propiedad: el email del caller debe corresponder al username del alumno.
+      // Normalizamos ambos lados (solo alfanumérico minúscula) para tolerar formatos distintos.
+      const callerEmailUser   = callerEmail.replace(/@medimagia\.test$/i, "");
+      const callerNorm        = callerEmailUser.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const studentUsernameDB = (student.username || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
-        if (studentByName.username !== null && studentByName.username !== "") {
-          // El alumno tiene username pero no coincide con callerUsername
-          return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
-        }
+      if (studentUsernameDB && callerNorm && studentUsernameDB !== callerNorm) {
+        // Hay username en BD y no coincide con el email del caller → acceso denegado
+        return new Response(JSON.stringify({
+          error: `Forbidden: email_prefix=${callerNorm} no coincide con username=${studentUsernameDB}`
+        }), { status: 403, headers: CORS_HEADERS });
+      }
 
-        // username es null — vincularlo a este callerUsername y continuar
+      // Si username en BD está vacío/null, vincular automáticamente
+      if (!student.username && callerNorm) {
         await supabaseAdmin
           .from("students")
-          .update({ username: callerUsername })
-          .eq("id", studentByName.id);
-
-        studentId = studentByName.id;
-      } else {
-        // Verificar que el alumno encontrado por username coincide con el studentName enviado
-        if (ownStudent.name !== studentName) {
-          return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
-        }
-        studentId = ownStudent.id;
+          .update({ username: callerNorm })
+          .eq("id", student.id);
       }
+
+      studentId = student.id;
     }
 
-    // Traer todos los hechizos de golpe para evitar N+1 queries
+    // Traer todos los hechizos de golpe
     const spellNames = Object.keys(spells);
     const { data: spellRows, error: spellsErr } = await supabaseAdmin
       .from("spells")
