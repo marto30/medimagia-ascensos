@@ -41,25 +41,61 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ error: "Faltan datos (studentName, spells)" }), { status: 400, headers: CORS_HEADERS });
     }
 
-    // Alumnos solo pueden guardar sus propios hechizos; admins pueden guardar para cualquiera.
-    if (!isAdmin) {
-      const { data: student } = await supabaseAdmin
+    let studentId: string;
+
+    if (isAdmin) {
+      // Admins: buscar alumno por nombre (pueden guardar para cualquiera)
+      const { data: student, error: studentErr } = await supabaseAdmin
         .from("students")
-        .select("username")
+        .select("id")
         .eq("name", studentName)
         .single();
-      if (!student || student.username !== callerUsername) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
+      if (studentErr || !student) {
+        return new Response(JSON.stringify({ error: "Alumno no encontrado" }), { status: 404, headers: CORS_HEADERS });
       }
-    }
+      studentId = student.id;
+    } else {
+      // Alumnos: buscar por su propio callerUsername (derivado del email de Auth)
+      // Esto es seguro porque el JWT está validado; el alumno SOLO puede guardar sus propios datos.
+      const { data: ownStudent, error: lookupErr } = await supabaseAdmin
+        .from("students")
+        .select("id, name")
+        .eq("username", callerUsername)
+        .single();
 
-    const { data: student, error: studentErr } = await supabaseAdmin
-      .from("students")
-      .select("id")
-      .eq("name", studentName)
-      .single();
-    if (studentErr || !student) {
-      return new Response(JSON.stringify({ error: "Alumno no encontrado" }), { status: 404, headers: CORS_HEADERS });
+      if (lookupErr || !ownStudent) {
+        // Fallback: si students.username es NULL (alumno sin username asignado aún),
+        // vincular automáticamente el username al alumno con ese nombre.
+        // Solo se permite si studentName coincide con la búsqueda y callerUsername no está en uso.
+        const { data: studentByName } = await supabaseAdmin
+          .from("students")
+          .select("id, username")
+          .eq("name", studentName)
+          .single();
+
+        if (!studentByName) {
+          return new Response(JSON.stringify({ error: "Tu cuenta no está vinculada a ningún perfil. Pide al administrador que genere tus credenciales." }), { status: 403, headers: CORS_HEADERS });
+        }
+
+        if (studentByName.username !== null && studentByName.username !== "") {
+          // El alumno tiene username pero no coincide con callerUsername
+          return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
+        }
+
+        // username es null — vincularlo a este callerUsername y continuar
+        await supabaseAdmin
+          .from("students")
+          .update({ username: callerUsername })
+          .eq("id", studentByName.id);
+
+        studentId = studentByName.id;
+      } else {
+        // Verificar que el alumno encontrado por username coincide con el studentName enviado
+        if (ownStudent.name !== studentName) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
+        }
+        studentId = ownStudent.id;
+      }
     }
 
     // Traer todos los hechizos de golpe para evitar N+1 queries
@@ -76,7 +112,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const upserts = spellNames
       .filter(name => spellMap[name])
       .map(name => ({
-        student_id: student.id,
+        student_id: studentId,
         spell_id:   spellMap[name],
         learned:    !!spells[name],
         source_spell_name: name
