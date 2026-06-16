@@ -1245,7 +1245,7 @@ window.applyManualRank = async function() {
     sel.value = oldRank;
     return;
   }
-  window.allRanks[name] = newRank;
+  allRanks[name] = newRank;
   renderProfile();
   toast(`Rango de ${name} cambiado a ${newRank}`, "success");
 };
@@ -1401,7 +1401,7 @@ window.guardarCambios = async function() {
     // Recalcular y actualizar el rango después de guardar hechizos
     const newRank = calcRankLegacy(pendingChanges);
     await updateStudentRank(currentStudent, newRank);
-    window.allRanks[currentStudent] = newRank;
+    allRanks[currentStudent] = newRank;
     document.getElementById("savedMsg").style.display = "inline";
     setTimeout(() => document.getElementById("savedMsg").style.display = "none", 2500);
     updateDirtyState();
