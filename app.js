@@ -1166,7 +1166,7 @@ function renderProfile() {
     const rows = RANKS[rk].map(s => {
       const on  = sp[s];
       const key = domKey(s);
-      return `<div class="spell-row${isAdmin ? "" : " readonly"}" ${isAdmin ? `onclick="toggleSpell('${safeAttr(s)}')"` : ""}>
+      return `<div class="spell-row" onclick="toggleSpell('${safeAttr(s)}')">
         <div class="spell-dot ${on ? "on" : "off"}" id="dot_${key}"></div>
         <span class="spell-txt ${on ? "" : "off"}" id="txt_${key}">${escHtml(s)}</span>
       </div>`;
@@ -1183,9 +1183,6 @@ function renderProfile() {
       <div class="spells-list">${rows}</div>
     </div>`;
   }).join("");
-
-  const saveRow = document.querySelector("#scProfile .save-row");
-  if (saveRow) saveRow.style.display = isAdmin ? "" : "none";
 
   updateDirtyState();
 }
@@ -1356,7 +1353,6 @@ window.removeInfraction = async function(idx) {
 };
 
 window.toggleSpell = function(s) {
-  if (!isAdmin) return;
   pendingChanges[s] = !pendingChanges[s];
   const key = domKey(s);
   const dot = document.getElementById("dot_" + key);
