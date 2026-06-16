@@ -32,7 +32,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     const callerEmail    = callerData.user.email || "";
-    const callerUsername = callerEmail.replace(/@medimagia\.test$/, "");
+    // Normalizar igual que authEmailForUsername: solo alfanumérico minúscula.
+    // Necesario porque el email pudo crearse con otro proceso (p.ej. "juan.garcia@medimagia.test"
+    // en vez de "juangarcia@medimagia.test") mientras students.username siempre es alfanumérico puro.
+    const callerUsername = callerEmail.replace(/@medimagia\.test$/i, "").toLowerCase().replace(/[^a-z0-9]/g, "");
     const callerRole     = (callerData.user.user_metadata as any)?.role;
     const isAdmin        = ["admin", "superadmin"].includes(callerRole);
 
