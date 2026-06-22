@@ -1418,9 +1418,16 @@ window.guardarCambios = async function() {
   const btn = document.getElementById("saveBtn");
   btn.disabled = true; btn.textContent = "Guardando…";
   try {
-    await saveStudent(currentStudent, pendingChanges);
-    // Recalcular y actualizar el rango después de guardar hechizos
-    const newRank = calcRankLegacy(pendingChanges);
+    // Enviar TODOS los hechizos (on y off), no solo los que se han tocado
+    const completeSpells = {};
+    for (const rk of RANKS_ORDER) {
+      for (const s of (RANKS[rk] || [])) {
+        completeSpells[s] = !!pendingChanges[s];
+      }
+    }
+    await saveStudent(currentStudent, completeSpells);
+    allStudents[currentStudent] = completeSpells;
+    const newRank = calcRankLegacy(completeSpells);
     await updateStudentRank(currentStudent, newRank);
     allRanks[currentStudent] = newRank;
     document.getElementById("savedMsg").style.display = "inline";
