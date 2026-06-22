@@ -498,33 +498,52 @@ window.saveRanksChanges = async function() {
   }
 };
 
+async function loadSpellsViaEdge() {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) return null;
+    const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/load-student-spells`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.success ? json.spells : null;
+  } catch { return null; }
+}
+
 async function loadAllStudents() {
   allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {};
 
   try {
-    // Cargar todo en paralelo: estudiantes, hechizos, infracciones
-    const [{ data: students, error: studentsErr }, { data: allSpells, error: spellsErr }, { data: allInfr, error: infErr }] = await Promise.all([
+    // Cargar estudiantes e infracciones directamente (RLS permite lectura)
+    // Los hechizos se cargan en paralelo: intento directo + edge function como fallback
+    const [{ data: students, error: studentsErr }, directSpells, edgeSpells, { data: allInfr, error: infErr }] = await Promise.all([
       supabase.from("students").select("id, name, graduated, current_rank, username"),
       supabase.from("student_spells").select("student_id, source_spell_name, learned"),
+      loadSpellsViaEdge(),
       supabase.from("infractions").select("*")
     ]);
 
-    if (studentsErr || spellsErr || infErr) {
-      console.error("Error cargando datos:", studentsErr || spellsErr || infErr);
+    if (studentsErr) {
+      console.error("Error cargando estudiantes:", studentsErr);
       toast("Error al cargar estudiantes", "error");
       return;
     }
 
     if (!students || students.length === 0) return;
 
+    // Usar hechizos directos si la RLS los devolvió, sino los del edge function
+    const allSpells = (directSpells.data && directSpells.data.length > 0)
+      ? directSpells.data
+      : (edgeSpells || []);
+
     // Mapear hechizos por student_id
     const spellsByStudent = {};
-    if (allSpells) {
-      allSpells.forEach(s => {
-        if (!spellsByStudent[s.student_id]) spellsByStudent[s.student_id] = {};
-        spellsByStudent[s.student_id][s.source_spell_name] = s.learned;
-      });
-    }
+    allSpells.forEach(s => {
+      if (!spellsByStudent[s.student_id]) spellsByStudent[s.student_id] = {};
+      spellsByStudent[s.student_id][s.source_spell_name] = s.learned;
+    });
 
     // Mapear infracciones por student_id
     const infrByStudent = {};
