@@ -503,8 +503,10 @@ async function loadSpellsViaEdge() {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
     if (!token) return null;
-    const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/load-student-spells`, {
-      headers: { "Authorization": `Bearer ${token}` }
+    const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/save-student-spells`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ action: "load" })
     });
     if (!res.ok) return null;
     const json = await res.json();

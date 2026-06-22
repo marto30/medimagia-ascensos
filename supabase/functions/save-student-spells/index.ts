@@ -35,7 +35,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const callerRole  = (callerData.user.user_metadata as any)?.role;
     const isAdmin     = ["admin", "superadmin"].includes(callerRole);
 
-    const { studentName, spells } = await req.json();
+    const body = await req.json();
+    const { studentName, spells, action } = body;
+
+    // ── ACTION: LOAD (devuelve hechizos de todos los alumnos para el cliente) ──
+    if (action === "load") {
+      if (!isAdmin && !callerEmail.toLowerCase().endsWith("@medimagia.test")) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
+      }
+      const { data: allSpells, error: loadErr } = await supabaseAdmin
+        .from("student_spells")
+        .select("student_id, source_spell_name, learned");
+      if (loadErr) throw loadErr;
+      return new Response(JSON.stringify({ success: true, spells: allSpells || [] }), { status: 200, headers: CORS_HEADERS });
+    }
+
+    // ── ACTION: SAVE (guardar hechizos) ──
     if (!studentName || !spells || typeof spells !== "object") {
       return new Response(JSON.stringify({ error: "Faltan datos (studentName, spells)" }), { status: 400, headers: CORS_HEADERS });
     }
@@ -43,7 +58,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let studentId: string;
 
     if (isAdmin) {
-      // Admins: pueden guardar para cualquier alumno
       const { data: student, error: studentErr } = await supabaseAdmin
         .from("students")
         .select("id")
@@ -54,14 +68,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
       studentId = student.id;
     } else {
-      // Alumnos: deben tener email @medimagia.test
       if (!callerEmail.toLowerCase().endsWith("@medimagia.test")) {
-        return new Response(JSON.stringify({
-          error: `Cuenta no válida. Email: ${callerEmail}`
-        }), { status: 403, headers: CORS_HEADERS });
+        return new Response(JSON.stringify({ error: "Cuenta no válida" }), { status: 403, headers: CORS_HEADERS });
       }
+      const callerNorm = callerEmail.replace(/@medimagia\.test$/i, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
-      // Buscar el alumno por nombre (el nombre viene del cliente autenticado)
       const { data: student, error: studentErr } = await supabaseAdmin
         .from("students")
         .select("id, username")
@@ -69,45 +80,44 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .single();
 
       if (studentErr || !student) {
-        return new Response(JSON.stringify({
-          error: `Alumno no encontrado: ${studentName}`
-        }), { status: 404, headers: CORS_HEADERS });
+        return new Response(JSON.stringify({ error: `Alumno no encontrado: ${studentName}` }), { status: 404, headers: CORS_HEADERS });
       }
 
-      // Verificación de propiedad: el email del caller debe corresponder al username del alumno.
-      // Normalizamos ambos lados (solo alfanumérico minúscula) para tolerar formatos distintos.
-      const callerEmailUser   = callerEmail.replace(/@medimagia\.test$/i, "");
-      const callerNorm        = callerEmailUser.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const studentUsernameDB = (student.username || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const dbNorm = (student.username || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
-      if (studentUsernameDB && callerNorm && studentUsernameDB !== callerNorm) {
-        // Hay username en BD y no coincide con el email del caller → acceso denegado
-        return new Response(JSON.stringify({
-          error: `Forbidden: email_prefix=${callerNorm} no coincide con username=${studentUsernameDB}`
-        }), { status: 403, headers: CORS_HEADERS });
+      if (dbNorm && callerNorm && dbNorm !== callerNorm) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
       }
 
-      // Si username en BD está vacío/null, vincular automáticamente
       if (!student.username && callerNorm) {
-        await supabaseAdmin
-          .from("students")
-          .update({ username: callerNorm })
-          .eq("id", student.id);
+        await supabaseAdmin.from("students").update({ username: callerNorm }).eq("id", student.id);
       }
 
       studentId = student.id;
     }
 
-    // Traer todos los hechizos de golpe
+    // Traer hechizos existentes en tabla spells
     const spellNames = Object.keys(spells);
-    const { data: spellRows, error: spellsErr } = await supabaseAdmin
+    const { data: existingSpells, error: spellsErr } = await supabaseAdmin
       .from("spells")
       .select("id, name")
       .in("name", spellNames);
     if (spellsErr) throw spellsErr;
 
     const spellMap: Record<string, string> = {};
-    for (const row of spellRows || []) spellMap[row.name] = row.id;
+    for (const row of existingSpells || []) spellMap[row.name] = row.id;
+
+    // Auto-crear los hechizos que no existen en la tabla spells
+    const missingNames = spellNames.filter(n => !spellMap[n]);
+    if (missingNames.length > 0) {
+      const inserts = missingNames.map(n => ({ name: n, source_rank_name: n }));
+      const { data: created, error: createErr } = await supabaseAdmin
+        .from("spells")
+        .upsert(inserts, { onConflict: "name" })
+        .select("id, name");
+      if (createErr) throw createErr;
+      for (const row of created || []) spellMap[row.name] = row.id;
+    }
 
     const upserts = spellNames
       .filter(name => spellMap[name])
@@ -125,7 +135,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (upsertErr) throw upsertErr;
     }
 
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS });
+    return new Response(JSON.stringify({ success: true, saved: upserts.length }), { status: 200, headers: CORS_HEADERS });
   } catch (error: any) {
     console.error("[save-student-spells] Error:", error);
     return new Response(
