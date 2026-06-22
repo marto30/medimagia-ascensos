@@ -290,6 +290,8 @@ window.adminPwdHash   = null;
 window.superAdminHash = null;
 let visitorIP      = null;
 let allInventory   = {};   // potion_id → qty (número)
+let studentIdMap   = {};   // name → student UUID
+let allAttendance  = [];   // [{id, session_date, title, records: [{student_id, attended}]}]
 
 // Catálogo completo de pociones
 const POTIONS_CATALOG = [
@@ -515,7 +517,7 @@ async function loadSpellsViaEdge() {
 }
 
 async function loadAllStudents() {
-  allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {};
+  allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {}; studentIdMap = {};
 
   try {
     // Cargar estudiantes e infracciones directamente (RLS permite lectura)
@@ -560,6 +562,7 @@ async function loadAllStudents() {
     students.forEach(student => {
       const spellsObj = spellsByStudent[student.id] || {};
       allStudents[student.name] = spellsObj;
+      studentIdMap[student.name] = student.id;
       allGraduated[student.name] = student.graduated || false;
       allRanks[student.name] = student.current_rank || calcRankLegacy(spellsObj);
       allInfractions[student.name] = infrByStudent[student.id] || [];
@@ -1089,6 +1092,7 @@ window.openProfile = function(name) {
         if (el) el.innerHTML = "";
       });
   }
+  renderProfileAttendance(name);
 }
 
 // Firma de hechizos independiente del orden de claves → detecta cambios reales
@@ -1605,6 +1609,7 @@ window.showTab = function(id) {
   if (id === "tabGrad")         renderGraduados();
   if (id === "tabRanks")        renderRanksEditor();
   if (id === "tabCredentials")  renderCredentialsOverview();
+  if (id === "tabAttendance")   renderAttendanceTab();
   if (id === "tabSecurity")     { if (isSuperAdmin) renderSecurityTab(); }
 };
 
@@ -4305,6 +4310,255 @@ function renderEditSelectedPotions() {
   ).join("");
 
   wrap.innerHTML = tags;
+}
+
+// =====================================================================
+//  ASISTENCIA (Attendance Tracking)
+// =====================================================================
+
+let attendanceLoaded = false;
+
+async function loadAttendance() {
+  const { data: sessions, error: sessErr } = await supabase
+    .from("attendance_sessions")
+    .select("id, session_date, title, created_by")
+    .order("session_date", { ascending: false });
+  if (sessErr) { console.error("Error cargando asistencias:", sessErr); return; }
+
+  const { data: records, error: recErr } = await supabase
+    .from("attendance_records")
+    .select("session_id, student_id, attended");
+  if (recErr) { console.error("Error cargando registros:", recErr); return; }
+
+  const recBySession = {};
+  (records || []).forEach(r => {
+    if (!recBySession[r.session_id]) recBySession[r.session_id] = [];
+    recBySession[r.session_id].push(r);
+  });
+
+  allAttendance = (sessions || []).map(s => ({
+    id: s.id,
+    session_date: s.session_date,
+    title: s.title || "Clase",
+    created_by: s.created_by,
+    records: recBySession[s.id] || []
+  }));
+  attendanceLoaded = true;
+}
+
+function idToName(studentId) {
+  for (const [name, id] of Object.entries(studentIdMap)) {
+    if (id === studentId) return name;
+  }
+  return null;
+}
+
+function renderAttendanceTab() {
+  const dateInput = document.getElementById("attDate");
+  if (!dateInput.value) {
+    dateInput.value = new Date().toISOString().slice(0, 10);
+  }
+
+  const names = Object.keys(allStudents).filter(n => !allGraduated[n]).sort((a, b) => a.localeCompare(b, "es"));
+  const listEl = document.getElementById("attStudentList");
+  listEl.innerHTML = `<div class="att-student-list">${names.map(n => {
+    const rank = getStudentRank(n);
+    return `<div class="att-student-row" onclick="this.querySelector('input').click()">
+      <input type="checkbox" id="att_${safeAttr(n)}" data-student="${safeAttr(n)}" onclick="event.stopPropagation()"/>
+      <label for="att_${safeAttr(n)}" onclick="event.stopPropagation()">${escHtml(n)}</label>
+      <span class="rank-badge ${rankClass('rk', rank)}">${rank}</span>
+    </div>`;
+  }).join("")}</div>`;
+
+  if (!attendanceLoaded) {
+    loadAttendance().then(() => renderAttendanceHistory()).catch(() => {});
+  } else {
+    renderAttendanceHistory();
+  }
+}
+
+function renderAttendanceHistory() {
+  const wrap = document.getElementById("attHistoryWrap");
+  if (!allAttendance.length) {
+    wrap.innerHTML = `<p style="color:var(--fg-sub);font-size:.88rem">No hay sesiones de asistencia registradas.</p>`;
+    return;
+  }
+
+  const rows = allAttendance.slice(0, 50).map(s => {
+    const present = s.records.filter(r => r.attended).length;
+    const absent = s.records.filter(r => !r.attended).length;
+    const dateStr = new Date(s.session_date + "T12:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    return `<tr style="cursor:pointer" onclick="showAttendanceDetail('${s.id}')">
+      <td>${dateStr}</td>
+      <td>${escHtml(s.title)}</td>
+      <td><span class="att-badge present">${present}</span></td>
+      <td><span class="att-badge absent">${absent}</span></td>
+    </tr>`;
+  }).join("");
+
+  wrap.innerHTML = `<table class="att-history-table">
+    <thead><tr><th>Fecha</th><th>Descripción</th><th>Presentes</th><th>Ausentes</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+window.showAttendanceDetail = function(sessionId) {
+  const session = allAttendance.find(s => s.id === sessionId);
+  if (!session) return;
+
+  const presentNames = session.records.filter(r => r.attended).map(r => idToName(r.student_id)).filter(Boolean).sort();
+  const absentNames = session.records.filter(r => !r.attended).map(r => idToName(r.student_id)).filter(Boolean).sort();
+  const dateStr = new Date(session.session_date + "T12:00:00").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const html = `<div class="att-detail-card">
+    <div class="att-detail-header">
+      <span class="att-detail-date">${dateStr}</span>
+      <span class="att-detail-title">${escHtml(session.title)}</span>
+    </div>
+    <div style="margin-top:.6rem">
+      <strong style="color:var(--green)">Presentes (${presentNames.length}):</strong>
+      <div class="att-detail-names">${presentNames.length ? presentNames.map(n => escHtml(n)).join(", ") : "Ninguno"}</div>
+    </div>
+    <div style="margin-top:.5rem">
+      <strong style="color:var(--red)">Ausentes (${absentNames.length}):</strong>
+      <div class="att-detail-names">${absentNames.length ? absentNames.map(n => escHtml(n)).join(", ") : "Ninguno"}</div>
+    </div>
+  </div>`;
+
+  const wrap = document.getElementById("attHistoryWrap");
+  const existing = document.getElementById("attDetailPanel");
+  if (existing) existing.remove();
+  wrap.insertAdjacentHTML("beforebegin", `<div id="attDetailPanel" style="margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+      <strong>Detalle de sesión</strong>
+      <button class="btn ghost sm" onclick="document.getElementById('attDetailPanel').remove()">✕ Cerrar</button>
+    </div>
+    ${html}
+  </div>`);
+};
+
+window.attSelectAll = function(checked) {
+  document.querySelectorAll("#attStudentList input[type=checkbox]").forEach(cb => cb.checked = checked);
+};
+
+window.saveAttendance = async function() {
+  const dateVal = document.getElementById("attDate").value;
+  const titleVal = document.getElementById("attTitle").value.trim() || "Clase";
+  const okEl = document.getElementById("attOk");
+  const errEl = document.getElementById("attErr");
+  okEl.style.display = "none";
+  errEl.style.display = "none";
+
+  if (!dateVal) {
+    errEl.textContent = "Selecciona una fecha.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  const checkboxes = document.querySelectorAll("#attStudentList input[type=checkbox]");
+  const records = [];
+  checkboxes.forEach(cb => {
+    const name = cb.getAttribute("data-student");
+    const sid = studentIdMap[name];
+    if (sid) records.push({ student_id: sid, attended: cb.checked });
+  });
+
+  if (!records.length) {
+    errEl.textContent = "No hay alumnos para registrar.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  try {
+    const { data: session, error: sessErr } = await supabase
+      .from("attendance_sessions")
+      .insert({ session_date: dateVal, title: titleVal, created_by: "admin" })
+      .select("id")
+      .single();
+    if (sessErr) throw sessErr;
+
+    const inserts = records.map(r => ({ session_id: session.id, ...r }));
+    const { error: recErr } = await supabase
+      .from("attendance_records")
+      .insert(inserts);
+    if (recErr) throw recErr;
+
+    allAttendance.unshift({
+      id: session.id,
+      session_date: dateVal,
+      title: titleVal,
+      created_by: "admin",
+      records: records
+    });
+
+    okEl.style.display = "block";
+    setTimeout(() => okEl.style.display = "none", 3000);
+
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById("attTitle").value = "";
+
+    renderAttendanceHistory();
+  } catch (err) {
+    console.error("Error guardando asistencia:", err);
+    errEl.textContent = `Error al guardar: ${err?.message || "Comprueba tu conexión."}`;
+    errEl.style.display = "block";
+  }
+};
+
+// Per-student attendance in profile
+function renderProfileAttendance(name) {
+  const el = document.getElementById("pAttendance");
+  if (!el) return;
+  const sid = studentIdMap[name];
+  if (!sid || !attendanceLoaded) {
+    if (!attendanceLoaded) {
+      el.innerHTML = "";
+      loadAttendance().then(() => renderProfileAttendance(name)).catch(() => {});
+    }
+    return;
+  }
+
+  const sessions = allAttendance.filter(s => s.records.some(r => r.student_id === sid));
+  if (!sessions.length) {
+    el.innerHTML = `<div class="att-profile-section">
+      <p class="card-title">📋 Asistencia</p>
+      <p style="color:var(--fg-sub);font-size:.88rem">Sin registros de asistencia.</p>
+    </div>`;
+    return;
+  }
+
+  const attended = sessions.filter(s => s.records.find(r => r.student_id === sid)?.attended);
+  const missed = sessions.filter(s => !s.records.find(r => r.student_id === sid)?.attended);
+  const pct = Math.round(attended.length / sessions.length * 100);
+
+  const rows = sessions.slice(0, 20).map(s => {
+    const rec = s.records.find(r => r.student_id === sid);
+    const was = rec?.attended;
+    const dateStr = new Date(s.session_date + "T12:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+    const others = s.records.filter(r => r.student_id !== sid);
+    const othersPresent = others.filter(r => r.attended).map(r => idToName(r.student_id)).filter(Boolean);
+    const othersAbsent = others.filter(r => !r.attended).map(r => idToName(r.student_id)).filter(Boolean);
+    return `<div class="att-detail-card">
+      <div class="att-detail-header">
+        <span class="att-detail-date">${dateStr} — ${escHtml(s.title)}</span>
+        <span class="att-badge ${was ? "present" : "absent"}">${was ? "Presente" : "Ausente"}</span>
+      </div>
+      <div class="att-detail-names">
+        ${othersPresent.length ? `<span style="color:var(--green)">Presentes:</span> ${othersPresent.map(n => escHtml(n)).join(", ")}` : ""}
+        ${othersAbsent.length ? `${othersPresent.length ? "<br>" : ""}<span style="color:var(--red)">Ausentes:</span> ${othersAbsent.map(n => escHtml(n)).join(", ")}` : ""}
+      </div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = `<div class="att-profile-section">
+    <p class="card-title">📋 Asistencia</p>
+    <div class="att-summary">
+      <div class="att-summary-stat"><strong>${attended.length}</strong><span>Presentes</span></div>
+      <div class="att-summary-stat"><strong>${missed.length}</strong><span>Ausentes</span></div>
+      <div class="att-summary-stat"><strong>${pct}%</strong><span>Asistencia</span></div>
+    </div>
+    ${rows}
+  </div>`;
 }
 
 window.removeSelectedPotion = function(id) {

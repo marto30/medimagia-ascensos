@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260616c">
+  <link rel="stylesheet" href="styles.css?v=20260622d">
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -55,6 +55,7 @@
       <button class="admin-quick-btn" onclick="showTab('tabGrad')">🎓 Graduados</button>
       <button class="admin-quick-btn" onclick="showTab('tabAdd')">➕ Nuevo alumno</button>
       <button class="admin-quick-btn" onclick="showTab('tabInventory')">🧪 Inventario</button>
+      <button class="admin-quick-btn" onclick="showTab('tabAttendance')">📋 Asistencia</button>
     </nav>
   </div>
 
@@ -214,6 +215,7 @@
         <span class="unsaved-badge" id="unsavedBadge" style="display:none">● Sin guardar</span>
       </div>
       <div id="pInfractions"></div>
+      <div id="pAttendance"></div>
     </div>
     <div class="admin-footer-btns">
       <button class="btn ghost" onclick="showBitacoras('profile')">📋 Bitácoras</button>
@@ -299,6 +301,7 @@
       <button class="tab"              data-tab="tabAdd"      onclick="showTab('tabAdd')">➕ Crear alumno</button>
       <button class="tab"              data-tab="tabInventory" onclick="showTab('tabInventory')">🧪 Inventario</button>
       <button class="tab"              data-tab="tabRanks"    onclick="showTab('tabRanks')">📜 Rangos</button>
+      <button class="tab"              data-tab="tabAttendance" onclick="showTab('tabAttendance')">📋 Asistencia</button>
       <button class="tab"              data-tab="tabCredentials" onclick="showTab('tabCredentials')">🔑 Credenciales</button>
       <button class="tab tab-security" data-tab="tabSecurity" id="tabSecurityBtn"
               onclick="showTab('tabSecurity')" style="display:none">🛡 Seguridad</button>
@@ -417,6 +420,35 @@
       <p class="err" id="invErr" style="display:none"></p>
     </div>
 
+
+    <!-- Asistencia -->
+    <div class="admin-section" id="tabAttendance">
+      <div class="card" style="margin-bottom:1rem">
+        <p class="card-title">📋 Pasar lista</p>
+        <div style="display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
+          <div class="field" style="margin-bottom:0;flex:1;min-width:180px">
+            <label for="attDate">Fecha</label>
+            <input type="date" id="attDate"/>
+          </div>
+          <div class="field" style="margin-bottom:0;flex:2;min-width:180px">
+            <label for="attTitle">Descripción (opcional)</label>
+            <input type="text" id="attTitle" placeholder="Ej. Clase teórica" maxlength="100"/>
+          </div>
+        </div>
+        <div id="attStudentList"></div>
+        <div class="btn-row" style="margin-top:1rem">
+          <button class="btn success" onclick="saveAttendance()">💾 Guardar asistencia</button>
+          <button class="btn ghost" onclick="attSelectAll(true)">Marcar todos</button>
+          <button class="btn ghost" onclick="attSelectAll(false)">Desmarcar todos</button>
+        </div>
+        <p class="ok-msg" id="attOk" style="display:none">✓ Asistencia guardada</p>
+        <p class="err" id="attErr" style="display:none"></p>
+      </div>
+      <div class="card">
+        <p class="card-title">📊 Historial de asistencias</p>
+        <div id="attHistoryWrap"><div class="loading"><span class="spinner"></span>Cargando…</div></div>
+      </div>
+    </div>
 
     <!-- Seguridad -->
     <div class="admin-section" id="tabSecurity">
@@ -631,6 +663,6 @@
 </main>
 
 <datalist id="patientsList"></datalist>
-<script type="module" src="app.js?v=20260622c"></script>
+<script type="module" src="app.js?v=20260622d"></script>
 </body>
 </html>
