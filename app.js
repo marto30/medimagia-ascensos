@@ -4388,10 +4388,103 @@ window.showAttendanceDetail = function(sessionId) {
   wrap.insertAdjacentHTML("beforebegin", `<div id="attDetailPanel" style="margin-bottom:1rem">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
       <strong>Detalle de sesión</strong>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn ghost sm" onclick="editAttendanceSession('${escJsAttr(session.id)}')">✏️ Editar</button>
+        <button class="btn ghost sm" onclick="document.getElementById('attDetailPanel').remove()">✕ Cerrar</button>
+      </div>
+    </div>
+    ${html}
+  </div>`);
+};
+
+function escJsAttr(id) { return String(id).replace(/'/g, "\\'"); }
+
+window.editAttendanceSession = function(sessionId) {
+  const session = allAttendance.find(s => s.id === sessionId);
+  if (!session) return;
+
+  const presentIds = new Set(session.records.filter(r => r.attended).map(r => r.student_id));
+  const names = Object.keys(allStudents).filter(n => !allGraduated[n]).sort((a, b) => a.localeCompare(b, "es"));
+
+  const rowsHtml = names.map(n => {
+    const rank = getStudentRank(n);
+    const sid = studentIdMap[n];
+    const checked = sid && presentIds.has(sid) ? "checked" : "";
+    return `<div class="att-student-row" onclick="this.querySelector('input').click()">
+      <input type="checkbox" id="attEdit_${safeAttr(n)}" data-student="${safeAttr(n)}" onclick="event.stopPropagation()" ${checked}/>
+      <label for="attEdit_${safeAttr(n)}" onclick="event.stopPropagation()">${escHtml(n)}</label>
+      <span class="rank-badge ${rankClass('rk', rank)}">${rank}</span>
+    </div>`;
+  }).join("");
+
+  const html = `<div class="att-detail-card">
+    <div class="att-detail-header">
+      <span class="att-detail-date">${escHtml(session.title)}</span>
+    </div>
+    <div style="display:flex;gap:.5rem;margin:.6rem 0">
+      <button class="btn ghost sm" onclick="attEditSelectAll(true)">Marcar todos</button>
+      <button class="btn ghost sm" onclick="attEditSelectAll(false)">Desmarcar todos</button>
+    </div>
+    <div class="att-student-list" id="attEditList">${rowsHtml}</div>
+    <div style="display:flex;gap:.5rem;margin-top:.8rem">
+      <button class="btn success sm" onclick="saveAttendanceEdit('${escJsAttr(session.id)}')">💾 Guardar cambios</button>
+      <button class="btn ghost sm" onclick="showAttendanceDetail('${escJsAttr(session.id)}')">Cancelar</button>
+    </div>
+    <p class="err" id="attEditErr" style="display:none;margin-top:.5rem"></p>
+  </div>`;
+
+  const wrap = document.getElementById("attHistoryWrap");
+  const existing = document.getElementById("attDetailPanel");
+  if (existing) existing.remove();
+  wrap.insertAdjacentHTML("beforebegin", `<div id="attDetailPanel" style="margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+      <strong>Editar asistencia</strong>
       <button class="btn ghost sm" onclick="document.getElementById('attDetailPanel').remove()">✕ Cerrar</button>
     </div>
     ${html}
   </div>`);
+};
+
+window.attEditSelectAll = function(checked) {
+  document.querySelectorAll("#attEditList input[type=checkbox]").forEach(cb => cb.checked = checked);
+};
+
+window.saveAttendanceEdit = async function(sessionId) {
+  const session = allAttendance.find(s => s.id === sessionId);
+  const errEl = document.getElementById("attEditErr");
+  if (!session) return;
+  errEl.style.display = "none";
+
+  const checkboxes = document.querySelectorAll("#attEditList input[type=checkbox]");
+  const records = [];
+  checkboxes.forEach(cb => {
+    const name = cb.getAttribute("data-student");
+    const sid = studentIdMap[name];
+    if (sid) records.push({ session_id: sessionId, student_id: sid, attended: cb.checked });
+  });
+
+  try {
+    const { error: delErr } = await supabase
+      .from("attendance_records")
+      .delete()
+      .eq("session_id", sessionId);
+    if (delErr) throw delErr;
+
+    if (records.length) {
+      const { error: insErr } = await supabase
+        .from("attendance_records")
+        .insert(records);
+      if (insErr) throw insErr;
+    }
+
+    session.records = records;
+    renderAttendanceHistory();
+    showAttendanceDetail(sessionId);
+  } catch (err) {
+    console.error("Error actualizando asistencia:", err);
+    errEl.textContent = `Error al guardar: ${err?.message || "Comprueba tu conexión."}`;
+    errEl.style.display = "block";
+  }
 };
 
 window.attSelectAll = function(checked) {
