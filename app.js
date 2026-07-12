@@ -537,10 +537,11 @@ async function loadAllStudents() {
 
     if (!students || students.length === 0) return;
 
-    // Usar hechizos directos si la RLS los devolvió, sino los del edge function
-    const allSpells = (directSpells.data && directSpells.data.length > 0)
-      ? directSpells.data
-      : (edgeSpells || []);
+    // Preferir edge function (usa service_role, devuelve datos completos)
+    // Solo usar query directa como fallback si edge function falló
+    const allSpells = (edgeSpells && edgeSpells.length > 0)
+      ? edgeSpells
+      : (directSpells.data || []);
 
     // Mapear hechizos por student_id
     const spellsByStudent = {};
@@ -584,73 +585,24 @@ async function loadAllStudents() {
 }
 
 async function saveStudent(name, spells) {
-  if (!isAdmin) {
-    // Alumnos: guardar via edge function (usa service role, valida propiedad en servidor)
-    const { data: sessionData } = await supabase.auth.getSession();
-    const accessToken = sessionData?.session?.access_token;
-    if (!accessToken) throw new Error("Sesión no activa. Vuelve a iniciar sesión.");
+  // Tanto admin como alumno guardan via edge function (service role, auto-crea spells)
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) throw new Error("Sesión no activa. Vuelve a iniciar sesión.");
 
-    const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/save-student-spells`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({ studentName: name, spells })
-    });
-    const result = await res.json().catch(() => ({}));
-    if (!res.ok || !result.success) {
-      throw new Error(result.error || `Error HTTP ${res.status}`);
-    }
-    allStudents[name] = spells;
-    return;
+  const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/save-student-spells`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`
+    },
+    body: JSON.stringify({ studentName: name, spells })
+  });
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok || !result.success) {
+    throw new Error(result.error || `Error HTTP ${res.status}`);
   }
-
-  // Admin: acceso directo a la BD
-  try {
-    const { data: student, error: studentError } = await supabase
-      .from("students")
-      .select("id")
-      .eq("name", name)
-      .single();
-
-    if (studentError) throw studentError;
-    if (!student) throw new Error("Estudiante no encontrado");
-
-    // Actualizar cada spell
-    for (const [spellName, learned] of Object.entries(spells)) {
-      const { data: spell, error: spellError } = await supabase
-        .from("spells")
-        .select("id")
-        .eq("name", spellName)
-        .single();
-
-      if (spellError) {
-        console.warn(`Spell no encontrado: ${spellName}`);
-        continue;
-      }
-
-      if (spell) {
-        const { error: upsertError } = await supabase
-          .from("student_spells")
-          .upsert({
-            student_id: student.id,
-            spell_id: spell.id,
-            learned: learned,
-            source_spell_name: spellName
-          }, { onConflict: "student_id,spell_id" });
-
-        if (upsertError) {
-          console.error(`Error guardando spell ${spellName}:`, upsertError);
-          throw upsertError;
-        }
-      }
-    }
-    allStudents[name] = spells;
-  } catch (err) {
-    console.error("Error guardando estudiante:", err);
-    throw err;
-  }
+  allStudents[name] = spells;
 }
 
 async function createStudent(name, spells) {
@@ -723,27 +675,28 @@ async function setGraduated(name, val) {
 }
 
 async function deleteStudent(name) {
-  try {
-    const { data: student } = await supabase
-      .from("students")
-      .select("id")
-      .eq("name", name)
-      .single();
-    if (student?.id) {
-      const { error } = await supabase
-        .from("students")
-        .delete()
-        .eq("id", student.id);
-      if (error) throw error;
-    }
-  } catch (err) {
-    console.error("Error eliminando estudiante:", err);
-    throw err;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) throw new Error("Sesión no activa.");
+
+  const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/delete-student`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`
+    },
+    body: JSON.stringify({ studentName: name })
+  });
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok || !result.success) {
+    throw new Error(result.error || `Error HTTP ${res.status}`);
   }
+
   delete allStudents[name];
   delete allGraduated[name];
   delete allRanks[name];
   delete allInfractions[name];
+  delete studentIdMap[name];
   if (allCredentials[name]) {
     delete usernameIndex[(allCredentials[name].username || "").toLowerCase()];
     delete allCredentials[name];
@@ -3916,7 +3869,11 @@ function tryAutoLogin() {
   if (d.kind === "student" && d.name && allStudents[d.name]) {
     window.loggedInStudent = d.name;
     updateAppHeader();
-    openProfile(d.name);
+    loadAllStudents().then(() => {
+      openProfile(d.name);
+    }).catch(() => {
+      openProfile(d.name);
+    });
     return;
   }
 
