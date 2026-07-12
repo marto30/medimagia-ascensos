@@ -679,13 +679,13 @@ async function deleteStudent(name) {
   const accessToken = sessionData?.session?.access_token;
   if (!accessToken) throw new Error("Sesión no activa.");
 
-  const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/delete-student`, {
+  const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/save-student-spells`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${accessToken}`
     },
-    body: JSON.stringify({ studentName: name })
+    body: JSON.stringify({ action: "deleteStudent", studentName: name })
   });
   const result = await res.json().catch(() => ({}));
   if (!res.ok || !result.success) {

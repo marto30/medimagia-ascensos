@@ -38,6 +38,46 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const body = await req.json();
     const { studentName, spells, action } = body;
 
+    // ── ACTION: DELETE STUDENT ──
+    if (action === "deleteStudent") {
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
+      }
+      if (!studentName) {
+        return new Response(JSON.stringify({ error: "Falta studentName" }), { status: 400, headers: CORS_HEADERS });
+      }
+
+      const { data: student, error: findErr } = await supabaseAdmin
+        .from("students")
+        .select("id, username")
+        .eq("name", studentName)
+        .single();
+
+      if (findErr || !student) {
+        return new Response(JSON.stringify({ error: "Alumno no encontrado" }), { status: 404, headers: CORS_HEADERS });
+      }
+
+      // Borrar usuario de Supabase Auth si tiene username
+      if (student.username) {
+        const email = `${(student.username as string).toLowerCase().replace(/[^a-z0-9]/g, "")}@medimagia.test`;
+        const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+        const authUser = (usersData?.users || []).find((u: any) => u.email === email);
+        if (authUser) {
+          await supabaseAdmin.auth.admin.deleteUser(authUser.id);
+        }
+      }
+
+      // Borrar el alumno con service_role (bypassa RLS, CASCADE elimina student_spells, infractions, etc.)
+      const { error: deleteErr } = await supabaseAdmin
+        .from("students")
+        .delete()
+        .eq("id", student.id);
+
+      if (deleteErr) throw deleteErr;
+
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: CORS_HEADERS });
+    }
+
     // ── ACTION: LOAD (devuelve hechizos de todos los alumnos para el cliente) ──
     if (action === "load") {
       if (!isAdmin && !callerEmail.toLowerCase().endsWith("@medimagia.test")) {
