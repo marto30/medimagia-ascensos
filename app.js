@@ -675,22 +675,10 @@ async function setGraduated(name, val) {
 }
 
 async function deleteStudent(name) {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const accessToken = sessionData?.session?.access_token;
-  if (!accessToken) throw new Error("Sesión no activa.");
-
-  const res = await fetch(`${SUPABASE_SERVICE_FUNCTION_URL}/save-student-spells`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${accessToken}`
-    },
-    body: JSON.stringify({ action: "deleteStudent", studentName: name })
-  });
-  const result = await res.json().catch(() => ({}));
-  if (!res.ok || !result.success) {
-    throw new Error(result.error || `Error HTTP ${res.status}`);
-  }
+  // RPC con SECURITY DEFINER: borra dependencias, credenciales y usuario auth
+  const { data: result, error } = await supabase.rpc("delete_student_full", { p_name: name });
+  if (error) throw error;
+  if (!result?.success) throw new Error(result?.error || "No se pudo borrar");
 
   delete allStudents[name];
   delete allGraduated[name];
