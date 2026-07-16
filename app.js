@@ -2100,11 +2100,11 @@ function renderPocaActividad() {
     ct: bitCntMonth(n, ty, tm),
     cl: bitCntMonth(n, ly, lm)
   }))
-  .filter(s => s.cl < 3 && !allGraduated[s.name])
-  .sort((a, b) => a.cl - b.cl || norm(a.name).localeCompare(norm(b.name)));
+  .filter(s => (s.cl < 3 || s.ct < 3) && !allGraduated[s.name])
+  .sort((a, b) => (a.cl + a.ct) - (b.cl + b.ct) || norm(a.name).localeCompare(norm(b.name)));
 
   if (!students.length) {
-    wrap.innerHTML = '<p class="empty-state">✓ Todos los medimagos tienen 3 o más bitácoras el mes pasado.</p>';
+    wrap.innerHTML = `<p class="empty-state">✓ Todos los medimagos tienen 3 o más bitácoras en ${mLastName} y ${mThisName}.</p>`;
     return;
   }
 
@@ -2114,7 +2114,7 @@ function renderPocaActividad() {
     return `<tr>
       <td>${escHtml(s.name)}</td>
       <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(s.rank)}</span></td>
-      <td style="text-align:center"><span class="bit-count-badge bit-count-warn">${s.cl}</span></td>
+      <td style="text-align:center"><span class="bit-count-badge${s.cl < 3 ? " bit-count-warn" : ""}">${s.cl}</span></td>
       <td style="text-align:center"><span class="bit-count-badge${s.ct < 3 ? " bit-count-warn" : ""}">${s.ct}</span></td>
       <td><button class="btn sm" onclick="adminEdit('${safe}')">Ver</button></td>
     </tr>`;
@@ -2123,7 +2123,7 @@ function renderPocaActividad() {
   wrap.innerHTML = `
     <div class="activity-notice">
       <strong>${students.length}</strong> medimago${students.length !== 1 ? "s" : ""}
-      con menos de 3 bitácoras en ${mLastName}.
+      con menos de 3 bitácoras en ${mLastName} o en ${mThisName}.
     </div>
     <table class="student-table">
       <thead><tr>
