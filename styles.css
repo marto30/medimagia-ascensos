@@ -665,6 +665,31 @@ textarea:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0
 }
 .rank-manual-row select:focus { outline: none; border-color: var(--gold); }
 
+/* === RENOMBRAR MEDIMAGO (perfil) === */
+.name-manual-edit { margin-top: .7rem; }
+.name-manual-edit label {
+  display: block; font-size: .72rem; color: #6a6060;
+  letter-spacing: .04em; margin-bottom: .3rem;
+}
+.name-manual-row { display: flex; gap: .5rem; flex-wrap: wrap; max-width: 520px; }
+.name-manual-row input {
+  background: rgba(255,255,255,.04); border: 1px solid var(--border-sub);
+  border-radius: var(--r-xs); padding: .4rem .6rem;
+  color: var(--text); font-size: .82rem; font-family: var(--font-b);
+}
+.name-manual-row input#editStudentName { flex: 2; min-width: 150px; }
+.name-manual-row input#editStudentUser { flex: 1; min-width: 120px; }
+.name-manual-row input:focus { outline: none; border-color: var(--gold); }
+.name-edit-hint {
+  font-size: .68rem; color: #8a7a6a; margin-top: .35rem;
+  max-width: 520px; line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .name-manual-row { flex-direction: column; }
+  .name-manual-row .btn.sm { width: 100%; justify-content: center; }
+}
+
 /* === INFRACCIONES (perfil) === */
 .infractions-list { display: flex; flex-direction: column; gap: .4rem; }
 .infraction-row {

@@ -121,13 +121,29 @@ function makeUsername(name) {
     .trim().replace(/\s+/g, ".");
 }
 
-// Genera un username a partir del nombre, añadiendo un sufijo numérico
-// si ya existe otro alumno con ese mismo username.
+// Clave con la que se construye el email de acceso: ignora puntos y
+// símbolos, así que "colin.o.sullivan" y "colin.osullivan" son la MISMA
+// cuenta. Hay que tenerlo en cuenta al generar usuarios o dos medimagos
+// acabarían compartiendo login.
+function loginKey(username) {
+  return String(username || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+// Genera un username a partir del nombre, añadiendo un sufijo numérico si
+// ya existe otro alumno con ese username o si chocaría su email de acceso.
 function generateUniqueUsername(name) {
-  let username = makeUsername(name);
+  const base = makeUsername(name);
+  const tomados = new Set();
+  for (const [u, n] of Object.entries(usernameIndex)) {
+    if (n !== name) tomados.add(loginKey(u));
+  }
+
+  let username = base;
   let suffix   = 0;
-  const base   = username;
-  while (usernameIndex[username] && usernameIndex[username] !== name) {
+  while (
+    (usernameIndex[username] && usernameIndex[username] !== name) ||
+    tomados.has(loginKey(username))
+  ) {
     suffix++;
     username = base + suffix;
   }
@@ -674,11 +690,46 @@ async function setGraduated(name, val) {
   }
 }
 
-async function deleteStudent(name) {
-  // RPC con SECURITY DEFINER: borra dependencias, credenciales y usuario auth
-  const { data: result, error } = await supabase.rpc("delete_student_full", { p_name: name });
+// Borrado manual: limpia las tablas dependientes antes de borrar al alumno.
+// Se usa cuando la función SQL delete_student_full aún no está instalada.
+async function deleteStudentManual(name) {
+  let sid = studentIdMap[name];
+  if (!sid) {
+    const { data } = await supabase.from("students").select("id").eq("name", name).single();
+    if (!data?.id) throw new Error(`Alumno no encontrado: ${name}`);
+    sid = data.id;
+  }
+
+  // Lo primero: desvincular las bitácoras sin tocar attendant_name, que es
+  // donde vive el nombre. Así el historial sigue mostrándolo aunque el alumno
+  // ya no exista, y un posible CASCADE no tiene filas que arrastrar.
+  await supabase.from("bitacora_attendants").update({ student_id: null }).eq("student_id", sid);
+
+  // Sin esto, el DELETE de students falla con error 23503 (clave foránea)
+  await supabase.from("attendance_records").delete().eq("student_id", sid);
+  await supabase.from("student_spells").delete().eq("student_id", sid);
+  await supabase.from("infractions").delete().eq("student_id", sid);
+
+  const { error } = await supabase.from("students").delete().eq("id", sid);
   if (error) throw error;
-  if (!result?.success) throw new Error(result?.error || "No se pudo borrar");
+}
+
+async function deleteStudent(name) {
+  // Vía principal: RPC con SECURITY DEFINER (borra dependencias, credenciales y usuario auth)
+  const { data: result, error } = await supabase.rpc("delete_student_full", { p_name: name });
+
+  if (error) {
+    if (error.code === "PGRST202") {
+      // La función SQL no está instalada en la base de datos todavía
+      console.warn("[deleteStudent] delete_student_full no existe; borrando manualmente. " +
+                   "Ejecuta supabase/migrations/004_delete_student_rpc.sql para el borrado completo.");
+      await deleteStudentManual(name);
+    } else {
+      throw error;
+    }
+  } else if (!result?.success) {
+    throw new Error(result?.error || "No se pudo borrar");
+  }
 
   delete allStudents[name];
   delete allGraduated[name];
@@ -1064,6 +1115,7 @@ function renderProfile() {
 
   document.getElementById("adminBadge").style.display = isAdmin ? "inline" : "none";
   renderRankEditor(name, grad ? "Graduado" : rank);
+  renderNameEditor(name);
   renderInfractions(name);
 
   const profileCard = document.querySelector("#scProfile .card");
@@ -1182,6 +1234,92 @@ function renderRankEditor(name, displayRank) {
       </div>
     </div>`;
 }
+
+function renderNameEditor(name) {
+  const wrap = document.getElementById("pNameEdit");
+  if (!wrap) return;
+  if (!isAdmin) { wrap.innerHTML = ""; return; }
+  const user = allCredentials[name]?.username || "";
+  wrap.innerHTML = `
+    <div class="name-manual-edit">
+      <label for="editStudentName">Renombrar medimago</label>
+      <div class="name-manual-row">
+        <input type="text" id="editStudentName" maxlength="80" placeholder="Nombre"
+               value="${escHtml(name)}" oninput="suggestUsernameFromName()"/>
+        <input type="text" id="editStudentUser" maxlength="60" placeholder="usuario"
+               value="${escHtml(user)}" autocapitalize="none" spellcheck="false"
+               oninput="this.dataset.touched='1'"/>
+        <button class="btn sm" onclick="applyRename()">Guardar</button>
+      </div>
+      <p class="name-edit-hint">
+        Se actualizan también sus bitácoras y su acceso. El usuario solo admite
+        letras, números y puntos: los apóstrofos y acentos se quitan solos.
+      </p>
+    </div>`;
+}
+
+// Al escribir el nombre, propone el usuario correspondiente, pero solo
+// mientras el admin no lo haya escrito él a mano.
+window.suggestUsernameFromName = function() {
+  const nEl = document.getElementById("editStudentName");
+  const uEl = document.getElementById("editStudentUser");
+  if (!nEl || !uEl || uEl.dataset.touched === "1") return;
+  uEl.value = makeUsername(nEl.value);
+};
+
+window.applyRename = async function() {
+  const oldName = currentStudent;
+  const nEl = document.getElementById("editStudentName");
+  const uEl = document.getElementById("editStudentUser");
+  if (!nEl || !uEl || !oldName) return;
+
+  const newName = nEl.value.trim();
+  const newUser = (uEl.value.trim() || makeUsername(newName))
+                    .toLowerCase().replace(/[^a-z0-9.]/g, "");
+  const oldUser = allCredentials[oldName]?.username || "";
+
+  if (!newName)  { toast("El nombre no puede estar vacío", "error"); return; }
+  if (!newUser)  { toast("El usuario no puede estar vacío", "error"); return; }
+  if (newName === oldName && newUser === oldUser) return;
+
+  // Aviso previo: el email de acceso ignora los puntos, así que dos
+  // usuarios distintos pueden acabar en la misma cuenta.
+  const choque = Object.entries(usernameIndex)
+    .find(([u, n]) => n !== oldName && loginKey(u) === loginKey(newUser));
+  if (choque) {
+    toast(`Ese usuario compartiría acceso con ${choque[1]}. Añade algo que lo distinga.`, "error");
+    return;
+  }
+
+  const ok = await showModal(
+    "Renombrar medimago",
+    `${oldName} pasará a llamarse ${newName}, con usuario "${newUser}". ` +
+    `Sus bitácoras y su acceso se actualizarán. Si tenía contraseña, seguirá siendo la misma.`,
+    "Renombrar", "success"
+  );
+  if (!ok) return;
+
+  try {
+    const { data, error } = await supabase.rpc("rename_student", {
+      p_old_name: oldName, p_new_name: newName, p_new_username: newUser
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || "No se pudo renombrar");
+
+    // Los nombres viajan por muchas tablas: recargar todo evita inconsistencias
+    bitacorasLoaded = false;
+    await loadAllStudents();
+    await loadBitacoras().then(() => { bitacorasLoaded = true; }).catch(() => {});
+
+    currentStudent = data.name;
+    openProfile(data.name);
+    toast(`Renombrado a ${data.name}`, "success");
+  } catch (err) {
+    console.error("Error renombrando:", err);
+    const detalle = [err?.message, err?.hint].filter(Boolean).join(" · ") || "error desconocido";
+    toast(`No se pudo renombrar: ${detalle}`, "error");
+  }
+};
 
 window.applyManualRank = async function() {
   const sel  = document.getElementById("manualRankSelect");
@@ -2314,7 +2452,10 @@ window.adminDelete = async function(name) {
   try {
     await deleteStudent(name);
   } catch (err) {
-    toast(`No se pudo eliminar de la base de datos: ${err?.code || err?.message || "desconocido"}`, "error");
+    console.error("Error eliminando alumno:", err);
+    const detail = [err?.message, err?.details, err?.hint].filter(Boolean).join(" · ")
+                   || err?.code || "error desconocido";
+    toast(`No se pudo eliminar: ${detail}`, "error");
     return;
   }
   toast(`${name} eliminado de la base de datos`, "success");
@@ -4308,9 +4449,12 @@ function renderAttendanceTab() {
   const listEl = document.getElementById("attStudentList");
   listEl.innerHTML = `<div class="att-student-list">${names.map(n => {
     const rank = getStudentRank(n);
+    // safeAttr escapa para JS dentro de onclick; en un atributo normal
+    // metería una barra invertida y "Colin O'Sullivan" no se encontraría.
+    const id = "att_" + domKey(n);
     return `<div class="att-student-row" onclick="this.querySelector('input').click()">
-      <input type="checkbox" id="att_${safeAttr(n)}" data-student="${safeAttr(n)}" onclick="event.stopPropagation()"/>
-      <label for="att_${safeAttr(n)}" onclick="event.stopPropagation()">${escHtml(n)}</label>
+      <input type="checkbox" id="${id}" data-student="${escHtml(n)}" onclick="event.stopPropagation()"/>
+      <label for="${id}" onclick="event.stopPropagation()">${escHtml(n)}</label>
       <span class="rank-badge ${rankClass('rk', rank)}">${rank}</span>
     </div>`;
   }).join("")}</div>`;
