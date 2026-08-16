@@ -79,6 +79,12 @@ function escHtml(v)  {
     .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 // Escapa para uso simultáneo en atributo HTML + literal JS dentro de onclick="fn('...')"
+//
+// ⚠️ SOLO para código JS dentro de un atributo (onclick, onchange, onkeydown).
+// Añade una barra invertida antes de las comillas simples, así que en un
+// atributo normal (value=, data-, id=, title=) el valor llegaría corrupto:
+// "Colin O'Sullivan" se leería como "Colin O\'Sullivan" y no coincidiría con
+// ningún alumno. Para esos casos usa escHtml(); para ids, domKey().
 function safeAttr(n) {
   return String(n ?? "")
     .replace(/\\/g,"\\\\").replace(/'/g,"\\'")
@@ -391,7 +397,7 @@ function renderRankSelector() {
   const wrap = document.getElementById("rankSelector");
   if (!wrap) return;
   wrap.innerHTML = RANKS_ORDER.map(rk =>
-    `<div class="rank-opt" data-rank="${safeAttr(rk)}" onclick="selectRankOpt(this)">${escHtml(rk)}</div>`
+    `<div class="rank-opt" data-rank="${escHtml(rk)}" onclick="selectRankOpt(this)">${escHtml(rk)}</div>`
   ).join("");
 }
 
@@ -1223,7 +1229,7 @@ function renderRankEditor(name, displayRank) {
   if (!isAdmin || allGraduated[name]) { wrap.innerHTML = ""; return; }
   const current = allRanks[name] || RANKS_ORDER[0];
   const opts = RANKS_ORDER.map(rk =>
-    `<option value="${safeAttr(rk)}" ${rk === current ? "selected" : ""}>${escHtml(rk)}</option>`
+    `<option value="${escHtml(rk)}" ${rk === current ? "selected" : ""}>${escHtml(rk)}</option>`
   ).join("");
   wrap.innerHTML = `
     <div class="rank-manual-edit">
@@ -2809,7 +2815,7 @@ function buildAttendantsList(filterQ = "") {
   }
   const item = (n, checked, missing = false) =>
     `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${missing ? " attendant-item-missing" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
-      <input type="checkbox" class="att-chk" value="${safeAttr(n)}" ${checked ? "checked" : ""}
+      <input type="checkbox" class="att-chk" value="${escHtml(n)}" ${checked ? "checked" : ""}
              onchange="toggleAttendant(this.value, this.checked)"/> ${escHtml(n)}${missing ? ' <span class="att-missing">⚠️ usuario no existe</span>' : ''}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
     </label>`;
   // Asistentes seleccionados que NO existen en la BD
@@ -3197,7 +3203,7 @@ function buildEditAttendantsList(filterQ = "") {
   const names = Object.keys(allStudents).sort();
   const item = (n, checked, missing = false) =>
     `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${missing ? " attendant-item-missing" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
-      <input type="checkbox" class="edit-att-chk" value="${safeAttr(n)}" ${checked ? "checked" : ""}
+      <input type="checkbox" class="edit-att-chk" value="${escHtml(n)}" ${checked ? "checked" : ""}
              onchange="toggleEditAttendant(this.value, this.checked)"/>
       ${escHtml(n)}${missing ? ' <span class="att-missing">⚠️ usuario no existe</span>' : ''}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
     </label>`;
@@ -4543,8 +4549,8 @@ window.editAttendanceSession = function(sessionId) {
     const sid = studentIdMap[n];
     const checked = sid && presentIds.has(sid) ? "checked" : "";
     return `<div class="att-student-row" onclick="this.querySelector('input').click()">
-      <input type="checkbox" id="attEdit_${safeAttr(n)}" data-student="${safeAttr(n)}" onclick="event.stopPropagation()" ${checked}/>
-      <label for="attEdit_${safeAttr(n)}" onclick="event.stopPropagation()">${escHtml(n)}</label>
+      <input type="checkbox" id="attEdit_${domKey(n)}" data-student="${escHtml(n)}" onclick="event.stopPropagation()" ${checked}/>
+      <label for="attEdit_${domKey(n)}" onclick="event.stopPropagation()">${escHtml(n)}</label>
       <span class="rank-badge ${rankClass('rk', rank)}">${rank}</span>
     </div>`;
   }).join("");
