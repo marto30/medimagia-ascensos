@@ -45,3 +45,4 @@ supabase/migrations/006_rename_student.sql
 supabase/migrations/004_delete_student_rpc.sql
 supabase/migrations/005_security_hardening.sql
 supabase/migrations/004_delete_student_rpc.sql
+supabase/migrations/007_fix_student_writes.sql
