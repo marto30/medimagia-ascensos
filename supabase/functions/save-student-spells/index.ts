@@ -83,11 +83,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (!isAdmin && !callerEmail.toLowerCase().endsWith("@medimagia.test")) {
         return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS_HEADERS });
       }
-      const { data: allSpells, error: loadErr } = await supabaseAdmin
-        .from("student_spells")
-        .select("student_id, source_spell_name, learned");
-      if (loadErr) throw loadErr;
-      return new Response(JSON.stringify({ success: true, spells: allSpells || [] }), { status: 200, headers: CORS_HEADERS });
+      // Por tramos: la API corta a 1000 filas y student_spells ya las supera.
+      // Sin esto se devolverían hechizos incompletos y al recargar la página
+      // parecería que no se han guardado.
+      const PAGE = 1000;
+      const allSpells: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error: loadErr } = await supabaseAdmin
+          .from("student_spells")
+          .select("student_id, source_spell_name, learned")
+          .range(from, from + PAGE - 1);
+        if (loadErr) throw loadErr;
+        if (!data || data.length === 0) break;
+        allSpells.push(...data);
+        if (data.length < PAGE) break;
+      }
+      return new Response(JSON.stringify({ success: true, spells: allSpells }), { status: 200, headers: CORS_HEADERS });
     }
 
     // ── ACTION: SAVE (guardar hechizos) ──

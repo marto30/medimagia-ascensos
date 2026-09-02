@@ -538,16 +538,38 @@ async function loadSpellsViaEdge() {
   } catch { return null; }
 }
 
+// La API corta cada respuesta a 1000 filas. Varias tablas ya superan ese
+// tope (student_spells ~1300, bitacoras ~1150, bitacora_attendants ~2100),
+// y el recorte NO da ningún error: simplemente faltan filas. Por eso hay
+// que pedirlas por tramos, o los hechizos guardados "desaparecen" al
+// recargar y quedan bitácoras invisibles.
+async function fetchAllRows(table, columns, tweak) {
+  const PAGE = 1000;
+  const out = [];
+  for (let from = 0; ; from += PAGE) {
+    let q = supabase.from(table).select(columns).range(from, from + PAGE - 1);
+    if (tweak) q = tweak(q);
+    const { data, error } = await q;
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    out.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return out;
+}
+
 async function loadAllStudents() {
   allStudents = {}; allGraduated = {}; allRanks = {}; allCredentials = {}; usernameIndex = {}; allInfractions = {}; studentIdMap = {};
 
   try {
-    // Cargar estudiantes e infracciones directamente (RLS permite lectura)
-    // Los hechizos se cargan en paralelo: intento directo + edge function como fallback
-    const [{ data: students, error: studentsErr }, directSpells, edgeSpells, { data: allInfr, error: infErr }] = await Promise.all([
+    // Los hechizos se piden por tramos: son más de 1000 filas y una consulta
+    // normal los truncaría sin avisar.
+    const [{ data: students, error: studentsErr }, directSpells, { data: allInfr, error: infErr }] = await Promise.all([
       supabase.from("students").select("id, name, graduated, current_rank, username"),
-      supabase.from("student_spells").select("student_id, source_spell_name, learned"),
-      loadSpellsViaEdge(),
+      fetchAllRows("student_spells", "student_id, source_spell_name, learned").catch(err => {
+        console.warn("Lectura directa de hechizos falló:", err);
+        return null;
+      }),
       supabase.from("infractions").select("*")
     ]);
 
@@ -559,11 +581,12 @@ async function loadAllStudents() {
 
     if (!students || students.length === 0) return;
 
-    // Preferir edge function (usa service_role, devuelve datos completos)
-    // Solo usar query directa como fallback si edge function falló
-    const allSpells = (edgeSpells && edgeSpells.length > 0)
-      ? edgeSpells
-      : (directSpells.data || []);
+    // La edge function solo se usa si la lectura directa no dio nada
+    // (por ejemplo si las políticas de lectura cambiaran en el futuro).
+    let allSpells = directSpells;
+    if (!allSpells || allSpells.length === 0) {
+      allSpells = (await loadSpellsViaEdge()) || [];
+    }
 
     // Mapear hechizos por student_id
     const spellsByStudent = {};
@@ -2728,20 +2751,18 @@ window.backFromBitacoras = function() {
 
 async function loadBitacoras() {
   try {
-    const { data: bitacoras, error } = await supabase
-      .from("bitacoras")
-      .select(`
-        *,
-        bitacora_attendants(attendant_name),
-        bitacora_potions(potion_id),
-        bitacora_edit_history(editor, edited_at, edit_number)
-      `)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error cargando bitácoras:", error);
-      return;
-    }
+    // Por tramos: ya hay más de 1000 bitácoras y una consulta normal
+    // dejaría fuera las más antiguas sin dar error.
+    // El id como segundo criterio evita que se repitan o se salten filas
+    // cuando varias comparten la misma fecha.
+    const bitacoras = await fetchAllRows(
+      "bitacoras",
+      `*,
+       bitacora_attendants(attendant_name),
+       bitacora_potions(potion_id),
+       bitacora_edit_history(editor, edited_at, edit_number)`,
+      q => q.order("created_at", { ascending: false }).order("id", { ascending: false })
+    );
 
     allBitacoras = (bitacoras || []).map(b => ({
       id: b.id,
