@@ -2707,9 +2707,49 @@ let allBitacoras      = [];
 let bitacorasFrom     = "search";
 let bitacorasLoaded   = false;
 let bitacorasPage     = 0;
-const BITS_PER_PAGE   = 3;
+const BITS_PER_PAGE   = 6;
 let editingBitacoraId = null;
 let bitacoraQuery     = "";
+
+// Paginador compacto: con más de 1000 bitácoras, pintar un botón por página
+// generaba cientos de botones. Muestra siempre primera y última, unas pocas
+// alrededor de la actual con "…" entre medias, y un campo para saltar a una
+// página concreta. `fnName` es la función global que cambia de página.
+function renderPager(current, totalPages, fnName) {
+  if (totalPages <= 1) return "";
+  const RADIO = 1;   // páginas a cada lado de la actual
+  const btn = (i, label = i + 1, extra = "") =>
+    `<button class="page-btn${i === current ? " active" : ""}" ${extra}
+       onclick="${fnName}(${i})" ${i === current ? 'aria-current="page"' : ""}>${label}</button>`;
+
+  const shown = new Set([0, totalPages - 1]);
+  for (let i = current - RADIO; i <= current + RADIO; i++) {
+    if (i >= 0 && i < totalPages) shown.add(i);
+  }
+  const pages = [...shown].sort((a, b) => a - b);
+
+  let nums = "";
+  pages.forEach((p, idx) => {
+    if (idx > 0 && p - pages[idx - 1] > 1) nums += `<span class="page-gap" aria-hidden="true">…</span>`;
+    nums += btn(p);
+  });
+
+  return `
+    <nav class="pagination" aria-label="Paginación">
+      <button class="page-btn page-nav" onclick="${fnName}(${current - 1})"
+        ${current === 0 ? "disabled" : ""} aria-label="Página anterior">&#8592;</button>
+      <div class="page-nums">${nums}</div>
+      <button class="page-btn page-nav" onclick="${fnName}(${current + 1})"
+        ${current >= totalPages - 1 ? "disabled" : ""} aria-label="Página siguiente">&#8594;</button>
+      <label class="page-jump">
+        <span>Ir a</span>
+        <input type="number" min="1" max="${totalPages}" value="${current + 1}" inputmode="numeric"
+          onkeydown="if(event.key==='Enter'){${fnName}((parseInt(this.value,10)||1)-1)}"
+          onchange="${fnName}((parseInt(this.value,10)||1)-1)"/>
+        <span>de ${totalPages}</span>
+      </label>
+    </nav>`;
+}
 
 window.showBitacoras = async function(from = "search") {
   if (!isAdmin && !loggedInStudent) { goSearch(); return; }
@@ -3143,18 +3183,7 @@ function renderBitacoraList() {
     </div>`;
   }).join("");
 
-  let paginationHtml = "";
-  if (totalPages > 1) {
-    const pageBtns = Array.from({ length: totalPages }, (_, i) =>
-      `<button class="page-btn${i === bitacorasPage ? " active" : ""}" onclick="setBitacorasPage(${i})">${i + 1}</button>`
-    ).join("");
-    paginationHtml = `
-      <div class="pagination">
-        <button class="page-btn" onclick="setBitacorasPage(${bitacorasPage - 1})" ${bitacorasPage === 0 ? "disabled" : ""}>&#8592;</button>
-        ${pageBtns}
-        <button class="page-btn" onclick="setBitacorasPage(${bitacorasPage + 1})" ${bitacorasPage >= totalPages - 1 ? "disabled" : ""}>&#8594;</button>
-      </div>`;
-  }
+  const paginationHtml = renderPager(bitacorasPage, totalPages, "setBitacorasPage");
 
   const countLine = q
     ? `<p class="bitacora-count-line">${total} resultado${total !== 1 ? "s" : ""} para “${escHtml(bitacoraQuery)}”</p>`
@@ -3524,17 +3553,7 @@ function renderPersonasList() {
       <span class="persona-arrow">›</span>
     </div>`).join("");
 
-  let paginationHtml = "";
-  if (totalPages > 1) {
-    const pageBtns = Array.from({ length: totalPages }, (_, i) =>
-      `<button class="page-btn${i === personasPage ? " active" : ""}" onclick="setPersonasPage(${i})">${i + 1}</button>`
-    ).join("");
-    paginationHtml = `<div class="pagination">
-      <button class="page-btn" onclick="setPersonasPage(${personasPage - 1})" ${personasPage === 0 ? "disabled" : ""}>&#8592;</button>
-      ${pageBtns}
-      <button class="page-btn" onclick="setPersonasPage(${personasPage + 1})" ${personasPage >= totalPages - 1 ? "disabled" : ""}>&#8594;</button>
-    </div>`;
-  }
+  const paginationHtml = renderPager(personasPage, totalPages, "setPersonasPage");
 
   wrap.innerHTML = `<p class="personas-count">${total} persona${total !== 1 ? "s" : ""} encontrada${total !== 1 ? "s" : ""}</p>` + rows + paginationHtml;
 }
@@ -3614,17 +3633,7 @@ function renderPersonaBitacoras() {
     </div>`;
   }).join("");
 
-  let paginationHtml = "";
-  if (totalPages > 1) {
-    const pageBtns = Array.from({ length: totalPages }, (_, i) =>
-      `<button class="page-btn${i === personaBitsPage ? " active" : ""}" onclick="setPersonaBitsPage(${i})">${i + 1}</button>`
-    ).join("");
-    paginationHtml = `<div class="pagination">
-      <button class="page-btn" onclick="setPersonaBitsPage(${personaBitsPage - 1})" ${personaBitsPage === 0 ? "disabled" : ""}>&#8592;</button>
-      ${pageBtns}
-      <button class="page-btn" onclick="setPersonaBitsPage(${personaBitsPage + 1})" ${personaBitsPage >= totalPages - 1 ? "disabled" : ""}>&#8594;</button>
-    </div>`;
-  }
+  const paginationHtml = renderPager(personaBitsPage, totalPages, "setPersonaBitsPage");
 
   contentEl.innerHTML = `<p class="personas-count">${bits.length} bitácora${bits.length !== 1 ? "s" : ""}</p>` + cardsHtml + paginationHtml;
 }

@@ -2102,6 +2102,32 @@ textarea:focus-visible,
   color: var(--gold-light);
 }
 
+/* Paginador compacto: una sola fila, sin envolver en cientos de botones */
+.pagination {
+  flex-wrap: nowrap; align-items: center; justify-content: center;
+  max-width: 100%;
+}
+.page-nums { display: flex; align-items: center; gap: .3rem; }
+.page-gap  { color: var(--text-muted); opacity: .6; padding: 0 .1rem; user-select: none; }
+.page-btn  { font-variant-numeric: tabular-nums; }
+.page-jump {
+  display: flex; align-items: center; gap: .35rem; margin-left: .5rem;
+  font-size: .75rem; color: var(--text-muted); white-space: nowrap;
+}
+.page-jump input {
+  width: 3.4rem; padding: .3rem .4rem; text-align: center;
+  background: rgba(8,7,22,.5); color: var(--text);
+  border: 1px solid rgba(201,162,39,.18); border-radius: 999px;
+  font: inherit; font-variant-numeric: tabular-nums;
+}
+.page-jump input:focus { outline: none; border-color: var(--gold); }
+.page-jump input::-webkit-inner-spin-button { display: none; }
+@media (max-width: 520px) {
+  .pagination { flex-wrap: wrap; row-gap: .5rem; }
+  .page-jump  { flex-basis: 100%; justify-content: center; margin-left: 0; }
+  .page-btn   { min-width: 2.1rem; padding: .38rem .6rem; }
+}
+
 /* Lista de asistentes del formulario más cómoda */
 .attendants-list {
   background: rgba(8,7,22,.4);
@@ -2396,4 +2422,129 @@ textarea:focus-visible,
 
 @media (max-width: 600px) {
   .att-student-list { grid-template-columns: 1fr; }
+}
+
+/* =================================================================
+   REDISEÑO — capa final (guía taste-skill: redesign-existing-projects)
+   Se mantiene la identidad (cielo nocturno, oro, Cinzel en el escudo)
+   y se corrigen los puntos débiles detectados en la auditoría:
+     · Cinzel (solo mayúsculas) en botones, pestañas y tablas → difícil
+       de leer a tamaño pequeño. Se reserva para títulos y nombres.
+     · Resplandor morado de fondo → tinta neutra con un único acento oro.
+     · Sombras negras planas → sombras teñidas del tono del fondo.
+     · Sin textura → grano sutil.
+     · Sin respuesta al pulsar, foco poco visible, animaciones que no
+       respetan "reducir movimiento".
+   Todo va en esta capa para poder revisarlo o retirarlo de una vez.
+   ================================================================= */
+:root {
+  --font-ui: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ink:        #090a12;
+  --ink-2:      #0e0f1a;
+  --shadow:     0 8px 28px rgba(4,4,14,.55);
+  --shadow-lg:  0 22px 60px -12px rgba(4,4,14,.75);
+  --ring:       0 0 0 3px rgba(201,162,39,.28);
+  --ease-out:   cubic-bezier(.22,1,.36,1);
+  --t:          .22s var(--ease-out);
+  /* Radios variados: más ceñidos dentro, más suaves en contenedores */
+  --r-xl: 22px; --r-lg: 18px; --r: 12px; --r-sm: 9px; --r-xs: 6px;
+}
+
+body { min-height: 100dvh; background: var(--ink); }
+
+/* Fondo: fuera el morado, queda tinta con un halo cálido arriba */
+.bg {
+  background:
+    radial-gradient(ellipse 70% 40% at 50% -8%, rgba(201,162,39,.10) 0%, transparent 62%),
+    radial-gradient(ellipse 55% 45% at 100% 0%, rgba(40,48,90,.22) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, rgba(30,36,70,.18) 0%, transparent 60%),
+    linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 50%, var(--ink) 100%);
+}
+/* Grano sutil para romper la planitud digital */
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .05; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Tipografía ─────────────────────────────────────────────────── */
+h1, .stu-name, .modal-title, .card-title, .persona-name { text-wrap: balance; }
+p, .notice { text-wrap: pretty; }
+
+h1 { letter-spacing: .1em; }
+.stu-name { letter-spacing: .02em; line-height: 1.15; }
+
+/* Controles, etiquetas y datos en sans legible (Cinzel queda para títulos) */
+.btn, .tab, .back-btn, .admin-quick-btn, .page-btn, .rank-badge,
+.student-table, .student-table th, .card-title, label, .field label,
+input, select, textarea, .toast, .att-badge, .bit-count-badge,
+.sort-bar-btn, .list-summary-chip, .cred-status, .rank-opt {
+  font-family: var(--font-ui);
+}
+.btn, .tab, .back-btn, .admin-quick-btn {
+  font-size: .84rem; font-weight: 500; letter-spacing: .01em;
+}
+.btn.sm { font-size: .78rem; letter-spacing: 0; }
+.rank-badge { font-size: .72rem; font-weight: 500; letter-spacing: .02em; }
+
+/* Subtítulos: versalitas suaves en vez de mayúsculas a gritos */
+.card-title {
+  font-size: .78rem; font-weight: 600; letter-spacing: .06em;
+  text-transform: none; font-variant-caps: all-small-caps;
+  color: #c2b392;
+}
+.student-table th {
+  font-size: .72rem; font-weight: 600; letter-spacing: .04em;
+  text-transform: none; color: #8a7f6c;
+}
+.student-table td { font-size: .88rem; color: #c4bbab; }
+
+/* Números alineados en columnas, contadores y estadísticas */
+.student-table, .bit-count-badge, .att-badge, .att-summary-stat strong,
+.profile-bit-stat strong, #pOvPct, .rk-pct, .personas-count,
+.list-summary-chip strong { font-variant-numeric: tabular-nums; }
+
+/* ── Superficies ────────────────────────────────────────────────── */
+.card {
+  box-shadow:
+    inset 0 1px 0 rgba(255,240,200,.05),
+    0 18px 40px -22px rgba(4,4,14,.9);
+}
+.toast      { box-shadow: 0 14px 34px -10px rgba(4,4,14,.85); }
+.toast-wrap { z-index: var(--z-toast); }
+.modal      { box-shadow: 0 30px 80px -20px rgba(4,4,14,.95), 0 0 0 1px rgba(201,162,39,.12); }
+
+/* ── Interacción: todo responde al pasar, al pulsar y al foco ───── */
+.btn, .tab, .back-btn, .page-btn, .admin-quick-btn, .spell-row,
+.att-student-row, .persona-row, .sort-bar-btn, .list-summary-chip {
+  transition: background-color var(--t), border-color var(--t), color var(--t),
+              box-shadow var(--t), transform .12s var(--ease-out);
+}
+.btn:active:not(:disabled), .tab:active, .back-btn:active, .page-btn:active:not(:disabled),
+.admin-quick-btn:active, .sort-bar-btn:active, .list-summary-chip:active {
+  transform: translateY(1px) scale(.98);
+}
+.spell-row:active, .att-student-row:active { transform: scale(.99); }
+
+:where(button, a, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* Pestaña activa claramente distinta (saber dónde estás) */
+.tab.active {
+  color: var(--gold-light);
+  border-color: rgba(201,162,39,.55);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+/* ── Respeta "reducir movimiento" del sistema ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
