@@ -16,9 +16,9 @@ const ASCENSO_MISSING = 2; // hechizos que pueden faltar para ser elegible al as
 let RANKS_ORDER   = ["Aprendiz","Principiante","Intermedio","Avanzado"];
 let RANKS = {
   Aprendiz:     ["Bullapure","Férula","Osseus Reparo","Tergeo","Examino","Vitae Expulso","Leniter","Sommnium"],
-  Principiante: ["Anapneo","Anesthetica","Brackium Emendo","Vitalis","Tranquillitas","Melis Sanitas","Tergiverso"],
+  Principiante: ["Anapneo","Anesthetica","Brackium Emendo","Vitalis","Tranquillitas","Melis Sanitas","Tergiverso","Reparifarge"],
   Intermedio:   ["Vulnera Curatio","Ennervate","Invenio Cardium","Restitutio Mobilitas","Medimend","Mind Recupero","Solatio"],
-  Avanzado:     ["Finite Incantatem","Confractus","Amicientes","Reparifarge","Panacea","Zanarem","Suturae","Revitalizare"]
+  Avanzado:     ["Finite Incantatem","Confractus","Amicientes","Panacea","Zanarem","Suturae","Revitalizare"]
 };
 const RANK_PALETTE_SIZE = 6;
 // Clase de color por posición — permite que rangos nuevos (creados desde el panel) tengan estilo sin CSS por nombre

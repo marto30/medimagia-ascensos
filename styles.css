@@ -31,7 +31,7 @@ img {
   filter: sepia(.15);
   border: 1px solid var(--line);
 }
-::selection { background: rgba(139,58,47,.18); color: var(--ink); }
+::selection { background: var(--selection); color: var(--ink); }
 * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 
 /* Utilidades de maquetación */
@@ -140,7 +140,7 @@ input[type=number]::-webkit-inner-spin-button { opacity: .6; }
 
 /* Barra de contenido a todo el ancho, alineada con la columna de contenido */
 .app-header-bar, .admin-quick-bar {
-  padding-inline: max(var(--gutter), calc((100% - var(--col-wide)) / 2 + var(--gutter)));
+  padding-inline: max(calc(.75rem + var(--sheet-pad)), calc((100% - var(--col-wide)) / 2 + var(--sheet-pad)));
 }
 
 /* ── 1. Barra de sesión ─────────────────────────────────────────── */
@@ -174,7 +174,7 @@ input[type=number]::-webkit-inner-spin-button { opacity: .6; }
   transition: transform 160ms var(--ease);
 }
 .app-nav-btn .ico { font-size: 1.1rem; }
-.app-nav-btn.active { color: var(--on-dark); background: var(--accent); border-color: var(--accent); }
+.app-nav-btn.active { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
 .app-nav-logout { color: var(--on-dark); border-color: rgba(243,234,211,.35); }
 .app-nav-btn:active { transform: translateY(1px); }
 @media (hover: hover) {
@@ -215,24 +215,24 @@ input[type=number]::-webkit-inner-spin-button { opacity: .6; }
 @media (max-width: 47.99rem) { #adminQuickBar { display: none !important; } }
 
 /* Chip de la sección abierta, rellenado con su color */
-body:has(#tabList.show) .admin-quick-btn[data-tab="tabList"],
-body:has(#tabAscensos.show) .admin-quick-btn[data-tab="tabAscensos"],
-body:has(#tabStats.show) .admin-quick-btn[data-tab="tabStats"],
-body:has(#tabActivity.show) .admin-quick-btn[data-tab="tabActivity"],
-body:has(#tabGrad.show) .admin-quick-btn[data-tab="tabGrad"],
-body:has(#tabAdd.show) .admin-quick-btn[data-tab="tabAdd"],
-body:has(#tabInventory.show) .admin-quick-btn[data-tab="tabInventory"],
-body:has(#tabAttendance.show) .admin-quick-btn[data-tab="tabAttendance"] {
-  color: var(--on-dark); background: var(--c); border-color: var(--c);
+body:has(#scAdmin[style*="block"] #tabList.show) .admin-quick-btn[data-tab="tabList"],
+body:has(#scAdmin[style*="block"] #tabAscensos.show) .admin-quick-btn[data-tab="tabAscensos"],
+body:has(#scAdmin[style*="block"] #tabStats.show) .admin-quick-btn[data-tab="tabStats"],
+body:has(#scAdmin[style*="block"] #tabActivity.show) .admin-quick-btn[data-tab="tabActivity"],
+body:has(#scAdmin[style*="block"] #tabGrad.show) .admin-quick-btn[data-tab="tabGrad"],
+body:has(#scAdmin[style*="block"] #tabAdd.show) .admin-quick-btn[data-tab="tabAdd"],
+body:has(#scAdmin[style*="block"] #tabInventory.show) .admin-quick-btn[data-tab="tabInventory"],
+body:has(#scAdmin[style*="block"] #tabAttendance.show) .admin-quick-btn[data-tab="tabAttendance"] {
+  color: var(--on-sec); background: var(--c); border-color: var(--c);
 }
-body:has(#tabList.show) .admin-quick-btn[data-tab="tabList"] .qdot,
-body:has(#tabAscensos.show) .admin-quick-btn[data-tab="tabAscensos"] .qdot,
-body:has(#tabStats.show) .admin-quick-btn[data-tab="tabStats"] .qdot,
-body:has(#tabActivity.show) .admin-quick-btn[data-tab="tabActivity"] .qdot,
-body:has(#tabGrad.show) .admin-quick-btn[data-tab="tabGrad"] .qdot,
-body:has(#tabAdd.show) .admin-quick-btn[data-tab="tabAdd"] .qdot,
-body:has(#tabInventory.show) .admin-quick-btn[data-tab="tabInventory"] .qdot,
-body:has(#tabAttendance.show) .admin-quick-btn[data-tab="tabAttendance"] .qdot { background: var(--on-dark); }
+body:has(#scAdmin[style*="block"] #tabList.show) .admin-quick-btn[data-tab="tabList"] .qdot,
+body:has(#scAdmin[style*="block"] #tabAscensos.show) .admin-quick-btn[data-tab="tabAscensos"] .qdot,
+body:has(#scAdmin[style*="block"] #tabStats.show) .admin-quick-btn[data-tab="tabStats"] .qdot,
+body:has(#scAdmin[style*="block"] #tabActivity.show) .admin-quick-btn[data-tab="tabActivity"] .qdot,
+body:has(#scAdmin[style*="block"] #tabGrad.show) .admin-quick-btn[data-tab="tabGrad"] .qdot,
+body:has(#scAdmin[style*="block"] #tabAdd.show) .admin-quick-btn[data-tab="tabAdd"] .qdot,
+body:has(#scAdmin[style*="block"] #tabInventory.show) .admin-quick-btn[data-tab="tabInventory"] .qdot,
+body:has(#scAdmin[style*="block"] #tabAttendance.show) .admin-quick-btn[data-tab="tabAttendance"] .qdot { background: var(--on-sec); }
 
 /* ── 3. Secciones del panel: baldosas ───────────────────────────── */
 .admin-tabs {
@@ -256,17 +256,17 @@ body:has(#tabAttendance.show) .admin-quick-btn[data-tab="tabAttendance"] .qdot {
 .tab:active { transform: translateY(1px); }
 @media (hover: hover) {
   .tab:hover:not(.active) { border-color: var(--c); transform: translateY(-2px); }
-  .tab:hover:not(.active) .tab-ico { color: var(--on-dark); background: var(--c); }
+  .tab:hover:not(.active) .tab-ico { color: var(--on-sec); background: var(--c); }
 }
-.tab.active { color: var(--on-dark); background: var(--c); border-color: var(--c); }
-.tab.active .tab-ico { color: var(--on-dark); background: rgba(248,242,226,.16); }
-.tab.active .tab-hint { color: var(--on-dark); }
+.tab.active { color: var(--on-sec); background: var(--c); border-color: var(--c); }
+.tab.active .tab-ico { color: var(--on-sec); background: var(--sec-ico-active); }
+.tab.active .tab-hint { color: var(--on-sec); }
 
 /* Móvil: tira horizontal de baldosas que se desliza con el dedo */
 @media (max-width: 47.99rem) {
   .admin-tabs {
     display: flex; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
-    margin-inline: calc(-1 * var(--gutter)); padding: 0 var(--gutter) .35rem; scroll-padding-inline: var(--gutter);
+    margin-inline: calc(14px - var(--sheet-pad)); padding: 0 calc(var(--sheet-pad) - 14px) .35rem; scroll-padding-inline: calc(var(--sheet-pad) - 14px);
   }
   .tab { flex: 0 0 11.5rem; scroll-snap-align: start; }
 }
@@ -351,12 +351,12 @@ body:has(#appHeader[style*="block"]) .wrap { padding-top: var(--space-m); }
   font-size: var(--step--1); white-space: nowrap;
   color: var(--ink); border: 1px solid currentColor; border-radius: var(--radius);
 }
-.rk-i0 { color: #7A5A3A; }
-.rk-i1 { color: #5C6B3E; }
-.rk-i2 { color: #4E5D6C; }
-.rk-i3 { color: #6B4E62; }
-.rk-i4 { color: #3F6461; }
-.rk-i5 { color: #7A4E4A; }
+.rk-i0 { color: var(--rk-0); }
+.rk-i1 { color: var(--rk-1); }
+.rk-i2 { color: var(--rk-2); }
+.rk-i3 { color: var(--rk-3); }
+.rk-i4 { color: var(--rk-4); }
+.rk-i5 { color: var(--rk-5); }
 .rk-Graduado { color: var(--accent); }
 
 .admin-badge {
@@ -511,12 +511,12 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
   padding: var(--space-s) var(--space-s) var(--space-s) calc(var(--space-s) + 2px);
   border: 1px solid var(--line); border-left: 2px solid var(--line-strong); border-radius: var(--radius);
 }
-.sc-rank-i0 { border-left-color: #7A5A3A; }
-.sc-rank-i1 { border-left-color: #5C6B3E; }
-.sc-rank-i2 { border-left-color: #4E5D6C; }
-.sc-rank-i3 { border-left-color: #6B4E62; }
-.sc-rank-i4 { border-left-color: #3F6461; }
-.sc-rank-i5 { border-left-color: #7A4E4A; }
+.sc-rank-i0 { border-left-color: var(--rk-0); }
+.sc-rank-i1 { border-left-color: var(--rk-1); }
+.sc-rank-i2 { border-left-color: var(--rk-2); }
+.sc-rank-i3 { border-left-color: var(--rk-3); }
+.sc-rank-i4 { border-left-color: var(--rk-4); }
+.sc-rank-i5 { border-left-color: var(--rk-5); }
 .sc-grad { border-left-color: var(--accent); }
 .sc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-xs); margin-bottom: var(--space-xs); }
 .sc-name { flex: 1; font-family: var(--font-display); font-size: var(--step-1); line-height: 1.25; }
@@ -603,12 +603,12 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
 @media (hover: hover) { .rank-opt:hover { color: var(--ink); border-color: var(--line-strong); } }
 .rank-opt.sel-i0, .rank-opt.sel-i1, .rank-opt.sel-i2,
 .rank-opt.sel-i3, .rank-opt.sel-i4, .rank-opt.sel-i5 { border-color: currentColor; background: var(--surface); }
-.rank-opt.sel-i0 { color: #7A5A3A; }
-.rank-opt.sel-i1 { color: #5C6B3E; }
-.rank-opt.sel-i2 { color: #4E5D6C; }
-.rank-opt.sel-i3 { color: #6B4E62; }
-.rank-opt.sel-i4 { color: #3F6461; }
-.rank-opt.sel-i5 { color: #7A4E4A; }
+.rank-opt.sel-i0 { color: var(--rk-0); }
+.rank-opt.sel-i1 { color: var(--rk-1); }
+.rank-opt.sel-i2 { color: var(--rk-2); }
+.rank-opt.sel-i3 { color: var(--rk-3); }
+.rank-opt.sel-i4 { color: var(--rk-4); }
+.rank-opt.sel-i5 { color: var(--rk-5); }
 
 .spell-editor {
   max-height: 18rem; overflow-y: auto; padding: var(--space-2xs) var(--space-s);
@@ -693,14 +693,38 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
 }
 .bitacora-count-line { margin-bottom: var(--space-2xs); font-size: var(--step--1); color: var(--sepia-text); }
 
-.bitacora-card { padding: var(--space-m) 0; border-bottom: 1px solid var(--line); }
-.bitacora-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-s); margin-bottom: var(--space-xs); }
-.bitacora-patient { font-family: var(--font-display); font-size: var(--step-1); line-height: 1.25; }
-.bitacora-date { font-size: var(--step--1); color: var(--sepia-text); }
+/* Cada bitácora es una ficha propia (viñeta): marco, sello de lacre a la
+   izquierda, bordes tostados hacia dentro y cabecera separada por un trazo */
+.bitacora-card {
+  margin-bottom: var(--space-s);
+  padding: var(--space-s) var(--space-m) var(--space-m) calc(var(--space-m) + 2px);
+  background: var(--surface);
+  border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 4px;
+  box-shadow: inset 0 0 1.75rem var(--burn-soft);
+  transition: transform 220ms var(--ease);
+}
+.bitacora-top {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-s);
+  padding-bottom: var(--space-xs); margin-bottom: var(--space-s); border-bottom: 1px dashed var(--line-strong);
+}
+.bitacora-patient {
+  display: flex; align-items: center; gap: .5rem;
+  font-family: var(--font-display); font-size: var(--step-1); line-height: 1.25;
+}
+.bitacora-patient::before { content: "⚕"; font-size: .85em; color: var(--accent); }
+.bitacora-date {
+  display: inline-block; margin-top: .3rem; padding: 0 .65rem;
+  font-size: var(--step--1); color: var(--sepia-text);
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px;
+}
+@media (max-width: 30rem) { .bitacora-top { flex-wrap: wrap; } }
 .bitacora-field { margin-bottom: var(--space-xs); }
 .bitacora-field:last-child { margin-bottom: 0; }
 .bitacora-label { display: block; font-size: var(--step--1); font-weight: var(--w-medium); color: var(--sepia-text); }
-.bitacora-proc { display: block; white-space: pre-wrap; }
+.bitacora-proc {
+  display: block; white-space: pre-wrap; margin-top: .2rem; padding: var(--space-xs) var(--space-s);
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: 2px;
+}
 .bitacora-attendants { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .2rem; }
 .att-badge {
   display: inline-flex; align-items: center; padding: 0 .5rem;
@@ -842,7 +866,7 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
 .inv-cell-status { text-align: center; font-size: var(--step--1); }
 .inv-input { width: 5.5rem; padding: 0 .4rem; text-align: center; font-variant-numeric: tabular-nums; }
 .inv-input.inv-qty-empty { color: var(--accent); border-color: var(--accent); }
-.inv-input.inv-qty-low { color: #7A5A3A; border-color: #7A5A3A; }
+.inv-input.inv-qty-low { color: var(--rk-0); border-color: var(--rk-0); }
 .inv-changed { color: var(--accent); font-weight: var(--w-medium); }
 .inv-unchanged { color: var(--sepia-text); }
 .inventory-actions { gap: var(--space-xs); flex-wrap: wrap; margin-top: var(--space-m); }
@@ -892,7 +916,7 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
 .modal-overlay {
   position: fixed; inset: 0; z-index: var(--z-modal);
   align-items: center; justify-content: center; padding: var(--gutter);
-  background: rgba(43,33,24,.42);
+  background: var(--overlay);
 }
 .modal-overlay.show { animation: fade var(--dur) var(--ease); }
 .modal {
@@ -935,3 +959,63 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
 @keyframes leave { to { opacity: 0; transform: translateY(6px); } }
 
 @media (hover: hover) { .scroll-top-btn:hover { color: var(--accent); border-color: var(--accent); } }
+
+/* =================================================================
+   ANIMACIONES
+   Solo transform y opacity (no recalculan el diseño). Cada una tiene un
+   propósito: guiar la vista al aparecer contenido, dar respuesta al
+   pasar el ratón o al marcar, y mostrar el avance de las barras.
+   Con "reducir movimiento" activado se desactivan todas (CSS crítico).
+   ================================================================= */
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes pop  { 0% { transform: scale(.3); } 60% { transform: scale(1.35); } 100% { transform: scale(1); } }
+@keyframes grow-x { from { transform: scaleX(0); } }
+@keyframes grow-y { from { transform: scaleY(0); } }
+
+/* Contenido que aparece en cascada (se repite al cambiar de página o filtrar) */
+.bitacora-card, .student-card, .stat-card, .stats-panel, .asc-card, .grad-card-item,
+.persona-row, .att-detail-card, .rk-card, .dir-group, .activity-section, .creds-stat,
+.ascenso-banner, .no-ascenso-banner, .grad-banner {
+  animation: rise 480ms var(--ease) backwards;
+}
+:is(.bitacora-card, .student-card, .stat-card, .stats-panel, .asc-card, .grad-card-item, .persona-row, .att-detail-card, .rk-card, .dir-group, .creds-stat):nth-child(2) { animation-delay: 50ms; }
+:is(.bitacora-card, .student-card, .stat-card, .stats-panel, .asc-card, .grad-card-item, .persona-row, .att-detail-card, .rk-card, .dir-group, .creds-stat):nth-child(3) { animation-delay: 100ms; }
+:is(.bitacora-card, .student-card, .stat-card, .stats-panel, .asc-card, .grad-card-item, .persona-row, .att-detail-card, .rk-card, .dir-group, .creds-stat):nth-child(4) { animation-delay: 150ms; }
+:is(.bitacora-card, .student-card, .stat-card, .stats-panel, .asc-card, .grad-card-item, .persona-row, .att-detail-card, .rk-card, .dir-group, .creds-stat):nth-child(5) { animation-delay: 200ms; }
+:is(.bitacora-card, .student-card, .stat-card, .stats-panel, .asc-card, .grad-card-item, .persona-row, .att-detail-card, .rk-card, .dir-group, .creds-stat):nth-child(6) { animation-delay: 250ms; }
+:is(.bitacora-card, .student-card, .stat-card, .stats-panel, .asc-card, .grad-card-item, .persona-row, .att-detail-card, .rk-card, .dir-group, .creds-stat):nth-child(7) { animation-delay: 300ms; }
+:is(.bitacora-card, .student-card, .stat-card, .stats-panel, .asc-card, .grad-card-item, .persona-row, .att-detail-card, .rk-card, .dir-group, .creds-stat):nth-child(n+8) { animation-delay: 340ms; }
+
+/* Baldosas del panel: entran una tras otra al abrir el panel */
+.screen-anim .admin-tabs .tab { animation: rise 420ms var(--ease) backwards; }
+.screen-anim .admin-tabs .tab:nth-child(2)  { animation-delay: 30ms; }
+.screen-anim .admin-tabs .tab:nth-child(3)  { animation-delay: 60ms; }
+.screen-anim .admin-tabs .tab:nth-child(4)  { animation-delay: 90ms; }
+.screen-anim .admin-tabs .tab:nth-child(5)  { animation-delay: 120ms; }
+.screen-anim .admin-tabs .tab:nth-child(6)  { animation-delay: 150ms; }
+.screen-anim .admin-tabs .tab:nth-child(7)  { animation-delay: 180ms; }
+.screen-anim .admin-tabs .tab:nth-child(8)  { animation-delay: 210ms; }
+.screen-anim .admin-tabs .tab:nth-child(9)  { animation-delay: 240ms; }
+.screen-anim .admin-tabs .tab:nth-child(10) { animation-delay: 270ms; }
+.screen-anim .admin-tabs .tab:nth-child(n+11) { animation-delay: 300ms; }
+/* La sección elegida entra con un fundido corto */
+.admin-section.show { animation: rise 360ms var(--ease) backwards; }
+
+/* Barras de progreso y gráficos: crecen desde cero */
+.bar-fill, .mini-fill, .sc-progress-bar, .asc-spell-fill, .hbar-fill {
+  transform-origin: left center; animation: grow-x 900ms var(--ease) 120ms backwards;
+}
+.chart-col-fill { transform-origin: center bottom; animation: grow-y 800ms var(--ease) 150ms backwards; }
+
+/* Respuesta al pasar el ratón: las fichas se elevan un poco */
+.student-card, .stat-card, .grad-card-item, .asc-card, .rk-card { transition: transform 220ms var(--ease); }
+@media (hover: hover) {
+  .bitacora-card:hover, .student-card:hover, .grad-card-item:hover, .asc-card:hover { transform: translateY(-3px); }
+  .stat-card:hover, .rk-card:hover { transform: translateY(-2px); }
+}
+
+/* Al marcar un hechizo como aprendido, el punto "salta" */
+.spell-dot.on { animation: pop 380ms cubic-bezier(.3, 1.5, .5, 1); }
+
+/* Cambio de tema: fundido suave entre claro y oscuro (View Transitions) */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 420ms; animation-timing-function: ease; }
