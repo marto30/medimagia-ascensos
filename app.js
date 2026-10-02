@@ -80,7 +80,7 @@ function escHtml(v)  {
 }
 // Escapa para uso simultáneo en atributo HTML + literal JS dentro de onclick="fn('...')"
 //
-// ⚠️ SOLO para código JS dentro de un atributo (onclick, onchange, onkeydown).
+// IMPORTANTE: SOLO para código JS dentro de un atributo (onclick, onchange, onkeydown).
 // Añade una barra invertida antes de las comillas simples, así que en un
 // atributo normal (value=, data-, id=, title=) el valor llegaría corrupto:
 // "Colin O'Sullivan" se leería como "Colin O\'Sullivan" y no coincidiría con
@@ -829,22 +829,22 @@ function updateAppHeader() {
         <span class="app-header-rank rank-badge ${rankClass("rk", rank)}">${escHtml(rank)}</span>
       </div>
       <nav class="app-header-nav">
-        <button class="app-nav-btn" data-screen="scProfile" onclick="openProfile(loggedInStudent)">👤 Perfil</button>
-        <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('profile')">📋 Bitácoras</button>
-        <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('profile')">👥 Personas</button>
-        <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('profile')">🗺 Directorio</button>
+        <button class="app-nav-btn" data-screen="scProfile" onclick="openProfile(loggedInStudent)">Perfil</button>
+        <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('profile')">Bitácoras</button>
+        <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('profile')">Personas</button>
+        <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('profile')">Directorio</button>
       </nav>
       <button class="app-nav-btn app-nav-logout" onclick="goSearch()">Salir ✕</button>`;
   } else if (isAdmin) {
     userHeader.innerHTML = `
       <div class="app-header-left">
-        <span class="app-header-name">${isSuperAdmin ? "⚙ Superadmin" : "⚙ Admin"}</span>
+        <span class="app-header-name">${isSuperAdmin ? "Superadmin" : "Admin"}</span>
       </div>
       <nav class="app-header-nav">
-        <button class="app-nav-btn" data-screen="scAdmin" onclick="show('scAdmin')">⚙ Panel</button>
-        <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('admin')">📋 Bitácoras</button>
-        <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('admin')">👥 Personas</button>
-        <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('admin')">🗺 Directorio</button>
+        <button class="app-nav-btn" data-screen="scAdmin" onclick="show('scAdmin')">Panel</button>
+        <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('admin')">Bitácoras</button>
+        <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('admin')">Personas</button>
+        <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('admin')">Directorio</button>
       </nav>
       <button class="app-nav-btn app-nav-logout" onclick="cerrarSesion()">Salir ✕</button>`;
   }
@@ -1061,7 +1061,7 @@ function renderBitCount(name) {
   const el = document.getElementById("pBitCount");
   if (!el) return;
   if (!bitacorasLoaded) {
-    el.innerHTML = `<div class="profile-bit-stats"><div class="profile-bit-stat profile-bit-loading">📋 <span>cargando…</span></div></div>`;
+    el.innerHTML = `<div class="profile-bit-stats"><div class="profile-bit-stat profile-bit-loading"><span>Bitácoras: cargando…</span></div></div>`;
     return;
   }
   const now = new Date();
@@ -1075,7 +1075,7 @@ function renderBitCount(name) {
   const pill  = (label, n, warn) =>
     `<div class="profile-bit-stat${warn ? " bit-warn" : ""}">` +
     `<span class="bit-label">${label}</span><strong>${n}</strong>` +
-    (warn ? `<span class="bit-alert">⚠</span>` : "") +
+    (warn ? `<span class="bit-alert" title="Menos de 3 bitácoras">bajo</span>` : "") +
     `</div>`;
   el.innerHTML = `<div class="profile-bit-stats">
     ${pill(mThis, ct, ct < 3)}
@@ -1153,7 +1153,7 @@ function renderProfile() {
   const gradBtn = document.getElementById("gradBtn");
   if (isAdmin) {
     gradBtn.style.display = "inline-flex";
-    gradBtn.textContent   = grad ? "✕ Revocar graduación" : "🎓 Graduar alumno";
+    gradBtn.textContent   = grad ? "Revocar graduación" : "Graduar alumno";
     gradBtn.className     = grad ? "btn danger" : "btn";
   } else {
     gradBtn.style.display = "none";
@@ -1163,19 +1163,18 @@ function renderProfile() {
   const banner = document.getElementById("ascBanner");
   if (grad) {
     banner.innerHTML = `<div class="grad-banner">
-      <div class="grad-icon">🎓</div>
       <div class="big">Graduado/a del Colegio</div>
       <div class="grad-divider"></div>
       <div class="sub">Ha completado su formación con distinción.</div>
     </div>`;
   } else if (ascending && nextRank) {
     banner.innerHTML = `<div class="ascenso-banner">
-      <div class="big">✦ Listo para ascender a ${escHtml(nextRank)}</div>
+      <div class="big">Listo para ascender a ${escHtml(nextRank)}</div>
       <div class="sub">Notifica a un administrador para que confirme el ascenso.</div>
     </div>`;
   } else if (rank === RANKS_ORDER[RANKS_ORDER.length - 1] && RANKS[rank].filter(s => !sp[s]).length === 0) {
     banner.innerHTML = `<div class="ascenso-banner">
-      <div class="big">✦ Dominio completo alcanzado</div>
+      <div class="big">Dominio completo alcanzado</div>
       <div class="sub">Has aprendido todos los hechizos del rango ${escHtml(rank)}.</div>
     </div>`;
   } else {
@@ -1213,7 +1212,8 @@ function renderProfile() {
     const rows = RANKS[rk].map(s => {
       const on  = sp[s];
       const key = domKey(s);
-      return `<div class="spell-row" onclick="toggleSpell('${safeAttr(s)}')">
+      return `<div class="spell-row" role="button" tabindex="0" onclick="toggleSpell('${safeAttr(s)}')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div class="spell-dot ${on ? "on" : "off"}" id="dot_${key}"></div>
         <span class="spell-txt ${on ? "" : "off"}" id="txt_${key}">${escHtml(s)}</span>
       </div>`;
@@ -1396,17 +1396,18 @@ function renderInfractions(name) {
           <span class="infraction-date">${formatDate(inf.date)}</span>
           <span class="infraction-reason">${escHtml(inf.reason)}</span>
         </div>
-        ${isAdmin ? `<button class="btn sm danger" onclick="removeInfraction(${i})" title="Eliminar">×</button>` : ""}
+        ${isAdmin ? `<button class="btn sm danger" onclick="removeInfraction(${i})" title="Eliminar" aria-label="Eliminar infracción">×</button>` : ""}
       </div>`).join("")
     : '<p class="empty-state">Sin infracciones registradas.</p>';
 
   wrap.innerHTML = `
     <div class="divider"></div>
-    <p class="card-title" style="font-size:.92rem">⚠ Infracciones${list.length ? ` <span class="sec-count">${list.length}</span>` : ""}</p>
+    <p class="card-title">Infracciones${list.length ? ` <span class="sec-count">${list.length}</span>` : ""}</p>
     <div class="infractions-list">${rows}</div>
     ${isAdmin ? `
-      <div class="rank-add-spell" style="margin-top:.6rem">
+      <div class="rank-add-spell">
         <input type="text" id="infractionReason" placeholder="Motivo de la infracción" maxlength="300"
+               aria-label="Motivo de la infracción"
                onkeydown="if(event.key==='Enter')addInfraction()"/>
         <button type="button" class="btn sm danger" onclick="addInfraction()">+ Añadir infracción</button>
       </div>
@@ -1570,7 +1571,7 @@ window.toggleGraduation = async function() {
   );
   if (!ok) return;
   await setGraduated(name, newVal);
-  toast(newVal ? `${name} graduado/a del Colegio 🎓` : `Graduación de ${name} revocada`, "success");
+  toast(newVal ? `${name} graduado/a del Colegio` : `Graduación de ${name} revocada`, "success");
   renderProfile();
 };
 
@@ -1779,7 +1780,7 @@ window.quickGraduate = async function(name) {
   );
   if (!ok) return;
   await setGraduated(name, newVal);
-  toast(newVal ? `${name} graduado/a del Colegio 🎓` : `Graduación de ${name} revocada`, "success");
+  toast(newVal ? `${name} graduado/a del Colegio` : `Graduación de ${name} revocada`, "success");
   renderList();
   renderGraduados();
 };
@@ -1799,8 +1800,8 @@ function buildStudentCard(n) {
   const rkIdx    = Math.max(0, RANKS_ORDER.indexOf(rk)) % RANK_PALETTE_SIZE;
 
   const statusHtml = grad
-    ? `<span class="sc-status sc-status-grad">🎓 Graduado</span>`
-    : (asc && nextRk ? `<span class="sc-status sc-status-apto">⬆ Apto</span>` : "");
+    ? `<span class="sc-status sc-status-grad">Graduado</span>`
+    : (asc && nextRk ? `<span class="sc-status sc-status-apto">Apto</span>` : "");
 
   let bitsHtml;
   if (bitacorasLoaded) {
@@ -1810,10 +1811,10 @@ function buildStudentCard(n) {
     const ct = bitCntMonth(n, ty, tm), cl = bitCntMonth(n, ly, lm);
     const mT = capitalize(new Date(ty, tm, 1).toLocaleDateString("es-ES", { month: "short" }));
     const mL = capitalize(new Date(ly, lm, 1).toLocaleDateString("es-ES", { month: "short" }));
-    bitsHtml = `<span class="sc-bit-pill${ct < 3 ? " warn" : ""}">📋 ${mT}: <strong>${ct}</strong></span>
-      <span class="sc-bit-pill${cl < 3 ? " warn" : ""}">📋 ${mL}: <strong>${cl}</strong></span>`;
+    bitsHtml = `<span class="sc-bit-pill${ct < 3 ? " warn" : ""}">${mT}: <strong>${ct}</strong></span>
+      <span class="sc-bit-pill${cl < 3 ? " warn" : ""}">${mL}: <strong>${cl}</strong></span>`;
   } else {
-    bitsHtml = `<span class="sc-bit-pill sc-bit-loading">📋 —</span>`;
+    bitsHtml = `<span class="sc-bit-pill sc-bit-loading">Bitácoras…</span>`;
   }
 
   const gradBtnCls = `btn btn-grad sm${grad ? " is-grad" : ""}`;
@@ -1838,11 +1839,11 @@ function buildStudentCard(n) {
       <div class="sc-bits">${bitsHtml}</div>
       <div class="sc-actions">
         <button class="${gradBtnCls}" title="${grad ? "Revocar graduación" : "Graduar"}"
-                onclick="quickGraduate('${safe}')">${grad ? "🎓 Revocar" : "🎓"}</button>
-        ${asc && nextRk && !grad ? `<button class="btn sm success" onclick="adminAscend('${safe}')">⬆ ${escHtml(nextRk)}</button>` : ""}
+                onclick="quickGraduate('${safe}')">${grad ? "Revocar" : "Graduar"}</button>
+        ${asc && nextRk && !grad ? `<button class="btn sm success" onclick="adminAscend('${safe}')">Ascender a ${escHtml(nextRk)}</button>` : ""}
         <button class="btn sm" onclick="adminEdit('${safe}')">Ver</button>
-        <button class="btn sm cred-btn" onclick="showCredentials('${safe}')">🔑 <span class="cred-dot ${allCredentials[n] ? "on" : "off"}"></span></button>
-        <button class="btn sm danger" onclick="adminDelete('${safe}')">✕</button>
+        <button class="btn sm cred-btn" onclick="showCredentials('${safe}')">Acceso <span class="cred-dot ${allCredentials[n] ? "on" : "off"}"></span></button>
+        <button class="btn sm danger" onclick="adminDelete('${safe}')" aria-label="Eliminar a ${escHtml(n)}" title="Eliminar">✕</button>
       </div>
     </div>
   </div>`;
@@ -1902,8 +1903,8 @@ function renderList() {
     { key: "name",      label: "Nombre"   },
     { key: "pct",       label: "% Total"  },
     { key: "status",    label: "Estado"   },
-    { key: "thisMonth", label: `📋 ${mT2}` },
-    { key: "lastMonth", label: `📋 ${mL2}` },
+    { key: "thisMonth", label: `Bitácoras ${mT2}` },
+    { key: "lastMonth", label: `Bitácoras ${mL2}` },
   ];
   const sortBar = `<div class="sort-bar">
     <span class="sort-bar-label">Orden:</span>
@@ -1922,8 +1923,8 @@ function renderList() {
     <span class="list-summary-chip"><strong>${totalAll}</strong> total</span>
     <span class="list-summary-chip"><strong>${totalActive}</strong> sin graduar</span>
     <span class="list-summary-chip chip-grad"><strong>${totalGrad}</strong> graduados</span>
-    ${readyCount ? `<button class="list-summary-chip chip-asc" onclick="showTab('tabAscensos')" title="Ver ascensos"><strong>${readyCount}</strong> ⬆ listos</button>` : ""}
-    ${bitacorasLoaded && lowActCount ? `<button class="list-summary-chip chip-warn" onclick="showTab('tabActivity')" title="Ver actividad"><strong>${lowActCount}</strong> ⚠ baja actividad</button>` : ""}
+    ${readyCount ? `<button class="list-summary-chip chip-asc" onclick="showTab('tabAscensos')" title="Ver ascensos"><strong>${readyCount}</strong> listos para ascender</button>` : ""}
+    ${bitacorasLoaded && lowActCount ? `<button class="list-summary-chip chip-warn" onclick="showTab('tabActivity')" title="Ver actividad"><strong>${lowActCount}</strong> con baja actividad</button>` : ""}
   </div>`;
 
   document.getElementById("adminListWrap").innerHTML = summary + sortBar + html;
@@ -1969,7 +1970,7 @@ window.migrateAllRanks = async function() {
     }
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = "⚙ Recalcular y corregir todos los rangos"; }
+  if (btn) { btn.disabled = false; btn.textContent = "Recalcular y corregir todos los rangos"; }
 
   const okEl = document.getElementById("migrateOk");
   if (okEl) {
@@ -2019,7 +2020,7 @@ function renderDirectoryIn(containerId) {
     const members = groups[rk];
     if (!members.length) continue;
     const badgeCls = rankClass("rk", rk);
-    const label    = rk === "Graduado" ? "🎓 Graduado" : rk;
+    const label    = rk === "Graduado" ? "Graduado" : rk;
     const rows = members.map(n => {
       const sp  = allStudents[n];
       const pct = Math.round(allSpells().filter(s => sp[s]).length / allSpells().length * 100);
@@ -2028,12 +2029,12 @@ function renderDirectoryIn(containerId) {
         <div class="dir-avatar">${initials}</div>
         <span class="dir-name">${escHtml(n)}</span>
         <span class="dir-pct">${pct}%</span>
-        ${allGraduated[n] ? '<span class="dir-grad-icon">🎓</span>' : ""}
+        ${allGraduated[n] ? '<span class="dir-grad-icon">Graduado</span>' : ""}
       </div>`;
     }).join("");
     html += `<div class="dir-group">
       <div class="dir-group-header">
-        <span class="rank-badge ${badgeCls}" style="font-size:.69rem">${label}</span>
+        <span class="rank-badge ${badgeCls}">${label}</span>
         <span class="dir-count">${members.length}</span>
       </div>
       <div class="dir-members">${rows}</div>
@@ -2109,7 +2110,7 @@ function renderAscensos() {
           ? "✓ Listo para ascender"
           : `Faltan ${missing} hechizo${missing !== 1 ? "s" : ""}`}</span>
       </div>
-      <button class="btn success asc-btn" onclick="adminAscend('${safe}')">⬆ Ascender a ${escHtml(nextRk)}</button>
+      <button class="btn success asc-btn" onclick="adminAscend('${safe}')">Ascender a ${escHtml(nextRk)}</button>
     </div>`;
   }).join("");
 
@@ -2172,7 +2173,7 @@ function renderGraduados() {
     const pct = Math.round(all.filter(s => sp[s]).length / all.length * 100);
     const safe = safeAttr(n);
     return `<div class="grad-card-item">
-      <span class="g-icon">🎓</span>
+      
       <div class="g-name">${escHtml(n)}</div>
       <div class="g-rank">${pct}% completado</div>
       <div class="g-actions">
@@ -2208,8 +2209,8 @@ function buildActivityReport(year, month) {
     const rkCls = rankClass("rk", s.rank);
     return `<tr>
       <td>${escHtml(s.name)}</td>
-      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(s.rank)}</span></td>
-      <td style="text-align:center"><span class="bit-count-badge bit-count-warn">${s.count}</span></td>
+      <td><span class="rank-badge ${rkCls}">${escHtml(s.rank)}</span></td>
+      <td class="t-center"><span class="bit-count-badge bit-count-warn">${s.count}</span></td>
       <td><button class="btn sm" onclick="adminEdit('${safe}')">Ver</button></td>
     </tr>`;
   }).join("");
@@ -2222,7 +2223,7 @@ function buildActivityReport(year, month) {
       </div>
       <table class="student-table">
         <thead><tr>
-          <th>Nombre</th><th>Rango</th><th>📋 Bitácoras</th><th></th>
+          <th>Nombre</th><th>Rango</th><th>Bitácoras</th><th></th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -2268,9 +2269,9 @@ function renderPocaActividad() {
     const rkCls = rankClass("rk", s.rank);
     return `<tr>
       <td>${escHtml(s.name)}</td>
-      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(s.rank)}</span></td>
-      <td style="text-align:center"><span class="bit-count-badge${s.cl < 3 ? " bit-count-warn" : ""}">${s.cl}</span></td>
-      <td style="text-align:center"><span class="bit-count-badge${s.ct < 3 ? " bit-count-warn" : ""}">${s.ct}</span></td>
+      <td><span class="rank-badge ${rkCls}">${escHtml(s.rank)}</span></td>
+      <td class="t-center"><span class="bit-count-badge${s.cl < 3 ? " bit-count-warn" : ""}">${s.cl}</span></td>
+      <td class="t-center"><span class="bit-count-badge${s.ct < 3 ? " bit-count-warn" : ""}">${s.ct}</span></td>
       <td><button class="btn sm" onclick="adminEdit('${safe}')">Ver</button></td>
     </tr>`;
   }).join("");
@@ -2283,8 +2284,8 @@ function renderPocaActividad() {
     <table class="student-table">
       <thead><tr>
         <th>Nombre</th><th>Rango</th>
-        <th>📋 ${mLastName} (pasado)</th>
-        <th>📋 ${mThisName} (actual)</th>
+        <th>Bitácoras ${mLastName} (pasado)</th>
+        <th>Bitácoras ${mThisName} (actual)</th>
         <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
@@ -2342,7 +2343,7 @@ function renderStats() {
   const dist = RANKS_ORDER.map(rk => ({
     rk, cnt: names.filter(n => !allGraduated[n] && getStudentRank(n) === rk).length
   }));
-  dist.push({ rk: "🎓 Graduados", cnt: grads });
+  dist.push({ rk: "Graduados", cnt: grads });
   const maxD = Math.max(1, ...dist.map(d => d.cnt));
 
   // Medimagos más activos (total de bitácoras)
@@ -2374,7 +2375,7 @@ function renderStats() {
     </div>
     <div class="stats-panels">
       <div class="stats-panel">
-        <p class="stats-panel-title">📋 Bitácoras por mes (últimos 6)</p>
+        <p class="stats-panel-title">Bitácoras por mes (últimos 6)</p>
         <div class="chart-bars">${months.map(m => `
           <div class="chart-col">
             <span class="chart-col-num">${m.cnt}</span>
@@ -2384,15 +2385,15 @@ function renderStats() {
         </div>
       </div>
       <div class="stats-panel">
-        <p class="stats-panel-title">🎖 Distribución por rango</p>
+        <p class="stats-panel-title">Distribución por rango</p>
         ${dist.map(d => hbar(d.rk, d.cnt, maxD)).join("")}
       </div>
       <div class="stats-panel">
-        <p class="stats-panel-title">⚕ Medimagos más activos</p>
+        <p class="stats-panel-title">Medimagos más activos</p>
         ${topMed.length ? topMed.map(([n, c]) => hbar(n, c, maxMed, "hbar-green")).join("") : '<p class="empty-state">Sin datos aún.</p>'}
       </div>
       <div class="stats-panel">
-        <p class="stats-panel-title">🤕 Pacientes más atendidos</p>
+        <p class="stats-panel-title">Pacientes más atendidos</p>
         ${topPat.length ? topPat.map(([n, c]) => hbar(n, c, maxPat, "hbar-red")).join("") : '<p class="empty-state">Sin datos aún.</p>'}
       </div>
     </div>
@@ -2400,8 +2401,8 @@ function renderStats() {
     <div class="stats-divider"></div>
 
     <div class="activity-header" style="margin-top:2rem">
-      <p class="activity-title">⚠️ Medimagos con baja actividad</p>
-      <p style="font-size:.85rem;color:var(--text-muted);margin-top:.4rem">Estudiantes con menos de 3 bitácoras en cada mes (excluye graduados)</p>
+      <p class="activity-title">Medimagos con baja actividad</p>
+      <p class="muted-note">Estudiantes con menos de 3 bitácoras en cada mes (excluye graduados)</p>
     </div>
     ${buildActivityReport(ty, 4)}
     ${buildActivityReport(ty, 5)}`;
@@ -2432,15 +2433,15 @@ function renderCredentialsOverview() {
 
     return `<tr>
       <td>${escHtml(n)}</td>
-      <td><span class="rank-badge ${rkCls}" style="font-size:.7rem">${escHtml(rank)}</span></td>
+      <td><span class="rank-badge ${rkCls}">${escHtml(rank)}</span></td>
       <td><code class="cred-username">${escHtml(username)}</code></td>
-      <td style="text-align:center">
+      <td class="t-center">
         <span class="cred-status ${hasPassword ? "has-password" : "no-password"}">
           ${hasPassword ? "✓ Sí" : "✗ No"}
         </span>
       </td>
       <td>
-        <button class="btn sm" onclick="showCredentials('${safe}')">🔑 Ver</button>
+        <button class="btn sm" onclick="showCredentials('${safe}')">Ver acceso</button>
       </td>
     </tr>`;
   }).join("");
@@ -2528,7 +2529,7 @@ window.showCredentials = function(name) {
         <code class="cred-val">${escHtml(cred.username)}</code>
         <button class="cred-copy-btn" onclick="copyToClipboard(this,'${safeAttr(cred.username)}')">Copiar</button>
       </div>
-      <p class="cred-note" style="margin-top:.7rem;font-size:.8rem">
+      <p class="cred-note">
         La contraseña no se puede recuperar. Puedes generar una nueva contraseña y comunicársela al alumno.
       </p>`;
   } else {
@@ -2593,7 +2594,7 @@ window.doGenerateCredentials = async function() {
   const body   = document.getElementById("credModalBody");
   const genBtn = document.getElementById("credModalGenBtn");
   body.innerHTML = `
-    <p class="cred-warn">⚠ Guarda esta contraseña ahora. No podrás verla de nuevo.</p>
+    <p class="cred-warn">Guarda esta contraseña ahora. No podrás verla de nuevo.</p>
     <div class="cred-row">
       <span class="cred-label">Usuario</span>
       <code class="cred-val" id="credValUser">${escHtml(username)}</code>
@@ -2877,7 +2878,7 @@ function buildAttendantsList(filterQ = "") {
   const item = (n, checked, missing = false) =>
     `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${missing ? " attendant-item-missing" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
       <input type="checkbox" class="att-chk" value="${escHtml(n)}" ${checked ? "checked" : ""}
-             onchange="toggleAttendant(this.value, this.checked)"/> ${escHtml(n)}${missing ? ' <span class="att-missing">⚠️ usuario no existe</span>' : ''}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
+             onchange="toggleAttendant(this.value, this.checked)"/> ${escHtml(n)}${missing ? ' <span class="att-missing">usuario no existe</span>' : ''}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
     </label>`;
   // Asistentes seleccionados que NO existen en la BD
   const missingAttendants = [...selectedAttendants].filter(n => !allStudents[n]).sort();
@@ -2892,7 +2893,7 @@ function buildAttendantsList(filterQ = "") {
                        others.map(n => item(n, false)).join("");
 
   if (!missingAttendants.length && !checkedNames.length && !others.length)
-    return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
+    return '<p class="empty-state">No hay medimagos en la base de datos.</p>';
   return missingHtml + existingHtml;
 }
 
@@ -2964,7 +2965,7 @@ async function doSaveBitacoraEntry() {
   if (!procedure)         { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length) { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
   if (attendants.length < selectedAttendants.size) {
-    errEl.textContent = `⚠️ ${selectedAttendants.size - attendants.length} asistente(s) no existen. Se guardarán solo los que existen.`;
+    errEl.textContent = `${selectedAttendants.size - attendants.length} asistente(s) no existen. Se guardarán solo los que existen.`;
     errEl.style.display = "block";
     await new Promise(r => setTimeout(r, 1500));
   }
@@ -2977,7 +2978,7 @@ async function doSaveBitacoraEntry() {
     const { valid, dropped } = await filterExistingPotions(potionsUsed);
     potionsUsed = valid;
     if (dropped) {
-      errEl.textContent = `⚠️ ${dropped} poción(es) no están en el inventario y se omitirán. Pide a un admin que las añada.`;
+      errEl.textContent = `${dropped} poción(es) no están en el inventario y se omitirán. Pide a un admin que las añada.`;
       errEl.style.display = "block";
       await new Promise(r => setTimeout(r, 1500));
     }
@@ -3255,7 +3256,7 @@ function buildEditAttendantsList(filterQ = "") {
     `<label class="attendant-item${checked ? " attendant-item-sel" : ""}${missing ? " attendant-item-missing" : ""}${n === loggedInStudent ? " attendant-item-me" : ""}">
       <input type="checkbox" class="edit-att-chk" value="${escHtml(n)}" ${checked ? "checked" : ""}
              onchange="toggleEditAttendant(this.value, this.checked)"/>
-      ${escHtml(n)}${missing ? ' <span class="att-missing">⚠️ usuario no existe</span>' : ''}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
+      ${escHtml(n)}${missing ? ' <span class="att-missing">usuario no existe</span>' : ''}${n === loggedInStudent ? ' <span class="att-you">• tú</span>' : ""}
     </label>`;
   // Asistentes seleccionados que NO existen en la BD (aparecen siempre al principio)
   const missingAttendants = [...editSelectedAttendants].filter(n => !allStudents[n]).sort();
@@ -3270,7 +3271,7 @@ function buildEditAttendantsList(filterQ = "") {
                        others.map(n => item(n, false)).join("");
 
   if (!missingAttendants.length && !checkedNames.length && !others.length)
-    return '<p style="color:#4a4540;font-size:.8rem;padding:.4rem">No hay medimagos en la base de datos.</p>';
+    return '<p class="empty-state">No hay medimagos en la base de datos.</p>';
 
   return missingHtml + existingHtml;
 }
@@ -3322,7 +3323,7 @@ async function doSaveEditBitacora() {
   if (!procedure)          { errEl.textContent = "El procedimiento es obligatorio.";         errEl.style.display = "block"; return; }
   if (!attendants.length)  { errEl.textContent = "Selecciona al menos un medimago.";         errEl.style.display = "block"; return; }
   if (attendants.length < editSelectedAttendants.size) {
-    errEl.textContent = `⚠️ ${editSelectedAttendants.size - attendants.length} asistente(s) no existen. Se guardarán solo los que existen.`;
+    errEl.textContent = `${editSelectedAttendants.size - attendants.length} asistente(s) no existen. Se guardarán solo los que existen.`;
     errEl.style.display = "block";
     await new Promise(r => setTimeout(r, 1500));
   }
@@ -3335,7 +3336,7 @@ async function doSaveEditBitacora() {
     const { valid, dropped } = await filterExistingPotions(potionsUsed);
     potionsUsed = valid;
     if (dropped) {
-      errEl.textContent = `⚠️ ${dropped} poción(es) no están en el inventario y se omitirán. Pide a un admin que las añada.`;
+      errEl.textContent = `${dropped} poción(es) no están en el inventario y se omitirán. Pide a un admin que las añada.`;
       errEl.style.display = "block";
       await new Promise(r => setTimeout(r, 1500));
     }
@@ -3544,11 +3545,11 @@ function renderPersonasList() {
     <div class="persona-row" onclick="selectPersona('${safeAttr(p.name)}')" role="button" tabindex="0">
       <div class="persona-info">
         <span class="persona-name">${escHtml(p.name)}</span>
-        ${isRegistered(p.name) ? `<span class="persona-badge medimago">⚕ Medimago</span>` : ""}
+        ${isRegistered(p.name) ? `<span class="persona-badge medimago">Medimago</span>` : ""}
       </div>
       <div class="persona-counts">
-        ${p.asPatient  ? `<span class="persona-count as-patient" title="Veces como paciente">🤕 ${p.asPatient}</span>` : ""}
-        ${p.asMedimago ? `<span class="persona-count as-medimago" title="Veces como medimago">⚕ ${p.asMedimago}</span>` : ""}
+        ${p.asPatient  ? `<span class="persona-count as-patient" title="Veces como paciente">Paciente: ${p.asPatient}</span>` : ""}
+        ${p.asMedimago ? `<span class="persona-count as-medimago" title="Veces como medimago">Medimago: ${p.asMedimago}</span>` : ""}
       </div>
       <span class="persona-arrow">›</span>
     </div>`).join("");
@@ -3854,11 +3855,11 @@ async function renderSecurityTab() {
 
     wrap.innerHTML = `
       <div class="sec-section">
-        <p class="sec-title">🚫 IPs bloqueadas <span class="sec-count">${blockedRows.length}</span></p>
+        <p class="sec-title">IPs bloqueadas <span class="sec-count">${blockedRows.length}</span></p>
         ${blockedHtml}
       </div>
       <div class="sec-section" style="margin-top:1.6rem">
-        <p class="sec-title">📋 Últimos ${recent.length} accesos
+        <p class="sec-title">Últimos ${recent.length} accesos
           <button class="btn sm ghost" style="margin-left:.6rem" onclick="clearOldLogs()">Limpiar logs</button>
         </p>
         ${logsHtml}
@@ -3993,24 +3994,29 @@ function enhancePasswordFields() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "pwd-toggle";
-    btn.textContent = "👁";
-    btn.setAttribute("aria-label", "Mostrar u ocultar contraseña");
+    btn.textContent = "Ver";
+    // El nombre accesible empieza por el texto visible (WCAG 2.5.3)
+    btn.setAttribute("aria-label", "Ver contraseña");
     btn.addEventListener("click", () => {
       const showing = inp.type === "text";
       inp.type = showing ? "password" : "text";
-      btn.textContent = showing ? "👁" : "🙈";
+      btn.textContent = showing ? "Ver" : "Ocultar";
+      btn.setAttribute("aria-label", showing ? "Ver contraseña" : "Ocultar contraseña");
     });
     wrap.appendChild(btn);
   });
 }
 
-// Muestra el botón "volver arriba" al desplazarse
+// Muestra el botón "volver arriba" cuando la cabecera sale de la pantalla.
+// IntersectionObserver en vez de un listener de scroll: no ejecuta código
+// en cada fotograma del desplazamiento.
 function initScrollTop() {
-  const btn = document.getElementById("scrollTopBtn");
-  if (!btn) return;
-  window.addEventListener("scroll", () => {
-    btn.classList.toggle("show", window.scrollY > 380);
-  }, { passive: true });
+  const btn    = document.getElementById("scrollTopBtn");
+  const header = document.querySelector(".header");
+  if (!btn || !header || !("IntersectionObserver" in window)) return;
+  new IntersectionObserver(([entry]) => {
+    btn.classList.toggle("show", !entry.isIntersecting);
+  }).observe(header);
 }
 
 // Aviso del navegador si se intenta cerrar con cambios sin guardar en el perfil
@@ -4406,7 +4412,7 @@ function renderSelectedPotions() {
 
   const tags = potions.map(p =>
     `<span class="potion-tag">
-      🧪 ${escHtml(p.name)}
+      ${escHtml(p.name)}
       <button type="button" onclick="removeSelectedPotion('${safeAttr(p.id)}')">✕</button>
     </span>`
   ).join("");
@@ -4426,7 +4432,7 @@ function renderEditSelectedPotions() {
 
   const tags = potions.map(p =>
     `<span class="potion-tag">
-      🧪 ${escHtml(p.name)}
+      ${escHtml(p.name)}
       <button type="button" onclick="removeEditSelectedPotion('${safeAttr(p.id)}')">✕</button>
     </span>`
   ).join("");
@@ -4505,7 +4511,7 @@ function renderAttendanceTab() {
 function renderAttendanceHistory() {
   const wrap = document.getElementById("attHistoryWrap");
   if (!allAttendance.length) {
-    wrap.innerHTML = `<p style="color:var(--fg-sub);font-size:.88rem">No hay sesiones de asistencia registradas.</p>`;
+    wrap.innerHTML = `<p class="muted-note">No hay sesiones de asistencia registradas.</p>`;
     return;
   }
 
@@ -4513,7 +4519,7 @@ function renderAttendanceHistory() {
     const present = s.records.filter(r => r.attended).length;
     const absent = s.records.filter(r => !r.attended).length;
     const dateStr = new Date(s.session_date + "T12:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-    return `<tr style="cursor:pointer" onclick="showAttendanceDetail('${s.id}')">
+    return `<tr class="row-link" onclick="showAttendanceDetail('${s.id}')">
       <td>${dateStr}</td>
       <td>${escHtml(s.title)}</td>
       <td><span class="att-badge present">${present}</span></td>
@@ -4557,7 +4563,7 @@ window.showAttendanceDetail = function(sessionId) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
       <strong>Detalle de sesión</strong>
       <div style="display:flex;gap:.4rem">
-        <button class="btn ghost sm" onclick="editAttendanceSession('${escJsAttr(session.id)}')">✏️ Editar</button>
+        <button class="btn ghost sm" onclick="editAttendanceSession('${escJsAttr(session.id)}')">Editar</button>
         <button class="btn ghost sm" onclick="document.getElementById('attDetailPanel').remove()">✕ Cerrar</button>
       </div>
     </div>
@@ -4595,7 +4601,7 @@ window.editAttendanceSession = function(sessionId) {
     </div>
     <div class="att-student-list" id="attEditList">${rowsHtml}</div>
     <div style="display:flex;gap:.5rem;margin-top:.8rem">
-      <button class="btn success sm" onclick="saveAttendanceEdit('${escJsAttr(session.id)}')">💾 Guardar cambios</button>
+      <button class="btn success sm" onclick="saveAttendanceEdit('${escJsAttr(session.id)}')">Guardar cambios</button>
       <button class="btn ghost sm" onclick="showAttendanceDetail('${escJsAttr(session.id)}')">Cancelar</button>
     </div>
     <p class="err" id="attEditErr" style="display:none;margin-top:.5rem"></p>
@@ -4739,8 +4745,8 @@ function renderProfileAttendance(name) {
   const sessions = allAttendance.filter(s => s.records.some(r => r.student_id === sid));
   if (!sessions.length) {
     el.innerHTML = `<div class="att-profile-section">
-      <p class="card-title">📋 Asistencia</p>
-      <p style="color:var(--fg-sub);font-size:.88rem">Sin registros de asistencia.</p>
+      <p class="card-title">Asistencia</p>
+      <p class="muted-note">Sin registros de asistencia.</p>
     </div>`;
     return;
   }
@@ -4769,7 +4775,7 @@ function renderProfileAttendance(name) {
   }).join("");
 
   el.innerHTML = `<div class="att-profile-section">
-    <p class="card-title">📋 Asistencia</p>
+    <p class="card-title">Asistencia</p>
     <div class="att-summary">
       <div class="att-summary-stat"><strong>${attended.length}</strong><span>Presentes</span></div>
       <div class="att-summary-stat"><strong>${missed.length}</strong><span>Ausentes</span></div>
