@@ -114,55 +114,208 @@ input[type=number]::-webkit-inner-spin-button { opacity: .6; }
 .empty-state { padding: var(--space-m) 0; text-align: center; color: var(--sepia-text); font-size: 1rem; }
 .edit-bitacora-modal .err { padding: var(--space-xs) var(--space-s); border-left: 2px solid var(--accent); background: var(--bg-2); }
 
-/* ── Navegación con sesión iniciada ─────────────────────────────── */
+/* =================================================================
+   MENÚS
+   Tres menús con funciones distintas y aspecto distinto:
+     1. Barra de sesión (oscura, a todo el ancho, fija arriba)
+     2. Accesos rápidos del admin (banda clara con chips de color)
+     3. Secciones del panel (baldosas: color, icono, nombre y descripción)
+   Los colores de sección se definen en :root (--sec-*) en index.html.
+   ================================================================= */
+
+/* Color de cada sección: lo usan baldosas, chips y el contenido activo */
+[data-tab="tabList"]        { --c: var(--sec-alumnos); }
+[data-tab="tabAscensos"]    { --c: var(--sec-ascensos); }
+[data-tab="tabStats"]       { --c: var(--sec-stats); }
+[data-tab="tabDirectory"]   { --c: var(--sec-directorio); }
+[data-tab="tabActivity"]    { --c: var(--sec-actividad); }
+[data-tab="tabGrad"]        { --c: var(--sec-graduados); }
+[data-tab="tabAdd"]         { --c: var(--sec-crear); }
+[data-tab="tabInventory"]   { --c: var(--sec-inventario); }
+[data-tab="tabRanks"]       { --c: var(--sec-rangos); }
+[data-tab="tabAttendance"]  { --c: var(--sec-asistencia); }
+[data-tab="tabCredentials"] { --c: var(--sec-credenciales); }
+[data-tab="tabSecurity"]    { --c: var(--sec-seguridad); }
+[data-tab="tabConfig"]      { --c: var(--sec-config); }
+
+/* Barra de contenido a todo el ancho, alineada con la columna de contenido */
+.app-header-bar, .admin-quick-bar {
+  padding-inline: max(var(--gutter), calc((100% - var(--col-wide)) / 2 + var(--gutter)));
+}
+
+/* ── 1. Barra de sesión ─────────────────────────────────────────── */
+#appHeader { position: sticky; top: 0; z-index: 60; }
 .app-header-bar {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-s);
-  padding-bottom: var(--space-xs); margin-bottom: var(--space-s);
-  border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-m);
+  min-height: 4.25rem; padding-block: .5rem;
+  color: var(--on-dark); background: var(--bar-bg);
+  border-bottom: 3px solid var(--accent);
 }
-.app-header-left { display: flex; align-items: center; gap: var(--space-xs); margin-right: auto; }
-.app-header-name { font-family: var(--font-display); font-size: var(--step-1); line-height: 1.2; }
-.app-header-nav { display: flex; flex-wrap: wrap; gap: 0 .15rem; }
+.app-header-left { display: flex; align-items: center; gap: .75rem; margin-right: auto; min-width: 0; }
+.app-brand {
+  display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0;
+  font-size: 1.25rem; color: var(--on-dark);
+  border: 1px solid rgba(243,234,211,.35); border-radius: 4px;
+}
+.app-header-who { display: grid; justify-items: start; min-width: 0; line-height: 1.2; }
+.app-header-name {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-display); font-size: var(--step-1); color: var(--on-dark);
+}
+.app-header-role { font-size: var(--step--1); color: var(--on-dark-soft); }
+.app-header-bar .rank-badge { margin-top: .15rem; color: var(--on-dark-soft); border-color: rgba(243,234,211,.4); }
+
+.app-header-nav { display: flex; gap: .25rem; }
 .app-nav-btn {
-  min-height: var(--tap); padding: 0 .6rem;
-  background: none; border: 0; border-bottom: 1px solid transparent;
-  font-size: 1rem; color: var(--sepia-text); cursor: pointer;
+  display: inline-flex; align-items: center; gap: .5rem;
+  min-height: var(--tap); padding: 0 .9rem; white-space: nowrap; cursor: pointer;
+  font-size: 1rem; color: var(--on-dark-soft); background: transparent;
+  border: 1px solid transparent; border-radius: 4px;
+  transition: transform 160ms var(--ease);
 }
-.app-nav-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
-.app-nav-logout { color: var(--accent); }
-@media (hover: hover) { .app-nav-btn:hover { color: var(--accent); } }
+.app-nav-btn .ico { font-size: 1.1rem; }
+.app-nav-btn.active { color: var(--on-dark); background: var(--accent); border-color: var(--accent); }
+.app-nav-logout { color: var(--on-dark); border-color: rgba(243,234,211,.35); }
+.app-nav-btn:active { transform: translateY(1px); }
+@media (hover: hover) {
+  .app-nav-btn:hover:not(.active) { color: var(--on-dark); background: rgba(243,234,211,.1); }
+  .app-nav-logout:hover { border-color: var(--accent); }
+}
+.app-header-bar :focus-visible { outline-color: var(--on-dark); }
 
+/* Móvil: las secciones pasan a una fila propia, icono sobre texto, en 4 columnas */
+@media (max-width: 47.99rem) {
+  .app-header-nav { order: 3; flex-basis: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: .25rem; }
+  .app-header-nav .app-nav-btn {
+    flex-direction: column; justify-content: center; gap: .15rem;
+    min-height: 3.5rem; padding: .25rem; font-size: var(--step--1);
+  }
+  .app-nav-logout span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .app-nav-logout { padding: 0 .75rem; }
+}
+
+/* ── 2. Accesos rápidos (admin) ─────────────────────────────────── */
 .admin-quick-bar {
-  display: flex; align-items: center; gap: 0 .25rem;
-  margin-bottom: var(--space-m); overflow-x: auto; white-space: nowrap;
+  display: flex; align-items: center; gap: .5rem; padding-block: .5rem;
+  overflow-x: auto; white-space: nowrap;
+  background: var(--bg-2); border-bottom: 1px solid var(--line);
 }
-.admin-quick-label { font-size: var(--step--1); color: var(--sepia-text); margin-right: .25rem; }
+.admin-quick-label { margin-right: .25rem; font-size: var(--step--1); font-weight: var(--w-medium); color: var(--sepia-text); }
 .admin-quick-btn {
-  min-height: var(--tap); padding: 0 .55rem; background: none; border: 0;
-  font-size: var(--step--1); color: var(--accent); text-decoration: underline;
-  text-decoration-color: var(--line); text-underline-offset: .25em; cursor: pointer;
+  display: inline-flex; align-items: center; gap: .45rem; flex-shrink: 0;
+  min-height: var(--tap); padding: 0 .9rem; cursor: pointer;
+  font-size: var(--step--1); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px;
+  transition: transform 160ms var(--ease);
 }
-@media (hover: hover) { .admin-quick-btn:hover { text-decoration-color: var(--accent); } }
+.qdot { width: .6rem; height: .6rem; flex-shrink: 0; border-radius: 50%; background: var(--c); }
+.admin-quick-btn:active { transform: translateY(1px); }
+@media (hover: hover) { .admin-quick-btn:hover { border-color: var(--c); color: var(--c); } }
+/* El panel ya muestra las baldosas: en móvil los accesos rápidos sobran */
+@media (max-width: 47.99rem) { #adminQuickBar { display: none !important; } }
 
-/* ── Pestañas del panel ─────────────────────────────────────────── */
+/* Chip de la sección abierta, rellenado con su color */
+body:has(#tabList.show) .admin-quick-btn[data-tab="tabList"],
+body:has(#tabAscensos.show) .admin-quick-btn[data-tab="tabAscensos"],
+body:has(#tabStats.show) .admin-quick-btn[data-tab="tabStats"],
+body:has(#tabActivity.show) .admin-quick-btn[data-tab="tabActivity"],
+body:has(#tabGrad.show) .admin-quick-btn[data-tab="tabGrad"],
+body:has(#tabAdd.show) .admin-quick-btn[data-tab="tabAdd"],
+body:has(#tabInventory.show) .admin-quick-btn[data-tab="tabInventory"],
+body:has(#tabAttendance.show) .admin-quick-btn[data-tab="tabAttendance"] {
+  color: var(--on-dark); background: var(--c); border-color: var(--c);
+}
+body:has(#tabList.show) .admin-quick-btn[data-tab="tabList"] .qdot,
+body:has(#tabAscensos.show) .admin-quick-btn[data-tab="tabAscensos"] .qdot,
+body:has(#tabStats.show) .admin-quick-btn[data-tab="tabStats"] .qdot,
+body:has(#tabActivity.show) .admin-quick-btn[data-tab="tabActivity"] .qdot,
+body:has(#tabGrad.show) .admin-quick-btn[data-tab="tabGrad"] .qdot,
+body:has(#tabAdd.show) .admin-quick-btn[data-tab="tabAdd"] .qdot,
+body:has(#tabInventory.show) .admin-quick-btn[data-tab="tabInventory"] .qdot,
+body:has(#tabAttendance.show) .admin-quick-btn[data-tab="tabAttendance"] .qdot { background: var(--on-dark); }
+
+/* ── 3. Secciones del panel: baldosas ───────────────────────────── */
 .admin-tabs {
-  display: flex; gap: 0 .25rem; margin-bottom: var(--space-m);
-  border-bottom: 1px solid var(--line);
-  overflow-x: auto; scroll-snap-type: x proximity;
+  display: grid; gap: .6rem; margin-bottom: var(--space-m);
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
 }
 .tab {
-  flex-shrink: 0; scroll-snap-align: start;
-  min-height: var(--tap); padding: 0 .7rem;
-  background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
-  font-size: 1rem; color: var(--sepia-text); white-space: nowrap; cursor: pointer;
+  display: grid; grid-template-columns: auto 1fr; align-items: center; gap: .75rem;
+  min-height: 4.25rem; padding: .6rem .8rem; text-align: left; cursor: pointer;
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 4px;
+  transition: transform 200ms var(--ease);
 }
-.tab.active { color: var(--ink); border-bottom-color: var(--accent); }
-.tab-warn, .tab-security { color: var(--accent); }
-@media (hover: hover) { .tab:hover { color: var(--ink); } }
-@media (min-width: 64rem) { .admin-tabs { flex-wrap: wrap; overflow: visible; } }
+.tab-ico {
+  display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 4px;
+  font-size: 1.2rem; color: var(--c); background: color-mix(in srgb, var(--c) 13%, var(--surface));
+}
+.tab-txt { display: grid; min-width: 0; line-height: 1.25; }
+.tab-label { font-size: 1rem; font-weight: var(--w-medium); }
+.tab-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--step--1); color: var(--sepia-text); }
+.tab:active { transform: translateY(1px); }
+@media (hover: hover) {
+  .tab:hover:not(.active) { border-color: var(--c); transform: translateY(-2px); }
+  .tab:hover:not(.active) .tab-ico { color: var(--on-dark); background: var(--c); }
+}
+.tab.active { color: var(--on-dark); background: var(--c); border-color: var(--c); }
+.tab.active .tab-ico { color: var(--on-dark); background: rgba(248,242,226,.16); }
+.tab.active .tab-hint { color: var(--on-dark); }
 
+/* Móvil: tira horizontal de baldosas que se desliza con el dedo */
+@media (max-width: 47.99rem) {
+  .admin-tabs {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+    margin-inline: calc(-1 * var(--gutter)); padding: 0 var(--gutter) .35rem; scroll-padding-inline: var(--gutter);
+  }
+  .tab { flex: 0 0 11.5rem; scroll-snap-align: start; }
+}
+
+/* El contenido de la sección abierta lleva su color */
+#scAdmin { --section: var(--sec-alumnos); }
+#scAdmin:has(#tabAscensos.show)    { --section: var(--sec-ascensos); }
+#scAdmin:has(#tabStats.show)       { --section: var(--sec-stats); }
+#scAdmin:has(#tabDirectory.show)   { --section: var(--sec-directorio); }
+#scAdmin:has(#tabActivity.show)    { --section: var(--sec-actividad); }
+#scAdmin:has(#tabGrad.show)        { --section: var(--sec-graduados); }
+#scAdmin:has(#tabAdd.show)         { --section: var(--sec-crear); }
+#scAdmin:has(#tabInventory.show)   { --section: var(--sec-inventario); }
+#scAdmin:has(#tabRanks.show)       { --section: var(--sec-rangos); }
+#scAdmin:has(#tabAttendance.show)  { --section: var(--sec-asistencia); }
+#scAdmin:has(#tabCredentials.show) { --section: var(--sec-credenciales); }
+#scAdmin:has(#tabSecurity.show)    { --section: var(--sec-seguridad); }
+#scAdmin:has(#tabConfig.show)      { --section: var(--sec-config); }
+.admin-section.show { padding-top: var(--space-m); border-top: 3px solid var(--section); }
 .admin-section { overflow-x: auto; }
 .search-admin { margin-bottom: var(--space-s); }
+
+/* Con sesión abierta la barra ya identifica la app: la cabecera grande se
+   compacta para que menús y contenido queden a la vista */
+body:has(#appHeader[style*="block"]) .header { margin-bottom: var(--space-m); }
+body:has(#appHeader[style*="block"]) .header .crest,
+body:has(#appHeader[style*="block"]) .header .subtitle { display: none; }
+body:has(#appHeader[style*="block"]) .header h1 { font-size: var(--step-2); }
+body:has(#appHeader[style*="block"]) .header::after { margin-top: var(--space-xs); }
+body:has(#appHeader[style*="block"]) .wrap { padding-top: var(--space-m); }
+
+/* Botones con icono al pie del perfil y del panel */
+.admin-footer-btns .btn .ico { font-size: 1.1rem; }
+
+/* ── Pantallas anchas: aprovechar todo el ancho ─────────────────── */
+@media (min-width: 75rem) {
+  /* Bitácoras: formulario a la izquierda, registro a la derecha */
+  #scBitacoras { grid-template-columns: minmax(24rem, 2fr) 3fr; column-gap: var(--space-l); align-items: start; }
+  #scBitacoras > .bit-form-card { grid-column: 1; grid-row: 1 / span 2; }
+  #scBitacoras > .bit-list-head { grid-column: 2; grid-row: 1; margin-top: 0; }
+  #scBitacoras > #bitacoraListWrap { grid-column: 2; grid-row: 2; }
+  #scBitacoras > .back-btn { grid-column: 1 / -1; }
+  /* Personas: buscador y lista a la izquierda, detalle a la derecha */
+  #scPersonas { grid-template-columns: 2fr 3fr; column-gap: var(--space-l); align-items: start; }
+  #scPersonas > .card { grid-column: 1; grid-row: 1; }
+  #scPersonas > #personasListWrap { grid-column: 1; grid-row: 2; }
+  #scPersonas > #personaBitacorasWrap { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
+  #scPersonas > .back-btn { grid-column: 1 / -1; }
+}
 
 /* ── Tablas ─────────────────────────────────────────────────────── */
 .student-table, .att-history-table, .inv-table {

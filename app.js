@@ -807,6 +807,11 @@ const show = window.show;
 // =====================================================================
 //  NAVIGATION HEADER
 // =====================================================================
+// Icono del sprite de index.html (Phosphor) y botón de la barra de sesión
+const navIcon = id => `<svg class="ico" aria-hidden="true" focusable="false"><use href="#${id}"/></svg>`;
+const navBtn  = (screen, action, icon, label) =>
+  `<button class="app-nav-btn" data-screen="${screen}" onclick="${action}">${navIcon(icon)}<span>${label}</span></button>`;
+
 function updateAppHeader() {
   const header     = document.getElementById("appHeader");
   const userHeader = document.getElementById("appHeaderUser");
@@ -825,28 +830,35 @@ function updateAppHeader() {
     const rank = getStudentRank(loggedInStudent);
     userHeader.innerHTML = `
       <div class="app-header-left">
-        <span class="app-header-name">${escHtml(loggedInStudent)}</span>
-        <span class="app-header-rank rank-badge ${rankClass("rk", rank)}">${escHtml(rank)}</span>
+        <span class="app-brand" aria-hidden="true">⚕</span>
+        <span class="app-header-who">
+          <span class="app-header-name">${escHtml(loggedInStudent)}</span>
+          <span class="app-header-rank rank-badge ${rankClass("rk", rank)}">${escHtml(rank)}</span>
+        </span>
       </div>
-      <nav class="app-header-nav">
-        <button class="app-nav-btn" data-screen="scProfile" onclick="openProfile(loggedInStudent)">Perfil</button>
-        <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('profile')">Bitácoras</button>
-        <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('profile')">Personas</button>
-        <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('profile')">Directorio</button>
-      </nav>
-      <button class="app-nav-btn app-nav-logout" onclick="goSearch()">Salir ✕</button>`;
+      <div class="app-header-nav">
+        ${navBtn("scProfile",   "openProfile(loggedInStudent)", "i-perfil",     "Perfil")}
+        ${navBtn("scBitacoras", "showBitacoras('profile')",     "i-bitacoras",  "Bitácoras")}
+        ${navBtn("scPersonas",  "showPersonas('profile')",      "i-personas",   "Personas")}
+        ${navBtn("scDirectory", "showDirectory('profile')",     "i-directorio", "Directorio")}
+      </div>
+      <button class="app-nav-btn app-nav-logout" onclick="goSearch()">${navIcon("i-salir")}<span>Salir</span></button>`;
   } else if (isAdmin) {
     userHeader.innerHTML = `
       <div class="app-header-left">
-        <span class="app-header-name">${isSuperAdmin ? "Superadmin" : "Admin"}</span>
+        <span class="app-brand" aria-hidden="true">⚕</span>
+        <span class="app-header-who">
+          <span class="app-header-name">${isSuperAdmin ? "Superadmin" : "Administración"}</span>
+          <span class="app-header-role">Panel del Colegio</span>
+        </span>
       </div>
-      <nav class="app-header-nav">
-        <button class="app-nav-btn" data-screen="scAdmin" onclick="show('scAdmin')">Panel</button>
-        <button class="app-nav-btn" data-screen="scBitacoras" onclick="showBitacoras('admin')">Bitácoras</button>
-        <button class="app-nav-btn" data-screen="scPersonas" onclick="showPersonas('admin')">Personas</button>
-        <button class="app-nav-btn" data-screen="scDirectory" onclick="showDirectory('admin')">Directorio</button>
-      </nav>
-      <button class="app-nav-btn app-nav-logout" onclick="cerrarSesion()">Salir ✕</button>`;
+      <div class="app-header-nav">
+        ${navBtn("scAdmin",     "show('scAdmin')",          "i-panel",      "Panel")}
+        ${navBtn("scBitacoras", "showBitacoras('admin')",   "i-bitacoras",  "Bitácoras")}
+        ${navBtn("scPersonas",  "showPersonas('admin')",    "i-personas",   "Personas")}
+        ${navBtn("scDirectory", "showDirectory('admin')",   "i-directorio", "Directorio")}
+      </div>
+      <button class="app-nav-btn app-nav-logout" onclick="cerrarSesion()">${navIcon("i-salir")}<span>Salir</span></button>`;
   }
 
   if (adminBar) adminBar.style.display = isAdmin ? "flex" : "none";

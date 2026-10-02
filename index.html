@@ -106,7 +106,26 @@
       --space-l: clamp(2rem, 1.5rem + 2vw, 3rem);
       --space-xl: clamp(3rem, 2rem + 4vw, 5.5rem);
       --gutter: clamp(1rem, 4vw, 2rem);
-      --col: 52rem;
+      --col: 52rem;        /* ancho de lectura cómodo (acceso, textos) */
+      --col-wide: 90rem;   /* ancho del contenido: aprovecha la pantalla */
+
+      /* Menús: barra de sesión oscura y un color por sección del panel */
+      --bar-bg:       #2B2118;
+      --on-dark:      #F3EAD3;
+      --on-dark-soft: #D8CCB2;
+      --sec-alumnos:      #355C7D;
+      --sec-ascensos:     #4E6B2E;
+      --sec-stats:        #2F6B6B;
+      --sec-directorio:   #6B4E6B;
+      --sec-actividad:    #8B3A2F;
+      --sec-graduados:    #7A5A12;
+      --sec-crear:        #2E6B4A;
+      --sec-inventario:   #8A3F5A;
+      --sec-rangos:       #4A4E85;
+      --sec-asistencia:   #8A4A1E;
+      --sec-credenciales: #6A4A8A;
+      --sec-seguridad:    #3D4A5C;
+      --sec-config:       #4A4238;
       --radius: 2px;
       --tap: 44px;
 
@@ -150,7 +169,11 @@
     .skip-link:focus { transform: none; }
     .noscript { padding: var(--space-l) var(--gutter); text-align: center; }
 
-    .wrap { max-width: var(--col); margin-inline: auto; padding: var(--space-l) var(--gutter) var(--space-xl); }
+    .wrap { max-width: var(--col-wide); margin-inline: auto; padding: var(--space-l) var(--gutter) var(--space-xl); }
+
+    /* Iconos (sprite inline de Phosphor) */
+    .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+    .ico { width: 1.25em; height: 1.25em; flex-shrink: 0; fill: currentColor; }
 
     /* Cabecera */
     .header { text-align: center; margin-bottom: var(--space-l); }
@@ -244,13 +267,25 @@
 
     .home-nav { display: grid; gap: var(--space-s); }
     .home-nav-card {
-      display: grid; gap: .1rem; justify-items: center; width: 100%; min-height: var(--tap);
-      padding: var(--space-s); background: none; color: var(--ink); text-align: center;
-      border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer;
+      display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-s);
+      width: 100%; min-height: 4.5rem; padding: var(--space-s); text-align: left; cursor: pointer;
+      color: var(--ink); background: var(--surface);
+      border: 1px solid var(--line); border-left: 4px solid var(--bar-bg); border-radius: 4px;
+      transition: transform 200ms var(--ease);
     }
-    .home-nav-title { font-family: var(--font-display); font-size: var(--step-1); line-height: 1.3; }
+    .home-nav-ico {
+      display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 4px;
+      color: var(--on-dark); background: var(--bar-bg); font-size: 1.15rem;
+    }
+    .home-nav-text { display: grid; }
+    .home-nav-title { font-family: var(--font-display); font-size: var(--step-1); line-height: 1.25; }
     .home-nav-sub { font-size: var(--step--1); color: var(--sepia-text); }
-    @media (hover: hover) { .home-nav-card:hover { border-color: var(--accent); } .home-nav-card:hover .home-nav-title { color: var(--accent); } }
+    .home-nav-arrow { color: var(--sepia); }
+    @media (hover: hover) {
+      .home-nav-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+      .home-nav-card:hover .home-nav-ico { background: var(--accent); }
+      .home-nav-card:hover .home-nav-arrow { color: var(--accent); }
+    }
 
     .footer { margin-top: var(--space-xl); text-align: center; font-size: var(--step--1); color: var(--sepia-text); }
 
@@ -288,14 +323,54 @@
   </style>
 
   <!-- Resto de estilos, sin bloquear el render -->
-  <link rel="preload" href="styles.css?v=20261002b" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="styles.css?v=20261002b"></noscript>
+  <link rel="preload" href="styles.css?v=20261002c" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="styles.css?v=20261002c"></noscript>
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
 <noscript>
   <p class="noscript">Esta aplicación necesita JavaScript para funcionar. Actívalo en tu navegador.</p>
 </noscript>
+<svg xmlns="http://www.w3.org/2000/svg" class="icon-sprite" aria-hidden="true" focusable="false">
+  <!-- Iconos: Phosphor Icons 2.1.1 (MIT), peso regular -->
+  <symbol id="i-alumnos" viewBox="0 0 256 256"><path d="M226.53,56.41l-96-32a8,8,0,0,0-5.06,0l-96,32A8,8,0,0,0,24,64v80a8,8,0,0,0,16,0V75.1L73.59,86.29a64,64,0,0,0,20.65,88.05c-18,7.06-33.56,19.83-44.94,37.29a8,8,0,1,0,13.4,8.74C77.77,197.25,101.57,184,128,184s50.23,13.25,65.3,36.37a8,8,0,0,0,13.4-8.74c-11.38-17.46-27-30.23-44.94-37.29a64,64,0,0,0,20.65-88l44.12-14.7a8,8,0,0,0,0-15.18ZM176,120A48,48,0,1,1,89.35,91.55l36.12,12a8,8,0,0,0,5.06,0l36.12-12A47.89,47.89,0,0,1,176,120ZM128,87.57,57.3,64,128,40.43,198.7,64Z"/></symbol>
+  <symbol id="i-ascensos" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm37.66-101.66a8,8,0,0,1-11.32,11.32L136,107.31V168a8,8,0,0,1-16,0V107.31l-18.34,18.35a8,8,0,0,1-11.32-11.32l32-32a8,8,0,0,1,11.32,0Z"/></symbol>
+  <symbol id="i-stats" viewBox="0 0 256 256"><path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"/></symbol>
+  <symbol id="i-directorio" viewBox="0 0 256 256"><path d="M83.19,174.4a8,8,0,0,0,11.21-1.6,52,52,0,0,1,83.2,0,8,8,0,1,0,12.8-9.6A67.88,67.88,0,0,0,163,141.51a40,40,0,1,0-53.94,0A67.88,67.88,0,0,0,81.6,163.2,8,8,0,0,0,83.19,174.4ZM112,112a24,24,0,1,1,24,24A24,24,0,0,1,112,112Zm96-88H64A16,16,0,0,0,48,40V64H32a8,8,0,0,0,0,16H48v40H32a8,8,0,0,0,0,16H48v40H32a8,8,0,0,0,0,16H48v24a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V40A16,16,0,0,0,208,24Zm0,192H64V40H208Z"/></symbol>
+  <symbol id="i-actividad" viewBox="0 0 256 256"><path d="M240,128a8,8,0,0,1-8,8H204.94l-37.78,75.58A8,8,0,0,1,160,216h-.4a8,8,0,0,1-7.08-5.14L95.35,60.76,63.28,131.31A8,8,0,0,1,56,136H24a8,8,0,0,1,0-16H50.85L88.72,36.69a8,8,0,0,1,14.76.46l57.51,151,31.85-63.71A8,8,0,0,1,200,120h32A8,8,0,0,1,240,128Z"/></symbol>
+  <symbol id="i-graduados" viewBox="0 0 256 256"><path d="M251.76,88.94l-120-64a8,8,0,0,0-7.52,0l-120,64a8,8,0,0,0,0,14.12L32,117.87v48.42a15.91,15.91,0,0,0,4.06,10.65C49.16,191.53,78.51,216,128,216a130,130,0,0,0,48-8.76V240a8,8,0,0,0,16,0V199.51a115.63,115.63,0,0,0,27.94-22.57A15.91,15.91,0,0,0,224,166.29V117.87l27.76-14.81a8,8,0,0,0,0-14.12ZM128,200c-43.27,0-68.72-21.14-80-33.71V126.4l76.24,40.66a8,8,0,0,0,7.52,0L176,143.47v46.34C163.4,195.69,147.52,200,128,200Zm80-33.75a97.83,97.83,0,0,1-16,14.25V134.93l16-8.53ZM188,118.94l-.22-.13-56-29.87a8,8,0,0,0-7.52,14.12L171,128l-43,22.93L25,96,128,41.07,231,96Z"/></symbol>
+  <symbol id="i-crear" viewBox="0 0 256 256"><path d="M256,136a8,8,0,0,1-8,8H232v16a8,8,0,0,1-16,0V144H200a8,8,0,0,1,0-16h16V112a8,8,0,0,1,16,0v16h16A8,8,0,0,1,256,136Zm-57.87,58.85a8,8,0,0,1-12.26,10.3C165.75,181.19,138.09,168,108,168s-57.75,13.19-77.87,37.15a8,8,0,0,1-12.25-10.3c14.94-17.78,33.52-30.41,54.17-37.17a68,68,0,1,1,71.9,0C164.6,164.44,183.18,177.07,198.13,194.85ZM108,152a52,52,0,1,0-52-52A52.06,52.06,0,0,0,108,152Z"/></symbol>
+  <symbol id="i-inventario" viewBox="0 0 256 256"><path d="M221.69,199.77,160,96.92V40h8a8,8,0,0,0,0-16H88a8,8,0,0,0,0,16h8V96.92L34.31,199.77A16,16,0,0,0,48,224H208a16,16,0,0,0,13.72-24.23ZM110.86,103.25A7.93,7.93,0,0,0,112,99.14V40h32V99.14a7.93,7.93,0,0,0,1.14,4.11L183.36,167c-12,2.37-29.07,1.37-51.75-10.11-15.91-8.05-31.05-12.32-45.22-12.81ZM48,208l28.54-47.58c14.25-1.74,30.31,1.85,47.82,10.72,19,9.61,35,12.88,48,12.88a69.89,69.89,0,0,0,19.55-2.7L208,208Z"/></symbol>
+  <symbol id="i-rangos" viewBox="0 0 256 256"><path d="M112.41,102.53a8,8,0,0,1,5.06-10.12l12-4A8,8,0,0,1,140,96v40a8,8,0,0,1-16,0V107.1l-1.47.49A8,8,0,0,1,112.41,102.53ZM248,208a8,8,0,0,1-8,8H16a8,8,0,0,1,0-16h8V104A16,16,0,0,1,40,88H80V56A16,16,0,0,1,96,40h64a16,16,0,0,1,16,16v72h40a16,16,0,0,1,16,16v56h8A8,8,0,0,1,248,208Zm-72-64v56h40V144ZM96,200h64V56H96Zm-56,0H80V104H40Z"/></symbol>
+  <symbol id="i-asistencia" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H128a8,8,0,0,1,0-16h88A8,8,0,0,1,224,128ZM128,72h88a8,8,0,0,0,0-16H128a8,8,0,0,0,0,16Zm88,112H128a8,8,0,0,0,0,16h88a8,8,0,0,0,0-16ZM82.34,42.34,56,68.69,45.66,58.34A8,8,0,0,0,34.34,69.66l16,16a8,8,0,0,0,11.32,0l32-32A8,8,0,0,0,82.34,42.34Zm0,64L56,132.69,45.66,122.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Zm0,64L56,196.69,45.66,186.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Z"/></symbol>
+  <symbol id="i-credenciales" viewBox="0 0 256 256"><path d="M216.57,39.43A80,80,0,0,0,83.91,120.78L28.69,176A15.86,15.86,0,0,0,24,187.31V216a16,16,0,0,0,16,16H72a8,8,0,0,0,8-8V208H96a8,8,0,0,0,8-8V184h16a8,8,0,0,0,5.66-2.34l9.56-9.57A79.73,79.73,0,0,0,160,176h.1A80,80,0,0,0,216.57,39.43ZM224,98.1c-1.09,34.09-29.75,61.86-63.89,61.9H160a63.7,63.7,0,0,1-23.65-4.51,8,8,0,0,0-8.84,1.68L116.69,168H96a8,8,0,0,0-8,8v16H72a8,8,0,0,0-8,8v16H40V187.31l58.83-58.82a8,8,0,0,0,1.68-8.84A63.72,63.72,0,0,1,96,95.92c0-34.14,27.81-62.8,61.9-63.89A64,64,0,0,1,224,98.1ZM192,76a12,12,0,1,1-12-12A12,12,0,0,1,192,76Z"/></symbol>
+  <symbol id="i-seguridad" viewBox="0 0 256 256"><path d="M208,40H48A16,16,0,0,0,32,56v56c0,52.72,25.52,84.67,46.93,102.19,23.06,18.86,46,25.26,47,25.53a8,8,0,0,0,4.2,0c1-.27,23.91-6.67,47-25.53C198.48,196.67,224,164.72,224,112V56A16,16,0,0,0,208,40Zm0,72c0,37.07-13.66,67.16-40.6,89.42A129.3,129.3,0,0,1,128,223.62a128.25,128.25,0,0,1-38.92-21.81C61.82,179.51,48,149.3,48,112l0-56,160,0ZM82.34,141.66a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32l-56,56a8,8,0,0,1-11.32,0Z"/></symbol>
+  <symbol id="i-config" viewBox="0 0 256 256"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm109.94-52.79a8,8,0,0,0-3.89-5.4l-29.83-17-.12-33.62a8,8,0,0,0-2.83-6.08,111.91,111.91,0,0,0-36.72-20.67,8,8,0,0,0-6.46.59L128,41.85,97.88,25a8,8,0,0,0-6.47-.6A112.1,112.1,0,0,0,54.73,45.15a8,8,0,0,0-2.83,6.07l-.15,33.65-29.83,17a8,8,0,0,0-3.89,5.4,106.47,106.47,0,0,0,0,41.56,8,8,0,0,0,3.89,5.4l29.83,17,.12,33.62a8,8,0,0,0,2.83,6.08,111.91,111.91,0,0,0,36.72,20.67,8,8,0,0,0,6.46-.59L128,214.15,158.12,231a7.91,7.91,0,0,0,3.9,1,8.09,8.09,0,0,0,2.57-.42,112.1,112.1,0,0,0,36.68-20.73,8,8,0,0,0,2.83-6.07l.15-33.65,29.83-17a8,8,0,0,0,3.89-5.4A106.47,106.47,0,0,0,237.94,107.21Zm-15,34.91-28.57,16.25a8,8,0,0,0-3,3c-.58,1-1.19,2.06-1.81,3.06a7.94,7.94,0,0,0-1.22,4.21l-.15,32.25a95.89,95.89,0,0,1-25.37,14.3L134,199.13a8,8,0,0,0-3.91-1h-.19c-1.21,0-2.43,0-3.64,0a8.08,8.08,0,0,0-4.1,1l-28.84,16.1A96,96,0,0,1,67.88,201l-.11-32.2a8,8,0,0,0-1.22-4.22c-.62-1-1.23-2-1.8-3.06a8.09,8.09,0,0,0-3-3.06l-28.6-16.29a90.49,90.49,0,0,1,0-28.26L61.67,97.63a8,8,0,0,0,3-3c.58-1,1.19-2.06,1.81-3.06a7.94,7.94,0,0,0,1.22-4.21l.15-32.25a95.89,95.89,0,0,1,25.37-14.3L122,56.87a8,8,0,0,0,4.1,1c1.21,0,2.43,0,3.64,0a8.08,8.08,0,0,0,4.1-1l28.84-16.1A96,96,0,0,1,188.12,55l.11,32.2a8,8,0,0,0,1.22,4.22c.62,1,1.23,2,1.8,3.06a8.09,8.09,0,0,0,3,3.06l28.6,16.29A90.49,90.49,0,0,1,222.9,142.12Z"/></symbol>
+  <symbol id="i-perfil" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 256 256"><path d="M104,40H56A16,16,0,0,0,40,56v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,104,40Zm0,64H56V56h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,64H152V56h48v48Zm-96,32H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm0,64H56V152h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Zm0,64H152V152h48v48Z"/></symbol>
+  <symbol id="i-bitacoras" viewBox="0 0 256 256"><path d="M184,112a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h64A8,8,0,0,1,184,112Zm-8,24H112a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16Zm48-88V208a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32H208A16,16,0,0,1,224,48ZM48,208H72V48H48Zm160,0V48H88V208H208Z"/></symbol>
+  <symbol id="i-personas" viewBox="0 0 256 256"><path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.84,8,57,57,0,0,0-98.16,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"/></symbol>
+  <symbol id="i-salir" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L204.69,120H112a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,229.66,122.34Z"/></symbol>
+  <symbol id="i-admin" viewBox="0 0 256 256"><path d="M128,112a28,28,0,0,0-8,54.83V184a8,8,0,0,0,16,0V166.83A28,28,0,0,0,128,112Zm0,40a12,12,0,1,1,12-12A12,12,0,0,1,128,152Zm80-72H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Z"/></symbol>
+  <symbol id="i-flecha" viewBox="0 0 256 256"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></symbol>
+</svg>
+
+  <!-- BARRA DE NAVEGACIÓN (visible cuando hay sesión iniciada) -->
+  <div id="appHeader" style="display:none">
+    <nav id="appHeaderUser" class="app-header-bar" aria-label="Navegación principal"></nav>
+    <nav id="adminQuickBar" class="admin-quick-bar" style="display:none" aria-label="Atajos de administración">
+      <span class="admin-quick-label">Accesos rápidos</span>
+      <button class="admin-quick-btn" data-tab="tabList" onclick="showTab('tabList')"><span class="qdot" aria-hidden="true"></span>Alumnos</button>
+      <button class="admin-quick-btn" data-tab="tabAscensos" onclick="showTab('tabAscensos')"><span class="qdot" aria-hidden="true"></span>Ascensos</button>
+      <button class="admin-quick-btn" data-tab="tabStats" onclick="showTab('tabStats')"><span class="qdot" aria-hidden="true"></span>Estadísticas</button>
+      <button class="admin-quick-btn" data-tab="tabActivity" onclick="showTab('tabActivity')"><span class="qdot" aria-hidden="true"></span>Actividad</button>
+      <button class="admin-quick-btn" data-tab="tabGrad" onclick="showTab('tabGrad')"><span class="qdot" aria-hidden="true"></span>Graduados</button>
+      <button class="admin-quick-btn" data-tab="tabAdd" onclick="showTab('tabAdd')"><span class="qdot" aria-hidden="true"></span>Nuevo alumno</button>
+      <button class="admin-quick-btn" data-tab="tabInventory" onclick="showTab('tabInventory')"><span class="qdot" aria-hidden="true"></span>Inventario</button>
+      <button class="admin-quick-btn" data-tab="tabAttendance" onclick="showTab('tabAttendance')"><span class="qdot" aria-hidden="true"></span>Asistencia</button>
+    </nav>
+  </div>
+
 <main class="wrap" id="contenido">
 
   <!-- CABECERA -->
@@ -304,22 +379,6 @@
     <h1>Registro de Ascensos</h1>
     <p class="subtitle">Medimagia — Consulta y actualiza tu progreso</p>
   </header>
-
-  <!-- BARRA DE NAVEGACIÓN (visible cuando hay sesión iniciada) -->
-  <div id="appHeader" style="display:none">
-    <nav id="appHeaderUser" class="app-header-bar" aria-label="Navegación principal"></nav>
-    <nav id="adminQuickBar" class="admin-quick-bar" style="display:none" aria-label="Atajos de administración">
-      <span class="admin-quick-label">Ir a:</span>
-      <button class="admin-quick-btn" onclick="showTab('tabList')">Alumnos</button>
-      <button class="admin-quick-btn" onclick="showTab('tabAscensos')">Ascensos</button>
-      <button class="admin-quick-btn" onclick="showTab('tabStats')">Estadísticas</button>
-      <button class="admin-quick-btn" onclick="showTab('tabActivity')">Actividad</button>
-      <button class="admin-quick-btn" onclick="showTab('tabGrad')">Graduados</button>
-      <button class="admin-quick-btn" onclick="showTab('tabAdd')">Nuevo alumno</button>
-      <button class="admin-quick-btn" onclick="showTab('tabInventory')">Inventario</button>
-      <button class="admin-quick-btn" onclick="showTab('tabAttendance')">Asistencia</button>
-    </nav>
-  </div>
 
   <!-- ── PANTALLA: BLOQUEADO ──────────────────────────────────── -->
   <div id="scBlocked" style="display:none" role="alert">
@@ -365,8 +424,12 @@
     <!-- Navegación secundaria -->
     <div class="home-nav">
       <button class="home-nav-card home-nav-admin" onclick="showAdminLogin()">
-        <span class="home-nav-title">Administrador</span>
-        <span class="home-nav-sub">Gestionar alumnos y ascensos</span>
+        <span class="home-nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-admin"/></svg></span>
+        <span class="home-nav-text">
+          <span class="home-nav-title">Administrador</span>
+          <span class="home-nav-sub">Gestionar alumnos y ascensos</span>
+        </span>
+        <svg class="ico home-nav-arrow" aria-hidden="true"><use href="#i-flecha"/></svg>
       </button>
     </div>
   </div>
@@ -478,8 +541,8 @@
       <div id="pAttendance"></div>
     </div>
     <div class="admin-footer-btns">
-      <button class="btn ghost" onclick="showBitacoras('profile')">Bitácoras</button>
-      <button class="btn ghost" onclick="showPersonas('profile')">Personas</button>
+      <button class="btn ghost" onclick="showBitacoras('profile')"><svg class="ico" aria-hidden="true"><use href="#i-bitacoras"/></svg>Bitácoras</button>
+      <button class="btn ghost" onclick="showPersonas('profile')"><svg class="ico" aria-hidden="true"><use href="#i-personas"/></svg>Personas</button>
       <button class="back-btn" id="profileBackBtn" onclick="backFromProfile()">← Cerrar sesión</button>
     </div>
   </div>
@@ -551,21 +614,62 @@
   <!-- ── PANTALLA: PANEL ADMIN ────────────────────────────────── -->
   <div id="scAdmin" style="display:none">
 
+    <!-- Menú de secciones: una baldosa por sección, cada una con su color e icono.
+         app.js solo cambia la clase (active) de cada botón; el contenido interior se conserva. -->
     <nav class="admin-tabs" aria-label="Secciones del panel de administración">
-      <button class="tab active"       data-tab="tabList"     onclick="showTab('tabList')">Alumnos</button>
-      <button class="tab"              data-tab="tabAscensos" onclick="showTab('tabAscensos')">Ascensos</button>
-      <button class="tab"              data-tab="tabStats"    onclick="showTab('tabStats')">Estadísticas</button>
-      <button class="tab"              data-tab="tabDirectory" onclick="showTab('tabDirectory')">Directorio</button>
-      <button class="tab tab-warn"     data-tab="tabActivity" onclick="showTab('tabActivity')">Actividad</button>
-      <button class="tab"              data-tab="tabGrad"     onclick="showTab('tabGrad')">Graduados</button>
-      <button class="tab"              data-tab="tabAdd"      onclick="showTab('tabAdd')">Crear alumno</button>
-      <button class="tab"              data-tab="tabInventory" onclick="showTab('tabInventory')">Inventario</button>
-      <button class="tab"              data-tab="tabRanks"    onclick="showTab('tabRanks')">Rangos</button>
-      <button class="tab"              data-tab="tabAttendance" onclick="showTab('tabAttendance')">Asistencia</button>
-      <button class="tab"              data-tab="tabCredentials" onclick="showTab('tabCredentials')">Credenciales</button>
+      <button class="tab active" data-tab="tabList" onclick="showTab('tabList')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-alumnos"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Alumnos</span><span class="tab-hint">Lista y progreso</span></span>
+      </button>
+      <button class="tab" data-tab="tabAscensos" onclick="showTab('tabAscensos')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-ascensos"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Ascensos</span><span class="tab-hint">Quién está listo</span></span>
+      </button>
+      <button class="tab" data-tab="tabStats" onclick="showTab('tabStats')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-stats"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Estadísticas</span><span class="tab-hint">Cifras del Colegio</span></span>
+      </button>
+      <button class="tab" data-tab="tabDirectory" onclick="showTab('tabDirectory')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-directorio"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Directorio</span><span class="tab-hint">Medimagos por rango</span></span>
+      </button>
+      <button class="tab tab-warn" data-tab="tabActivity" onclick="showTab('tabActivity')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-actividad"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Actividad</span><span class="tab-hint">Baja actividad</span></span>
+      </button>
+      <button class="tab" data-tab="tabGrad" onclick="showTab('tabGrad')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-graduados"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Graduados</span><span class="tab-hint">Promociones</span></span>
+      </button>
+      <button class="tab" data-tab="tabAdd" onclick="showTab('tabAdd')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-crear"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Crear alumno</span><span class="tab-hint">Alta nueva</span></span>
+      </button>
+      <button class="tab" data-tab="tabInventory" onclick="showTab('tabInventory')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-inventario"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Inventario</span><span class="tab-hint">Pociones</span></span>
+      </button>
+      <button class="tab" data-tab="tabRanks" onclick="showTab('tabRanks')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-rangos"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Rangos</span><span class="tab-hint">Rangos y hechizos</span></span>
+      </button>
+      <button class="tab" data-tab="tabAttendance" onclick="showTab('tabAttendance')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-asistencia"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Asistencia</span><span class="tab-hint">Pasar lista</span></span>
+      </button>
+      <button class="tab" data-tab="tabCredentials" onclick="showTab('tabCredentials')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-credenciales"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Credenciales</span><span class="tab-hint">Accesos de alumnos</span></span>
+      </button>
       <button class="tab tab-security" data-tab="tabSecurity" id="tabSecurityBtn"
-              onclick="showTab('tabSecurity')" style="display:none">Seguridad</button>
-      <button class="tab"              data-tab="tabConfig"   onclick="showTab('tabConfig')">Configuración</button>
+              onclick="showTab('tabSecurity')" style="display:none">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-seguridad"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Seguridad</span><span class="tab-hint">Accesos e IPs</span></span>
+      </button>
+      <button class="tab" data-tab="tabConfig" onclick="showTab('tabConfig')">
+        <span class="tab-ico"><svg class="ico" aria-hidden="true"><use href="#i-config"/></svg></span>
+        <span class="tab-txt"><span class="tab-label">Configuración</span><span class="tab-hint">Contraseña y datos</span></span>
+      </button>
     </nav>
 
     <!-- Tab: lista de alumnos -->
@@ -779,8 +883,8 @@
     </div>
 
     <div class="admin-footer-btns">
-      <button class="btn ghost" onclick="showBitacoras('admin')">Bitácoras</button>
-      <button class="btn ghost" onclick="showPersonas('admin')">Personas</button>
+      <button class="btn ghost" onclick="showBitacoras('admin')"><svg class="ico" aria-hidden="true"><use href="#i-bitacoras"/></svg>Bitácoras</button>
+      <button class="btn ghost" onclick="showPersonas('admin')"><svg class="ico" aria-hidden="true"><use href="#i-personas"/></svg>Personas</button>
       <button class="back-btn"  onclick="goSearch()">← Cerrar panel</button>
     </div>
   </div>
@@ -926,7 +1030,7 @@
       started = true;
       var s = document.createElement("script");
       s.type = "module";
-      s.src = "app.js?v=20261002c";
+      s.src = "app.js?v=20261002d";
       document.body.appendChild(s);
     }
     try {
