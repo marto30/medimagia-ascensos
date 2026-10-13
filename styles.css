@@ -692,6 +692,8 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
   background: none; border: 0; color: var(--sepia-text); cursor: pointer;
 }
 .bitacora-count-line { margin-bottom: var(--space-2xs); font-size: var(--step--1); color: var(--sepia-text); }
+/* Marca invisible al final de la lista: al acercarse, se cargan más bitácoras */
+.bitacora-sentinel { height: 1px; }
 
 /* Cada bitácora es una ficha propia (viñeta): marco, sello de lacre a la
    izquierda, bordes tostados hacia dentro y cabecera separada por un trazo */

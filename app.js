@@ -2719,8 +2719,10 @@ window.addAlumno = async function() {
 let allBitacoras      = [];
 let bitacorasFrom     = "search";
 let bitacorasLoaded   = false;
-let bitacorasPage     = 0;
-const BITS_PER_PAGE   = 6;
+let bitacorasShown    = 0;   // cuántas tarjetas hay pintadas (scroll infinito)
+const BITS_BATCH      = 10;
+let bitacorasFiltered = [];
+let bitacorasObserver = null;
 let editingBitacoraId = null;
 let bitacoraQuery     = "";
 
@@ -3064,7 +3066,7 @@ async function doSaveBitacoraEntry() {
       editHistory: [{ editor: loggedInStudent || "Sistema", editedAt: now, editNumber: 1 }]
     });
 
-    bitacorasPage = 0;
+    bitacorasShown = 0;
     toast("Bitácora guardada", "success");
     okEl.style.display = "block";
     setTimeout(() => okEl.style.display = "none", 2500);
@@ -3139,6 +3141,7 @@ function formatDate(iso) {
 
 function renderBitacoraList() {
   const wrap = document.getElementById("bitacoraListWrap");
+  if (bitacorasObserver) bitacorasObserver.disconnect();
   if (!allBitacoras.length) {
     wrap.innerHTML = '<p class="empty-state">Todavía no hay ninguna bitácora registrada.</p>';
     return;
@@ -3157,20 +3160,51 @@ function renderBitacoraList() {
     return;
   }
 
-  const total      = list.length;
-  const totalPages = Math.ceil(total / BITS_PER_PAGE);
-  bitacorasPage    = Math.max(0, Math.min(bitacorasPage, totalPages - 1));
-  const start      = bitacorasPage * BITS_PER_PAGE;
-  const pageItems  = list.slice(start, start + BITS_PER_PAGE);
+  const total = list.length;
+  bitacorasFiltered = list;
 
-  const cardsHtml = pageItems.map(b => {
-    const canEdit = isAdmin || (loggedInStudent && (b.attendants || []).includes(loggedInStudent));
-    const btns = (canEdit || isAdmin) ? `
-      <div style="display:flex;gap:.4rem;flex-shrink:0;margin-left:.5rem">
-        ${canEdit ? `<button class="btn sm" onclick="openEditBitacora('${b.id}')">Editar</button>` : ""}
-        ${isAdmin ? `<button class="btn sm danger" onclick="deleteBitacora('${b.id}')">Eliminar</button>` : ""}
-      </div>` : "";
-    return `
+  const countLine = q
+    ? `<p class="bitacora-count-line">${total} resultado${total !== 1 ? "s" : ""} para “${escHtml(bitacoraQuery)}”</p>`
+    : "";
+
+  // Al re-renderizar (editar/borrar) se conservan las tarjetas ya cargadas
+  const keep = Math.max(bitacorasShown, BITS_BATCH);
+  bitacorasShown = 0;
+  wrap.innerHTML = countLine +
+    `<div id="bitacoraCards"></div><div id="bitacoraSentinel" class="bitacora-sentinel" aria-hidden="true"></div>`;
+  appendBitacoras(keep);
+}
+
+// Pinta las siguientes `n` bitácoras del listado filtrado y vigila el final
+// de la lista para cargar más al hacer scroll
+function appendBitacoras(n = BITS_BATCH) {
+  const cards    = document.getElementById("bitacoraCards");
+  const sentinel = document.getElementById("bitacoraSentinel");
+  if (!cards || !sentinel) return;
+
+  const next = bitacorasFiltered.slice(bitacorasShown, bitacorasShown + n);
+  cards.insertAdjacentHTML("beforeend", next.map(bitacoraCardHtml).join(""));
+  bitacorasShown += next.length;
+
+  if (bitacorasObserver) bitacorasObserver.disconnect();
+  if (bitacorasShown >= bitacorasFiltered.length) { sentinel.remove(); return; }
+
+  // Observar de nuevo fuerza una comprobación inicial: si el centinela sigue
+  // a la vista tras añadir el lote, se carga otro sin esperar más scroll
+  bitacorasObserver = new IntersectionObserver(entries => {
+    if (entries.some(e => e.isIntersecting)) appendBitacoras();
+  }, { rootMargin: "0px 0px 600px 0px" });
+  bitacorasObserver.observe(sentinel);
+}
+
+function bitacoraCardHtml(b) {
+  const canEdit = isAdmin || (loggedInStudent && (b.attendants || []).includes(loggedInStudent));
+  const btns = (canEdit || isAdmin) ? `
+    <div style="display:flex;gap:.4rem;flex-shrink:0;margin-left:.5rem">
+      ${canEdit ? `<button class="btn sm" onclick="openEditBitacora('${b.id}')">Editar</button>` : ""}
+      ${isAdmin ? `<button class="btn sm danger" onclick="deleteBitacora('${b.id}')">Eliminar</button>` : ""}
+    </div>` : "";
+  return `
     <div class="bitacora-card">
       <div class="bitacora-top">
         <div>
@@ -3194,38 +3228,11 @@ function renderBitacoraList() {
       </div>
       ${editHistoryField(b)}
     </div>`;
-  }).join("");
-
-  const paginationHtml = renderPager(bitacorasPage, totalPages, "setBitacorasPage");
-
-  const countLine = q
-    ? `<p class="bitacora-count-line">${total} resultado${total !== 1 ? "s" : ""} para “${escHtml(bitacoraQuery)}”</p>`
-    : "";
-
-  wrap.innerHTML = countLine + cardsHtml + paginationHtml;
 }
-
-// Cuenta las bitácoras visibles según el filtro activo (para la paginación)
-function filteredBitacorasCount() {
-  const q = norm(bitacoraQuery);
-  if (!q) return allBitacoras.length;
-  return allBitacoras.filter(b =>
-    norm(b.patient   || "").includes(q) ||
-    norm(b.diagnosis || "").includes(q) ||
-    norm(b.procedure || "").includes(q) ||
-    (b.attendants || []).some(a => norm(a).includes(q))
-  ).length;
-}
-
-window.setBitacorasPage = function(page) {
-  const totalPages = Math.ceil(filteredBitacorasCount() / BITS_PER_PAGE);
-  bitacorasPage = Math.max(0, Math.min(page, totalPages - 1));
-  renderBitacoraList();
-};
 
 window.filterBitacoras = function() {
   bitacoraQuery = document.getElementById("bitacoraSearch").value;
-  bitacorasPage = 0;
+  bitacorasShown = 0;
   const clr = document.getElementById("bitacoraSearchClear");
   if (clr) clr.style.display = bitacoraQuery ? "block" : "none";
   renderBitacoraList();
@@ -3237,7 +3244,7 @@ window.clearBitacoraSearch = function() {
   if (inp) inp.value = "";
   const clr = document.getElementById("bitacoraSearchClear");
   if (clr) clr.style.display = "none";
-  bitacorasPage = 0;
+  bitacorasShown = 0;
   renderBitacoraList();
 };
 
