@@ -6,7 +6,7 @@
   <meta name="referrer" content="no-referrer">
   <title>Medimagia — Registro de Ascensos</title>
   <meta name="description" content="Medimagia — Registro de ascensos del Colegio: consulta tu progreso, hechizos y bitácoras.">
-  <meta name="theme-color" content="#070403">
+  <meta name="theme-color" content="#05040F">
   <meta name="color-scheme" content="dark">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_ES">
@@ -78,37 +78,39 @@
       color-scheme: dark;
 
       /* Hoja de pergamino quemado */
-      --page:        #070403;                 /* fondo fuera de la hoja */
-      --sheet-1:     #3A2412;                 /* centro de la hoja */
-      --sheet-2:     #26170B;                 /* hacia los bordes */
-      --sheet-3:     #160C05;                 /* manchas y orillas tostadas */
+      --page:        #05040F;                 /* cielo nocturno fuera de la hoja */
+      --sheet-1:     #1E1A3D;                 /* centro del grimorio */
+      --sheet-2:     #120F29;                 /* hacia los bordes */
+      --sheet-3:     #0A0818;                 /* orillas en sombra */
       --burn:        rgba(0,0,0,.8);          /* borde quemado */
       --burn-soft:   rgba(0,0,0,.5);
-      --roll-1:      #6B4420;                 /* rollos superior e inferior */
-      --roll-2:      #A87538;
-      --roll-3:      #1E1209;
+      --roll-1:      #B8892E;                 /* rollos superior e inferior */
+      --roll-2:      #FFE08A;
+      --roll-3:      #5A3E0E;
 
       /* Tinta, lacre y dorado (intensos) */
-      --bg:          #2E1C0E;
-      --bg-2:        #3D2614;                 /* avisos, filas al pasar el ratón */
-      --surface:     #452B17;                 /* campos, baldosas, paneles */
-      --panel:       rgba(20,11,5,.42);       /* fondo de cada bloque/sección */
-      --ink:         #F7E6C4;                 /* texto principal (≥10.6:1) */
-      --sepia:       #A8875A;                 /* líneas y bordes */
-      --sepia-text:  #D9BF94;                 /* texto de apoyo (≥7.3:1) */
-      --accent:      #FF6B57;                 /* lacre vivo: enlaces, capitulares (≥4.6:1) */
-      --accent-deep: #FF8E7D;
-      --on-accent:   #140A04;
-      --seal-glow:   #C8332A;                 /* sello de lacre: brillo, cuerpo y sombra */
-      --seal:        #B01E1E;
-      --seal-deep:   #6E0C0C;
+      --bg:          #1A1636;
+      --bg-2:        #231E47;                 /* avisos, filas al pasar el ratón */
+      --surface:     #2A2452;                 /* campos, baldosas, paneles */
+      --panel:       rgba(8,6,24,.5);         /* fondo de cada bloque/sección */
+      --ink:         #F1EAFF;                 /* texto principal (≥10.6:1) */
+      --sepia:       #8E80C8;                 /* líneas y bordes */
+      --sepia-text:  #C7BCEB;                 /* texto de apoyo (≥7.3:1) */
+      --accent:      #FF7A8A;                 /* lacre vivo: enlaces, capitulares (≥4.6:1) */
+      --accent-deep: #FF9BA7;
+      --on-accent:   #0A0818;
+      --seal-glow:   #9D6BFF;                 /* sello de lacre: brillo, cuerpo y sombra */
+      --seal:        #5B2DBF;
+      --seal-deep:   #2A1066;
       --on-seal:     #FFF1D6;
-      --gilt:        #F0BE4A;                 /* dorado intenso: adornos y títulos (≥7.5:1) */
+      --gilt:        #F5CB5C;                 /* dorado intenso: adornos y títulos (≥7.5:1) */
       --gilt-light:  #FFE08A;
+      --arcane:      #B49BFF;                 /* brillo arcano (violeta) */
+      --arcane-cyan: #7FE7FF;                 /* destellos (cian) */
       --ok:          #B5D46A;
-      --line:        rgba(240,190,74,.22);
-      --line-strong: #B08A55;
-      --selection:   rgba(255,107,87,.35);
+      --line:        rgba(180,155,255,.24);
+      --line-strong: #8E80C8;
+      --selection:   rgba(180,155,255,.4); 
       --overlay:     rgba(0,0,0,.7);
 
       /* Rangos (insignias) */
@@ -116,9 +118,9 @@
       --rk-3: #F09ADF; --rk-4: #5FE0D0; --rk-5: #FF9E8E;
 
       /* Menús: barra de sesión y un color por sección del panel */
-      --bar-bg:       #0B0603;
-      --on-dark:      #F7E6C4;
-      --on-dark-soft: #D9C49E;
+      --bar-bg:       #07061A;
+      --on-dark:      #F1EAFF;
+      --on-dark-soft: #C7BCEB;
       --sec-alumnos:      #6FB2FF;
       --sec-ascensos:     #9BD95A;
       --sec-stats:        #4FD1C5;
@@ -136,9 +138,9 @@
       --sec-ico-active:   rgba(20,10,4,.16);
 
       /* Texturas y ornamentos (SVG inline, < 1 KB cada uno) */
-      --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .8 0 0 0 0 .55 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+      --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .75 0 0 0 0 .7 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
       /* Filigrana dorada: separadores (240×24) */
-      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' fill='none' stroke='%23F0BE4A' stroke-linecap='round'%3E%3Cpath d='M6 12H82M158 12H234' stroke-width='.9'/%3E%3Cpath d='M82 12C91 12 95 4 103 4C109 4 111 9 107 11C104 12.4 101 10 103 8M82 12C91 12 95 20 103 20C109 20 111 15 107 13C104 11.6 101 14 103 16M158 12C149 12 145 4 137 4C131 4 129 9 133 11C136 12.4 139 10 137 8M158 12C149 12 145 20 137 20C131 20 129 15 133 13C136 11.6 139 14 137 16' stroke-width='1.2'/%3E%3Cpath d='M120 3L127 12L120 21L113 12Z' fill='%23F0BE4A' stroke='none'/%3E%3Cpath d='M120 7.5L123.5 12L120 16.5L116.5 12Z' fill='%233A2412' stroke='none'/%3E%3Ccircle cx='6' cy='12' r='1.3' fill='%23F0BE4A' stroke='none'/%3E%3Ccircle cx='234' cy='12' r='1.3' fill='%23F0BE4A' stroke='none'/%3E%3C/svg%3E");
+      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' fill='none' stroke='%23F0BE4A' stroke-linecap='round'%3E%3Cpath d='M6 12H82M158 12H234' stroke-width='.9'/%3E%3Cpath d='M82 12C91 12 95 4 103 4C109 4 111 9 107 11C104 12.4 101 10 103 8M82 12C91 12 95 20 103 20C109 20 111 15 107 13C104 11.6 101 14 103 16M158 12C149 12 145 4 137 4C131 4 129 9 133 11C136 12.4 139 10 137 8M158 12C149 12 145 20 137 20C131 20 129 15 133 13C136 11.6 139 14 137 16' stroke-width='1.2'/%3E%3Cpath d='M120 3L127 12L120 21L113 12Z' fill='%23F0BE4A' stroke='none'/%3E%3Cpath d='M120 7.5L123.5 12L120 16.5L116.5 12Z' fill='%231E1A3D' stroke='none'/%3E%3Ccircle cx='6' cy='12' r='1.3' fill='%23F0BE4A' stroke='none'/%3E%3Ccircle cx='234' cy='12' r='1.3' fill='%23F0BE4A' stroke='none'/%3E%3C/svg%3E");
       --torn-top: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='14' viewBox='0 0 240 14' preserveAspectRatio='none'%3E%3Cpath d='M0 14 L0 6.9 L6 5.6 L12 4.9 L18 7.3 L24 11.1 L30 8.1 L36 6 L42 5.9 L48 6.9 L54 9.6 L60 9 L66 8 L72 6 L78 4.8 L84 5.5 L90 6.7 L96 7 L102 4.6 L108 6 L114 8.2 L120 10.6 L126 10.3 L132 10.1 L138 8.5 L144 7.3 L150 6.5 L156 7.8 L162 8.1 L168 6.1 L174 4.2 L180 2.4 L186 3 L192 5.2 L198 6.8 L204 8.5 L210 10.7 L216 7.8 L222 13.3 L228 9.4 L234 9.1 L240 6.9 L240 14Z'/%3E%3C/svg%3E");
       --torn-bottom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='14' viewBox='0 0 240 14' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L0 13.3 L6 12.6 L12 9.7 L18 8.2 L24 6.1 L30 2.1 L36 0.7 L42 0.7 L48 0.8 L54 1.2 L60 1.4 L66 3.5 L72 5.1 L78 7.1 L84 6.6 L90 7.3 L96 4.7 L102 4.2 L108 4.6 L114 2.2 L120 2.6 L126 4.7 L132 4.4 L138 5.3 L144 5.7 L150 6.2 L156 7.1 L162 8.5 L168 8.5 L174 8.8 L180 7.1 L186 7.7 L192 9.8 L198 10.3 L204 9.9 L210 10.2 L216 13.3 L222 13.3 L228 13.3 L234 13.3 L240 13.3 L240 0Z'/%3E%3C/svg%3E");
       --torn-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='260' viewBox='0 0 14 260' preserveAspectRatio='none'%3E%3Cpath d='M14 0 L7.8 0 L11.9 6 L7.4 12.1 L6.5 18.1 L8.5 24.2 L5.1 30.2 L3.9 36.3 L4.3 42.3 L7.3 48.4 L5.9 54.4 L7.1 60.5 L6.1 66.5 L5.7 72.6 L7.3 78.6 L8 84.7 L12.1 90.7 L10.5 96.7 L11.2 102.8 L9.1 108.8 L7.2 114.9 L8.4 120.9 L6.1 127 L5.4 133 L6.8 139.1 L8 145.1 L11.3 151.2 L10.4 157.2 L10.7 163.3 L10 169.3 L8.4 175.3 L7 181.4 L7 187.4 L7.9 193.5 L8.2 199.5 L8.7 205.6 L7.8 211.6 L4.7 217.7 L4.3 223.7 L1.5 229.8 L4.4 235.8 L5.8 241.9 L7.6 247.9 L7.2 254 L7.8 260 L14 260Z'/%3E%3C/svg%3E");
@@ -190,7 +192,16 @@
     body {
       min-height: 100dvh;
       overflow-x: clip;
-      background: var(--page) var(--paper);
+      /* Cielo nocturno: tres capas de estrellas, dos nebulosas y el grano */
+      background:
+        radial-gradient(1px 1px at 20px 30px, #fff, transparent) 0 0 / 180px 180px,
+        radial-gradient(1px 1px at 120px 90px, rgba(255,240,200,.9), transparent) 0 0 / 180px 180px,
+        radial-gradient(1.5px 1.5px at 70px 150px, rgba(200,190,255,.9), transparent) 0 0 / 240px 240px,
+        radial-gradient(1px 1px at 190px 40px, rgba(127,231,255,.8), transparent) 0 0 / 260px 260px,
+        radial-gradient(ellipse 60% 40% at 15% 0%, rgba(91,45,191,.35), transparent 70%) fixed,
+        radial-gradient(ellipse 50% 40% at 100% 100%, rgba(30,90,140,.3), transparent 70%) fixed,
+        var(--paper),
+        var(--page);
       color: var(--ink);
       font-family: var(--font-body);
       font-size: var(--step-0);
@@ -217,38 +228,34 @@
       margin: clamp(1rem, 2.5vw, 2rem) auto clamp(1.25rem, 3vw, 2.75rem);
       padding: calc(var(--space-l) + .75rem) var(--sheet-pad) var(--space-xl);
     }
-    /* Papel: centro claro que se tuesta hacia fuera, grano, bordes quemados
-       y borde rasgado (máscara con cuatro tiras irregulares que se repiten) */
+    /* Grimorio: hoja nocturna con aura violeta, nebulosas y marco de oro luminoso */
     .wrap::before {
       content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
       background:
         var(--paper),
-        radial-gradient(circle at 9% 14%, color-mix(in srgb, var(--sheet-3) 55%, transparent), transparent 22rem),
-        radial-gradient(circle at 92% 78%, color-mix(in srgb, var(--sheet-3) 50%, transparent), transparent 26rem),
-        radial-gradient(circle at 70% 6%, color-mix(in srgb, var(--sheet-3) 30%, transparent), transparent 14rem),
-        radial-gradient(ellipse 75% 60% at 50% 42%, var(--sheet-1) 0%, var(--sheet-1) 30%, var(--sheet-2) 82%, var(--sheet-3) 100%);
+        radial-gradient(circle at 12% 10%, rgba(157,107,255,.22), transparent 24rem),
+        radial-gradient(circle at 90% 85%, rgba(127,231,255,.12), transparent 26rem),
+        radial-gradient(circle at 75% 8%, rgba(245,203,92,.08), transparent 16rem),
+        radial-gradient(ellipse 80% 65% at 50% 40%, var(--sheet-1) 0%, var(--sheet-2) 75%, var(--sheet-3) 100%);
       background-color: var(--sheet-2);
-      box-shadow: inset 0 0 4rem var(--burn-soft), inset 0 0 1.1rem var(--burn), inset 0 0 .25rem #5C3A1E;
-      -webkit-mask:
-        var(--torn-top) top left / 240px 14px repeat-x,
-        var(--torn-bottom) bottom left / 240px 14px repeat-x,
-        var(--torn-left) top left / 14px 260px repeat-y,
-        var(--torn-right) top right / 14px 260px repeat-y,
-        linear-gradient(#000 0 0) center / calc(100% - 26px) calc(100% - 26px) no-repeat;
-              mask:
-        var(--torn-top) top left / 240px 14px repeat-x,
-        var(--torn-bottom) bottom left / 240px 14px repeat-x,
-        var(--torn-left) top left / 14px 260px repeat-y,
-        var(--torn-right) top right / 14px 260px repeat-y,
-        linear-gradient(#000 0 0) center / calc(100% - 26px) calc(100% - 26px) no-repeat;
+      border: 1px solid color-mix(in srgb, var(--gilt) 70%, transparent);
+      border-radius: .6rem;
+      box-shadow:
+        inset 0 0 0 6px var(--sheet-3),
+        inset 0 0 0 7px color-mix(in srgb, var(--gilt) 40%, transparent),
+        inset 0 0 4rem rgba(157,107,255,.18),
+        0 0 2.5rem rgba(157,107,255,.25),
+        0 0 .75rem rgba(245,203,92,.18);
     }
-    /* Rollos superior e inferior, como los extremos enrollados de la imagen */
+    /* Filigrana dorada en las cuatro esquinas del marco */
     .wrap::after {
-      content: ""; position: absolute; inset: -.3rem -.45rem; z-index: -1; pointer-events: none;
+      content: ""; position: absolute; inset: .35rem; z-index: -1; pointer-events: none;
       background:
-        linear-gradient(to bottom, var(--roll-3), var(--roll-2) 40%, var(--roll-1) 72%, var(--roll-3)) top / 100% 1.35rem no-repeat,
-        linear-gradient(to top,    var(--roll-3), var(--roll-2) 40%, var(--roll-1) 72%, var(--roll-3)) bottom / 100% 1.35rem no-repeat;
-      border-radius: .7rem;
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cg transform='' fill='none' stroke='%23F5CB5C' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M2 30V8a6 6 0 0 1 6-6h22'/%3E%3Cpath d='M9 24c0-8.5 6.5-15 15-15'/%3E%3Ccircle cx='8' cy='8' r='2.4' fill='%23F5CB5C'/%3E%3Cpath d='M15 15l3 3M2 37v5M37 2h5'/%3E%3C/g%3E%3C/svg%3E") top left / 3rem no-repeat,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cg transform='translate(48 0) scale(-1 1)' fill='none' stroke='%23F5CB5C' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M2 30V8a6 6 0 0 1 6-6h22'/%3E%3Cpath d='M9 24c0-8.5 6.5-15 15-15'/%3E%3Ccircle cx='8' cy='8' r='2.4' fill='%23F5CB5C'/%3E%3Cpath d='M15 15l3 3M2 37v5M37 2h5'/%3E%3C/g%3E%3C/svg%3E") top right / 3rem no-repeat,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cg transform='translate(0 48) scale(1 -1)' fill='none' stroke='%23F5CB5C' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M2 30V8a6 6 0 0 1 6-6h22'/%3E%3Cpath d='M9 24c0-8.5 6.5-15 15-15'/%3E%3Ccircle cx='8' cy='8' r='2.4' fill='%23F5CB5C'/%3E%3Cpath d='M15 15l3 3M2 37v5M37 2h5'/%3E%3C/g%3E%3C/svg%3E") bottom left / 3rem no-repeat,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cg transform='translate(48 48) scale(-1 -1)' fill='none' stroke='%23F5CB5C' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M2 30V8a6 6 0 0 1 6-6h22'/%3E%3Cpath d='M9 24c0-8.5 6.5-15 15-15'/%3E%3Ccircle cx='8' cy='8' r='2.4' fill='%23F5CB5C'/%3E%3Cpath d='M15 15l3 3M2 37v5M37 2h5'/%3E%3C/g%3E%3C/svg%3E") bottom right / 3rem no-repeat;
+      filter: drop-shadow(0 0 4px rgba(245,203,92,.45));
     }
 
     /* Iconos (sprite inline de Phosphor) */
@@ -490,8 +497,8 @@
   </style>
 
   <!-- Resto de estilos, sin bloquear el render -->
-  <link rel="preload" href="styles.css?v=20261013b" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="styles.css?v=20261013b"></noscript>
+  <link rel="preload" href="styles.css?v=20261013c" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="styles.css?v=20261013c"></noscript>
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>

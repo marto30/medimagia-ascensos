@@ -1238,3 +1238,107 @@ h3.card-title {
 
 /* Inicio: acceso y navegación secundaria separados */
 .home-nav { margin-top: var(--space-m); }
+
+/* =================================================================
+   CAPA ARCANA
+   Grimorio nocturno: oro luminoso, auras violeta (--arcane) y
+   destellos cian (--arcane-cyan). Todo el movimiento se detiene con
+   prefers-reduced-motion (regla global del CSS crítico).
+   ================================================================= */
+
+/* ── Emblema: círculo de runas que gira y aura que respira ──────── */
+.masthead-main { position: relative; --crest: clamp(3.5rem, 2.6rem + 3vw, 5.25rem); }
+.crest { position: relative; z-index: 1; width: var(--crest); animation: crest-glow 4s ease-in-out infinite; }
+.masthead-main::before {
+  content: ""; position: absolute; z-index: 0; pointer-events: none;
+  left: calc(var(--crest) / 2); top: calc(50% - var(--space-s) / 2);
+  width: calc(var(--crest) * 1.8); aspect-ratio: 1; translate: -50% -50%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23B49BFF' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='47' stroke-width='.8'/%3E%3Ccircle cx='50' cy='50' r='40' stroke-width='.5' stroke-dasharray='2 3'/%3E%3Cg stroke='%23F5CB5C' stroke-width='1'%3E%3Cpath d='M50 3v6M50 91v6M3 50h6M91 50h6'/%3E%3Cpath d='M17 17l4 4M83 17l-4 4M17 83l4-4M83 83l-4-4'/%3E%3C/g%3E%3Cg stroke-width='.9'%3E%3Cpath d='M47 12l3-3 3 3M88 47l3 3-3 3M53 88l-3 3-3-3M12 53l-3-3 3-3'/%3E%3Cpath d='M30 9.5v4l3-2M70 9.5l-3 2 3 2M90.5 30h-4l2 3M90.5 70h-4l2-3M70 90.5v-4l-3 2M30 90.5l3-2-3-2M9.5 70h4l-2-3M9.5 30h4l-2 3'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: .8; animation: rune-spin 40s linear infinite;
+}
+@keyframes rune-spin { to { rotate: 360deg; } }
+@keyframes crest-glow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(245,203,92,.35)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(180,155,255,.7)); }
+}
+.masthead-titles { position: relative; z-index: 1; }
+body:has(#appHeader[style*="block"]) .masthead-main::before { display: none; }
+
+/* ── Título: tinta de oro con resplandor violeta ────────────────── */
+h1 { text-shadow: 0 0 1.1rem rgba(180,155,255,.45), 0 0 .2rem rgba(245,203,92,.3); }
+.card-title { text-shadow: 0 0 .9rem rgba(245,203,92,.3); }
+
+/* ── Tarjetas: sin rollos de papel; barras de luz y aura arcana ─── */
+.card {
+  border: 1px solid color-mix(in srgb, var(--arcane) 35%, transparent);
+  border-radius: .4rem;
+  box-shadow: inset 0 0 2.5rem rgba(157,107,255,.12), 0 0 1.5rem rgba(91,45,191,.18);
+}
+.card::before, .card::after {
+  left: 8%; right: 8%; height: 2px; border-radius: 0;
+  background: linear-gradient(90deg, transparent, var(--gilt) 30%, var(--gilt-light) 50%, var(--gilt) 70%, transparent);
+  box-shadow: 0 0 10px rgba(245,203,92,.6);
+}
+.card::before { top: -1px; }
+.card::after  { bottom: -1px; }
+.admin-section .card::before, .admin-section .card::after { left: 8%; right: 8%; }
+
+/* ── Sello de amatista: el botón principal brilla en violeta y cian ── */
+@media (hover: hover) {
+  .btn.success:hover:not(:disabled), .home-search-btn:hover:not(:disabled) {
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,.2),
+      inset 0 0 0 4px var(--gilt),
+      inset 2px 3px 4px rgba(230,220,255,.3),
+      inset -2px -3px 6px rgba(10,4,30,.5),
+      0 0 0 2px color-mix(in srgb, var(--arcane) 70%, transparent),
+      0 0 1.5rem .3rem rgba(127,231,255,.45);
+  }
+}
+/* Botones secundarios: halo arcano al pasar el ratón */
+.btn::before { background: linear-gradient(135deg, var(--seal), var(--seal-glow)); }
+@media (hover: hover) {
+  .btn:hover:not(:disabled) { color: var(--on-seal); border-color: var(--arcane); box-shadow: 0 0 .9rem rgba(180,155,255,.45); }
+}
+
+/* ── Campos: foco con brillo mágico ─────────────────────────────── */
+input:focus, textarea:focus, select:focus {
+  outline-color: var(--arcane); border-color: var(--arcane);
+  box-shadow: 0 0 0 3px rgba(180,155,255,.2), 0 0 1rem rgba(127,231,255,.2);
+}
+
+/* ── Barra de sesión y navegación ───────────────────────────────── */
+.app-header-bar {
+  background: linear-gradient(90deg, #0B0926, #1A1145 50%, #0B0926);
+  box-shadow: 0 2px 0 var(--arcane), 0 0 1.5rem rgba(91,45,191,.5);
+}
+.app-nav-btn.active { color: var(--on-seal); background: linear-gradient(135deg, var(--seal), var(--seal-glow)); border-color: var(--arcane); }
+.home-nav-ico { color: var(--gilt); background: linear-gradient(135deg, var(--seal-deep), var(--seal)); }
+@media (hover: hover) {
+  .home-nav-card:hover { border-color: var(--arcane); box-shadow: 0 0 1.2rem rgba(180,155,255,.35); }
+  .home-nav-card:hover .home-nav-ico { color: var(--on-seal); background: linear-gradient(135deg, var(--seal), var(--seal-glow)); }
+}
+
+/* ── Fichas de bitácora: sello arcano y aura ────────────────────── */
+.bitacora-card {
+  border-left-color: var(--arcane);
+  box-shadow: inset 0 0 1.75rem rgba(157,107,255,.12);
+}
+.bitacora-patient::before { content: "✦"; color: var(--gilt); text-shadow: 0 0 6px rgba(245,203,92,.7); }
+@media (hover: hover) { .bitacora-card:hover { box-shadow: inset 0 0 1.75rem rgba(157,107,255,.12), 0 0 1.4rem rgba(180,155,255,.3); } }
+
+/* ── Separadores: la filigrana centellea ────────────────────────── */
+.header::after, .divider, .stats-divider { filter: drop-shadow(0 0 4px rgba(245,203,92,.55)); }
+
+/* ── Partículas: oro, violeta y cian que titilan al subir ───────── */
+.motes i:nth-child(3n+1) { background: radial-gradient(circle, #fff 0%, var(--arcane) 45%, transparent 72%); }
+.motes i:nth-child(3n+2) { background: radial-gradient(circle, #fff 0%, var(--arcane-cyan) 45%, transparent 72%); }
+.motes i { box-shadow: 0 0 6px currentColor; color: rgba(245,203,92,.6); }
+@keyframes mote {
+  0%   { transform: translate3d(0, 0, 0) scale(.6); opacity: 0; }
+  10%  { opacity: .9; }
+  30%  { opacity: .3; }
+  50%  { opacity: 1; transform: translate3d(calc(var(--dx, 0) / 2), -54vh, 0) scale(1.2); }
+  70%  { opacity: .4; }
+  100% { transform: translate3d(var(--dx, 0), -108vh, 0) scale(.6); opacity: 0; }
+}
