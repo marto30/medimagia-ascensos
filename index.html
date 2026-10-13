@@ -6,8 +6,8 @@
   <meta name="referrer" content="no-referrer">
   <title>Medimagia — Registro de Ascensos</title>
   <meta name="description" content="Medimagia — Registro de ascensos del Colegio: consulta tu progreso, hechizos y bitácoras.">
-  <meta name="theme-color" content="#E6DCC8">
-  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#070403">
+  <meta name="color-scheme" content="dark">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_ES">
   <meta property="og:site_name" content="Medimagia">
@@ -40,33 +40,6 @@
        ocultos. El resto (styles.css) se carga sin bloquear el render.
        PALETA, TIPOGRAFÍA Y ESPACIADO SE AJUSTAN EN :root (abajo).
        ============================================================= -->
-  <!-- Tema: elección guardada o, si no hay, la del sistema. Antes del primer pintado: sin parpadeo. -->
-  <script>
-    (function () {
-      var root = document.documentElement, saved = null;
-      try { saved = localStorage.getItem("mm_theme"); } catch (e) {}
-      var mq = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
-      function apply(t) {
-        root.setAttribute("data-theme", t);
-        var m = document.querySelector('meta[name="theme-color"]');
-        if (m) m.setAttribute("content", t === "dark" ? "#0D0906" : "#E6DCC8");
-      }
-      apply(saved === "dark" || saved === "light" ? saved : (mq && mq.matches ? "dark" : "light"));
-      // Si el usuario no ha elegido, sigue los cambios del sistema
-      if (mq && mq.addEventListener) mq.addEventListener("change", function (e) {
-        var s = null; try { s = localStorage.getItem("mm_theme"); } catch (x) {}
-        if (s !== "dark" && s !== "light") apply(e.matches ? "dark" : "light");
-      });
-      window.toggleTheme = function () {
-        var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-        var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-        // Fundido entre temas donde el navegador lo admite; si no, cambio directo
-        if (document.startViewTransition && !reduce) document.startViewTransition(function () { apply(next); });
-        else apply(next);
-        try { localStorage.setItem("mm_theme", next); } catch (e) {}
-      };
-    })();
-  </script>
   <style>
     /* ── Fuentes autoalojadas (variables, subsets latin y latin-ext) ── */
     /* Cinzel Decorative (Google Fonts, OFL) autoalojada: la CSP solo admite font-src 'self' */
@@ -97,70 +70,75 @@
     }
 
     /* ═══════════════════════════════════════════════════════════════
-       TEMA CLARO — pergamino tostado (por defecto)
-       Paleta validada con contraste AA en el centro y en los bordes de la hoja.
+       PALETA ÚNICA — pergamino a la luz de las velas, colores intensos
+       Validada con contraste AA (texto ≥ 4.5:1) en el centro y en las
+       orillas más oscuras de la hoja, y sobre --surface.
        ═══════════════════════════════════════════════════════════════ */
     :root {
-      color-scheme: light;
+      color-scheme: dark;
 
-      /* Hoja de pergamino envejecido */
-      --page:        #E2D3B0;                 /* fondo fuera de la hoja */
-      --sheet-1:     #F4E4BC;                 /* centro de la hoja */
-      --sheet-2:     #E8D5A3;                 /* hacia los bordes */
-      --sheet-3:     #D4B483;                 /* manchas y orillas tostadas */
-      --burn:        rgba(92,58,30,.72);      /* borde quemado (#5C3A1E) */
-      --burn-soft:   rgba(92,58,30,.26);
-      --roll-1:      #C9A063;                 /* rollos superior e inferior */
-      --roll-2:      #F4E4BC;
-      --roll-3:      #8A6234;
+      /* Hoja de pergamino quemado */
+      --page:        #070403;                 /* fondo fuera de la hoja */
+      --sheet-1:     #3A2412;                 /* centro de la hoja */
+      --sheet-2:     #26170B;                 /* hacia los bordes */
+      --sheet-3:     #160C05;                 /* manchas y orillas tostadas */
+      --burn:        rgba(0,0,0,.8);          /* borde quemado */
+      --burn-soft:   rgba(0,0,0,.5);
+      --roll-1:      #6B4420;                 /* rollos superior e inferior */
+      --roll-2:      #A87538;
+      --roll-3:      #1E1209;
 
-      /* Paleta propia: tinta, lacre y dorado */
-      --bg:          #F4E4BC;
-      --bg-2:        #EAD6A6;                 /* avisos, filas al pasar el ratón */
-      --surface:     #FAF0D4;                 /* campos, baldosas, ventanas */
-      --ink:         #3B2414;                 /* tinta: texto principal (11.5:1) */
-      --sepia:       #7A5C3C;                 /* líneas y bordes */
-      --sepia-text:  #5C4128;                 /* texto de apoyo (≥4.7:1 en toda la hoja) */
-      --accent:      #7A1F1F;                 /* lacre: enlaces, sello, capitulares */
-      --accent-deep: #5A1414;
-      --accent-glow: #A8423A;                 /* brillo del lacre */
-      --on-accent:   #F6E7C4;
-      --gilt:        #B8913A;                 /* dorado: SOLO adornos (no texto, 2.3:1) */
-      --gilt-light:  #E8CB7A;
-      --ok:          #46592F;
-      --line:        rgba(92,58,30,.38);
-      --line-strong: #7A5C3C;
-      --selection:   rgba(122,31,31,.18);
-      --overlay:     rgba(43,25,10,.5);
+      /* Tinta, lacre y dorado (intensos) */
+      --bg:          #2E1C0E;
+      --bg-2:        #3D2614;                 /* avisos, filas al pasar el ratón */
+      --surface:     #452B17;                 /* campos, baldosas, paneles */
+      --panel:       rgba(20,11,5,.42);       /* fondo de cada bloque/sección */
+      --ink:         #F7E6C4;                 /* texto principal (≥10.6:1) */
+      --sepia:       #A8875A;                 /* líneas y bordes */
+      --sepia-text:  #D9BF94;                 /* texto de apoyo (≥7.3:1) */
+      --accent:      #FF6B57;                 /* lacre vivo: enlaces, capitulares (≥4.6:1) */
+      --accent-deep: #FF8E7D;
+      --on-accent:   #140A04;
+      --seal-glow:   #C8332A;                 /* sello de lacre: brillo, cuerpo y sombra */
+      --seal:        #B01E1E;
+      --seal-deep:   #6E0C0C;
+      --on-seal:     #FFF1D6;
+      --gilt:        #F0BE4A;                 /* dorado intenso: adornos y títulos (≥7.5:1) */
+      --gilt-light:  #FFE08A;
+      --ok:          #B5D46A;
+      --line:        rgba(240,190,74,.22);
+      --line-strong: #B08A55;
+      --selection:   rgba(255,107,87,.35);
+      --overlay:     rgba(0,0,0,.7);
 
       /* Rangos (insignias) */
-      --rk-0: #644729; --rk-1: #46532D; --rk-2: #435365;
-      --rk-3: #634659; --rk-4: #335956; --rk-5: #714440;
+      --rk-0: #F0B070; --rk-1: #C6E07A; --rk-2: #8EC2FF;
+      --rk-3: #F09ADF; --rk-4: #5FE0D0; --rk-5: #FF9E8E;
 
       /* Menús: barra de sesión y un color por sección del panel */
-      --bar-bg:       #3B2414;
-      --on-dark:      #F3EAD3;
-      --on-dark-soft: #D8CCB2;
-      --sec-alumnos:      #355C7D;
-      --sec-ascensos:     #4E6B2E;
-      --sec-stats:        #2F6B6B;
-      --sec-directorio:   #6B4E6B;
-      --sec-actividad:    #8B3A2F;
-      --sec-graduados:    #7A5A12;
-      --sec-crear:        #2E6B4A;
-      --sec-inventario:   #8A3F5A;
-      --sec-rangos:       #4A4E85;
-      --sec-asistencia:   #8A4A1E;
-      --sec-credenciales: #6A4A8A;
-      --sec-seguridad:    #3D4A5C;
-      --sec-config:       #4A4238;
-      --on-sec:           #FAEFD6;            /* texto sobre una baldosa activa */
-      --sec-ico-active:   rgba(250,239,214,.18);
+      --bar-bg:       #0B0603;
+      --on-dark:      #F7E6C4;
+      --on-dark-soft: #D9C49E;
+      --sec-alumnos:      #6FB2FF;
+      --sec-ascensos:     #9BD95A;
+      --sec-stats:        #4FD1C5;
+      --sec-directorio:   #D59BF0;
+      --sec-actividad:    #FF7A5C;
+      --sec-graduados:    #F5C242;
+      --sec-crear:        #55D99A;
+      --sec-inventario:   #FF7FB0;
+      --sec-rangos:       #A3A3FF;
+      --sec-asistencia:   #FF9F4A;
+      --sec-credenciales: #B98CFF;
+      --sec-seguridad:    #8FB3D9;
+      --sec-config:       #D8C7A6;
+      --on-sec:           #140A04;            /* texto sobre una baldosa activa (≥7.6:1) */
+      --sec-ico-active:   rgba(20,10,4,.16);
 
       /* Texturas y ornamentos (SVG inline, < 1 KB cada uno) */
-      --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .2 0 0 0 0 .06 0 0 0 .13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+      --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .8 0 0 0 0 .55 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
       /* Filigrana dorada: separadores (240×24) */
-      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' fill='none' stroke='%23B8913A' stroke-linecap='round'%3E%3Cpath d='M6 12H82M158 12H234' stroke-width='.9'/%3E%3Cpath d='M82 12C91 12 95 4 103 4C109 4 111 9 107 11C104 12.4 101 10 103 8M82 12C91 12 95 20 103 20C109 20 111 15 107 13C104 11.6 101 14 103 16M158 12C149 12 145 4 137 4C131 4 129 9 133 11C136 12.4 139 10 137 8M158 12C149 12 145 20 137 20C131 20 129 15 133 13C136 11.6 139 14 137 16' stroke-width='1.2'/%3E%3Cpath d='M120 3L127 12L120 21L113 12Z' fill='%23B8913A' stroke='none'/%3E%3Cpath d='M120 7.5L123.5 12L120 16.5L116.5 12Z' fill='%23F4E4BC' stroke='none'/%3E%3Ccircle cx='6' cy='12' r='1.3' fill='%23B8913A' stroke='none'/%3E%3Ccircle cx='234' cy='12' r='1.3' fill='%23B8913A' stroke='none'/%3E%3C/svg%3E");
+      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' fill='none' stroke='%23F0BE4A' stroke-linecap='round'%3E%3Cpath d='M6 12H82M158 12H234' stroke-width='.9'/%3E%3Cpath d='M82 12C91 12 95 4 103 4C109 4 111 9 107 11C104 12.4 101 10 103 8M82 12C91 12 95 20 103 20C109 20 111 15 107 13C104 11.6 101 14 103 16M158 12C149 12 145 4 137 4C131 4 129 9 133 11C136 12.4 139 10 137 8M158 12C149 12 145 20 137 20C131 20 129 15 133 13C136 11.6 139 14 137 16' stroke-width='1.2'/%3E%3Cpath d='M120 3L127 12L120 21L113 12Z' fill='%23F0BE4A' stroke='none'/%3E%3Cpath d='M120 7.5L123.5 12L120 16.5L116.5 12Z' fill='%233A2412' stroke='none'/%3E%3Ccircle cx='6' cy='12' r='1.3' fill='%23F0BE4A' stroke='none'/%3E%3Ccircle cx='234' cy='12' r='1.3' fill='%23F0BE4A' stroke='none'/%3E%3C/svg%3E");
       --torn-top: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='14' viewBox='0 0 240 14' preserveAspectRatio='none'%3E%3Cpath d='M0 14 L0 6.9 L6 5.6 L12 4.9 L18 7.3 L24 11.1 L30 8.1 L36 6 L42 5.9 L48 6.9 L54 9.6 L60 9 L66 8 L72 6 L78 4.8 L84 5.5 L90 6.7 L96 7 L102 4.6 L108 6 L114 8.2 L120 10.6 L126 10.3 L132 10.1 L138 8.5 L144 7.3 L150 6.5 L156 7.8 L162 8.1 L168 6.1 L174 4.2 L180 2.4 L186 3 L192 5.2 L198 6.8 L204 8.5 L210 10.7 L216 7.8 L222 13.3 L228 9.4 L234 9.1 L240 6.9 L240 14Z'/%3E%3C/svg%3E");
       --torn-bottom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='14' viewBox='0 0 240 14' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L0 13.3 L6 12.6 L12 9.7 L18 8.2 L24 6.1 L30 2.1 L36 0.7 L42 0.7 L48 0.8 L54 1.2 L60 1.4 L66 3.5 L72 5.1 L78 7.1 L84 6.6 L90 7.3 L96 4.7 L102 4.2 L108 4.6 L114 2.2 L120 2.6 L126 4.7 L132 4.4 L138 5.3 L144 5.7 L150 6.2 L156 7.1 L162 8.5 L168 8.5 L174 8.8 L180 7.1 L186 7.7 L192 9.8 L198 10.3 L204 9.9 L210 10.2 L216 13.3 L222 13.3 L228 13.3 L234 13.3 L240 13.3 L240 0Z'/%3E%3C/svg%3E");
       --torn-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='260' viewBox='0 0 14 260' preserveAspectRatio='none'%3E%3Cpath d='M14 0 L7.8 0 L11.9 6 L7.4 12.1 L6.5 18.1 L8.5 24.2 L5.1 30.2 L3.9 36.3 L4.3 42.3 L7.3 48.4 L5.9 54.4 L7.1 60.5 L6.1 66.5 L5.7 72.6 L7.3 78.6 L8 84.7 L12.1 90.7 L10.5 96.7 L11.2 102.8 L9.1 108.8 L7.2 114.9 L8.4 120.9 L6.1 127 L5.4 133 L6.8 139.1 L8 145.1 L11.3 151.2 L10.4 157.2 L10.7 163.3 L10 169.3 L8.4 175.3 L7 181.4 L7 187.4 L7.9 193.5 L8.2 199.5 L8.7 205.6 L7.8 211.6 L4.7 217.7 L4.3 223.7 L1.5 229.8 L4.4 235.8 L5.8 241.9 L7.6 247.9 L7.2 254 L7.8 260 L14 260Z'/%3E%3C/svg%3E");
@@ -204,66 +182,6 @@
       /* Alias que el JS usa en estilos inline */
       --red: var(--accent); --green: var(--ok); --gold: var(--sepia-text);
       --text: var(--ink); --text-muted: var(--sepia-text);
-    }
-
-    /* ═══════════════════════════════════════════════════════════════
-       TEMA OSCURO — pergamino envejecido a la luz de una vela
-       Lo activa el script de <head> (preferencia del sistema o elección guardada).
-       ═══════════════════════════════════════════════════════════════ */
-    :root[data-theme="dark"] {
-      color-scheme: dark;
-      --page:        #0D0906;
-      --sheet-1:     #33271A;
-      --sheet-2:     #241B12;
-      --sheet-3:     #1A130C;
-      --gilt:        #D9B45E;
-      --gilt-light:  #F0D58C;
-      --accent-glow: #F2AE96;
-      --burn:        rgba(0,0,0,.75);
-      --burn-soft:   rgba(0,0,0,.45);
-      --roll-1:      #4A3826;
-      --roll-2:      #6B5539;
-      --roll-3:      #1A120B;
-
-      --bg:          #2E2318;
-      --bg-2:        #3A2D1F;
-      --surface:     #3A2C1E;
-      --ink:         #EEDFC2;
-      --sepia:       #9C8566;
-      --sepia-text:  #C9B492;
-      --accent:      #E8957A;
-      --accent-deep: #F2AE96;
-      --on-accent:   #1C130C;
-      --ok:          #AAC683;
-      --line:        rgba(214,186,140,.26);
-      --line-strong: #9C8566;
-      --selection:   rgba(232,149,122,.3);
-      --overlay:     rgba(0,0,0,.62);
-
-      --rk-0: #D8AE80; --rk-1: #BACB90; --rk-2: #AFC3D8;
-      --rk-3: #D6AECA; --rk-4: #94CBC4; --rk-5: #E2A9A1;
-
-      --bar-bg:       #090604;
-      --on-dark:      #EEDFC2;
-      --on-dark-soft: #C2B191;
-      --sec-alumnos:      #8DB4DA;
-      --sec-ascensos:     #A9C47D;
-      --sec-stats:        #7FC2C0;
-      --sec-directorio:   #CAA6CA;
-      --sec-actividad:    #E8957A;
-      --sec-graduados:    #D9B45E;
-      --sec-crear:        #7FC79F;
-      --sec-inventario:   #E09AB5;
-      --sec-rangos:       #A9ADE6;
-      --sec-asistencia:   #E2A574;
-      --sec-credenciales: #C1A5E2;
-      --sec-seguridad:    #AABACE;
-      --sec-config:       #CDBFA9;
-      --on-sec:           #1C130C;
-      --sec-ico-active:   rgba(28,19,12,.14);
-
-      --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .93 0 0 0 0 .85 0 0 0 0 .7 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
-      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' fill='none' stroke='%23D9B45E' stroke-linecap='round'%3E%3Cpath d='M6 12H82M158 12H234' stroke-width='.9'/%3E%3Cpath d='M82 12C91 12 95 4 103 4C109 4 111 9 107 11C104 12.4 101 10 103 8M82 12C91 12 95 20 103 20C109 20 111 15 107 13C104 11.6 101 14 103 16M158 12C149 12 145 4 137 4C131 4 129 9 133 11C136 12.4 139 10 137 8M158 12C149 12 145 20 137 20C131 20 129 15 133 13C136 11.6 139 14 137 16' stroke-width='1.2'/%3E%3Cpath d='M120 3L127 12L120 21L113 12Z' fill='%23D9B45E' stroke='none'/%3E%3Cpath d='M120 7.5L123.5 12L120 16.5L116.5 12Z' fill='%2333271A' stroke='none'/%3E%3Ccircle cx='6' cy='12' r='1.3' fill='%23D9B45E' stroke='none'/%3E%3Ccircle cx='234' cy='12' r='1.3' fill='%23D9B45E' stroke='none'/%3E%3C/svg%3E");
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -333,26 +251,12 @@
       border-radius: .7rem;
     }
 
-    /* Botón de modo claro / oscuro */
-    .theme-row { display: flex; justify-content: flex-end; margin: calc(-1 * var(--space-s)) 0 var(--space-xs); }
-    .theme-toggle {
-      display: inline-flex; align-items: center; gap: .5rem; min-height: var(--tap); padding: 0 .9rem;
-      font-size: .8125rem; letter-spacing: .12em; text-transform: uppercase;
-      color: var(--ink); background: var(--surface); cursor: pointer;
-      border: var(--rule); border-radius: 0;
-    }
-    .theme-toggle .ico { font-size: 1.05rem; color: var(--accent); }
-    .theme-toggle .to-light, :root[data-theme="dark"] .theme-toggle .to-dark { display: none; }
-    :root[data-theme="dark"] .theme-toggle .to-light { display: inline-flex; align-items: center; gap: .5rem; }
-    .theme-toggle .to-dark { display: inline-flex; align-items: center; gap: .5rem; }
-    @media (hover: hover) { .theme-toggle:hover { border-color: var(--accent); } }
-
     /* Iconos (sprite inline de Phosphor) */
     .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
     .ico { width: 1.25em; height: 1.25em; flex-shrink: 0; fill: currentColor; }
 
     /* Cabecera: masthead editorial (tira superior, emblema + título, doble filete) */
-    .header { margin-bottom: var(--space-l); }
+    .header { margin-bottom: var(--space-xl); }
     .masthead-strip {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2xs) var(--space-s);
       margin: calc(-1 * var(--space-s)) 0 var(--space-s); padding-bottom: var(--space-2xs);
@@ -360,14 +264,14 @@
     }
     .kicker {
       display: inline-flex; align-items: center; gap: .55rem;
-      font-size: .8125rem; font-weight: var(--w-medium); letter-spacing: .18em; text-transform: uppercase; color: var(--sepia-text);
+      font-size: .8125rem; font-weight: var(--w-medium); letter-spacing: .18em; text-transform: uppercase; color: var(--gilt);
     }
     .kicker::before { content: ""; width: .5rem; height: .5rem; background: var(--gilt); transform: rotate(45deg); flex-shrink: 0; }
     .masthead-main {
       display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-s) var(--space-m);
       padding-bottom: var(--space-s);
-      border-bottom: var(--rule-thick);
-      box-shadow: 0 4px 0 -3px var(--ink);   /* segundo filete fino bajo el grueso */
+      border-bottom: 3px solid var(--gilt);
+      box-shadow: 0 5px 0 -3px var(--accent);   /* segundo filete, en lacre, bajo el dorado */
     }
     .crest { display: block; width: clamp(3.5rem, 2.6rem + 3vw, 5.25rem); height: auto; aspect-ratio: 64 / 72; color: var(--gilt); }
     h1 {
@@ -393,8 +297,8 @@
     #scSearch, #scAdminLogin { max-width: 30rem; margin-inline: auto; }
     /* Tarjeta: pergamino enrollado (rollos arriba y abajo, orillas tostadas) */
     .card {
-      position: relative; padding: var(--space-m); margin: .75rem 0 calc(var(--space-m) + .5rem);
-      background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--surface) 70%, transparent), transparent 75%);
+      position: relative; padding: var(--space-m) var(--space-m) var(--space-l); margin: 1rem 0 calc(var(--space-l) + .5rem);
+      background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--surface) 55%, transparent), transparent 80%), var(--panel);
       border: var(--rule); border-block: 0; border-radius: 0;
       box-shadow: inset 0 0 1.75rem var(--burn-soft);
     }
@@ -410,7 +314,8 @@
     .card-title {
       font-family: var(--font-display); font-weight: var(--w-regular);
       font-size: var(--step-1); line-height: 1.25; margin-bottom: var(--space-s); text-wrap: balance;
-      padding-bottom: var(--space-2xs); border-bottom: var(--rule-thick);
+      padding-bottom: var(--space-2xs); border-bottom: 3px solid var(--gilt);
+      color: var(--gilt);
     }
     .card-title::first-letter { color: var(--accent); }
     .home-search-card .card-title { text-align: center; }
@@ -467,8 +372,8 @@
        en hover desprende un brillo mágico y un destello lo recorre */
     .btn.success, .home-search-btn {
       overflow: hidden;
-      color: var(--on-accent); border: 0;
-      background: radial-gradient(circle at 30% 25%, var(--accent-glow) 0%, var(--accent) 48%, var(--accent-deep) 100%);
+      color: var(--on-seal); border: 0;
+      background: radial-gradient(circle at 30% 25%, var(--seal-glow) 0%, var(--seal) 48%, var(--seal-deep) 100%);
       border-radius: 1.6rem 1.1rem 1.5rem 1.2rem / 1.2rem 1.5rem 1.1rem 1.6rem;
       text-shadow: 0 -1px 0 rgba(0,0,0,.35);
       box-shadow:
@@ -479,7 +384,8 @@
         0 2px 3px var(--burn-soft);
       transition: box-shadow var(--dur) var(--ease), transform 160ms var(--ease);
     }
-    .btn.success::before, .home-search-btn::before { background: var(--accent-deep); }
+    .btn.success::before, .home-search-btn::before { background: var(--seal-deep); }
+    @media (hover: hover) { .btn.success:hover:not(:disabled), .home-search-btn:hover:not(:disabled) { color: var(--on-seal); } }
     .btn.success::after, .home-search-btn::after {
       content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
       background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--gilt-light) 55%, transparent) 50%, transparent 65%);
@@ -584,8 +490,8 @@
   </style>
 
   <!-- Resto de estilos, sin bloquear el render -->
-  <link rel="preload" href="styles.css?v=20261013a" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="styles.css?v=20261013a"></noscript>
+  <link rel="preload" href="styles.css?v=20261013b" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="styles.css?v=20261013b"></noscript>
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -614,8 +520,6 @@
   <symbol id="i-salir" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L204.69,120H112a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,229.66,122.34Z"/></symbol>
   <symbol id="i-admin" viewBox="0 0 256 256"><path d="M128,112a28,28,0,0,0-8,54.83V184a8,8,0,0,0,16,0V166.83A28,28,0,0,0,128,112Zm0,40a12,12,0,1,1,12-12A12,12,0,0,1,128,152Zm80-72H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Z"/></symbol>
   <symbol id="i-flecha" viewBox="0 0 256 256"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></symbol>
-  <symbol id="i-luna" viewBox="0 0 256 256"><path d="M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z"/></symbol>
-  <symbol id="i-sol" viewBox="0 0 256 256"><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></symbol>
   <!-- Emblema propio del Colegio (original): escudo de lacre, filete dorado,
        redoma con poción y estrella de cuatro puntas. El trazo toma currentColor. -->
   <symbol id="i-emblema" viewBox="0 0 64 72">
@@ -654,10 +558,6 @@
   <header class="header">
     <div class="masthead-strip">
       <span class="kicker">Colegio de Medimagia</span>
-      <button class="theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()">
-        <span class="to-dark"><svg class="ico" aria-hidden="true"><use href="#i-luna"/></svg>Modo oscuro</span>
-        <span class="to-light"><svg class="ico" aria-hidden="true"><use href="#i-sol"/></svg>Modo claro</span>
-      </button>
     </div>
     <div class="masthead-main">
       <svg class="crest" aria-hidden="true" focusable="false"><use href="#i-emblema"/></svg>

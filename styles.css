@@ -1019,8 +1019,6 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
 /* Al marcar un hechizo como aprendido, el punto "salta" */
 .spell-dot.on { animation: pop 380ms cubic-bezier(.3, 1.5, .5, 1); }
 
-/* Cambio de tema: fundido suave entre claro y oscuro (View Transitions) */
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 420ms; animation-timing-function: ease; }
 
 /* =================================================================
    CAPA EDITORIAL + ESCUELA DE MAGIA
@@ -1161,11 +1159,11 @@ body:has(#appHeader[style*="block"]) .masthead-strip { margin-top: 0; }
   }
 }
 
-/* ── Tablas: cabecera en banda de tinta con filete dorado ───────── */
+/* ── Tablas: cabecera en banda dorada con filete de lacre ───────── */
 .student-table th, .att-history-table th, .inv-table th {
-  color: var(--bg); background: var(--ink);
+  color: var(--on-sec); background: var(--gilt);
   font-size: .75rem; letter-spacing: .14em; text-transform: uppercase;
-  border-bottom: 3px solid var(--gilt);
+  border-bottom: 3px solid var(--accent);
 }
 .student-table th .sort-arr, .att-history-table th .sort-arr, .inv-table th .sort-arr { color: inherit; opacity: .6; }
 .student-table th .sort-arr.on, .att-history-table th .sort-arr.on, .inv-table th .sort-arr.on { opacity: 1; }
@@ -1185,3 +1183,58 @@ body:has(#appHeader[style*="block"]) .masthead-strip { margin-top: 0; }
 .toast { border-radius: 0; }
 .notice { border-left: 3px solid var(--gilt); }
 .footer { padding-top: var(--space-s); border-top: var(--rule); letter-spacing: .06em; }
+
+/* =================================================================
+   SECCIONES LIMPIAS Y SEPARADAS
+   Cada bloque vive en su propio panel (fondo oscuro translúcido,
+   filete y cabecera), con aire generoso entre bloques y subapartados
+   marcados por un título menor. Sin cambios de marcado.
+   ================================================================= */
+
+/* Subapartados dentro de una tarjeta (h3): título menor con filete fino */
+h3.card-title {
+  margin-top: 0; font-size: 1.05rem; letter-spacing: .04em;
+  border-bottom: var(--rule); color: var(--gilt);
+}
+.card .divider { margin-block: var(--space-l); }
+
+/* Paneles del panel de administración: la sección abierta es un bloque propio */
+.admin-section.show {
+  margin-top: var(--space-m); padding: var(--space-m);
+  background: var(--panel);
+  border: var(--rule); border-top: 4px solid var(--section);
+  box-shadow: inset 0 0 2rem var(--burn-soft);
+}
+.admin-section .card { margin-top: var(--space-s); }
+.admin-section .card:last-child { margin-bottom: .5rem; }
+.admin-section > .notice:first-child { margin-top: 0; }
+.admin-tabs { margin-bottom: var(--space-l); }
+
+/* Bloques internos que antes compartían fondo: ahora cada uno es un panel */
+.stats-panels { gap: var(--space-l); }
+.stats-panel, .activity-section, .rank-edit-block, .att-detail-card, .creds-stat, .att-summary-stat {
+  padding: var(--space-m); background: var(--panel);
+  border: var(--rule); border-top: 2px solid var(--gilt);
+}
+.activity-section, .rank-edit-block { margin-bottom: var(--space-l); }
+.stats-grid, .asc-grid, .grad-grid, .rk-grid { background: var(--panel); }
+.stats-grid { margin-bottom: var(--space-l); }
+
+/* Perfil: progreso, hechizos, guardado, infracciones y asistencia, bien separados */
+.stu-header { margin-bottom: var(--space-l); padding-bottom: var(--space-m); border-bottom: 3px solid var(--gilt); box-shadow: 0 5px 0 -3px var(--accent); }
+.ov-wrap { margin-bottom: var(--space-l); }
+#pBitCount:not(:empty) { margin-bottom: var(--space-m); }
+.rk-grid { margin-bottom: var(--space-l); }
+.save-row { margin-top: 0; padding-block: var(--space-m); border-block: var(--rule); }
+#pInfractions:not(:empty), #pAttendance:not(:empty) { margin-top: var(--space-l); padding-top: var(--space-m); border-top: var(--rule); }
+
+/* Pie de cada pantalla (botones de navegación): separado del contenido */
+.admin-footer-btns { margin-top: var(--space-l); padding-top: var(--space-m); border-top: var(--rule); }
+
+/* Bitácoras: el formulario y el registro, como dos bloques distintos */
+.bit-form-section { padding-top: var(--space-m); margin-top: var(--space-m); }
+.bit-list-head { margin-top: var(--space-xl); }
+.bitacora-card { margin-bottom: var(--space-m); }
+
+/* Inicio: acceso y navegación secundaria separados */
+.home-nav { margin-top: var(--space-m); }
