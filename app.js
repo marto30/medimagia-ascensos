@@ -830,7 +830,7 @@ function updateAppHeader() {
     const rank = getStudentRank(loggedInStudent);
     userHeader.innerHTML = `
       <div class="app-header-left">
-        <span class="app-brand" aria-hidden="true">⚕</span>
+        <span class="app-brand" aria-hidden="true"><svg class="app-emblem"><use href="#i-emblema"/></svg></span>
         <span class="app-header-who">
           <span class="app-header-name">${escHtml(loggedInStudent)}</span>
           <span class="app-header-rank rank-badge ${rankClass("rk", rank)}">${escHtml(rank)}</span>
@@ -846,7 +846,7 @@ function updateAppHeader() {
   } else if (isAdmin) {
     userHeader.innerHTML = `
       <div class="app-header-left">
-        <span class="app-brand" aria-hidden="true">⚕</span>
+        <span class="app-brand" aria-hidden="true"><svg class="app-emblem"><use href="#i-emblema"/></svg></span>
         <span class="app-header-who">
           <span class="app-header-name">${isSuperAdmin ? "Superadmin" : "Administración"}</span>
           <span class="app-header-role">Panel del Colegio</span>

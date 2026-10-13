@@ -30,7 +30,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23F3EAD3'/%3E%3Ctext x='50' y='72' font-size='64' text-anchor='middle' fill='%238B3A2F'%3E%E2%9A%95%3C/text%3E%3C/svg%3E">
 
   <!-- Única fuente precargada: la del título (elemento LCP) -->
-  <link rel="preload" href="fonts/cormorant-garamond-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/cinzel-decorative-400-latin.woff2" as="font" type="font/woff2" crossorigin>
   <!-- Orígenes que la app necesita nada más arrancar (módulos y datos) -->
   <link rel="preconnect" href="https://esm.sh" crossorigin>
   <link rel="preconnect" href="https://znuleryreishpfmtvhby.supabase.co" crossorigin>
@@ -69,15 +69,16 @@
   </script>
   <style>
     /* ── Fuentes autoalojadas (variables, subsets latin y latin-ext) ── */
+    /* Cinzel Decorative (Google Fonts, OFL) autoalojada: la CSP solo admite font-src 'self' */
     @font-face {
-      font-family: "Cormorant Garamond"; font-style: normal; font-weight: 300 400; font-display: swap;
-      src: url(fonts/cormorant-garamond-latin.woff2) format("woff2");
+      font-family: "Cinzel Decorative"; font-style: normal; font-weight: 400; font-display: swap;
+      src: url(fonts/cinzel-decorative-400-latin.woff2) format("woff2");
       unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
     }
     @font-face {
-      font-family: "Cormorant Garamond"; font-style: normal; font-weight: 300 400; font-display: swap;
-      src: url(fonts/cormorant-garamond-latin-ext.woff2) format("woff2");
-      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      font-family: "Cinzel Decorative"; font-style: normal; font-weight: 700; font-display: swap;
+      src: url(fonts/cinzel-decorative-700-latin.woff2) format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
     }
     @font-face {
       font-family: "EB Garamond"; font-style: normal; font-weight: 400 500; font-display: swap;
@@ -91,10 +92,6 @@
     }
     /* Fallbacks con métricas medidas sobre Times New Roman: el texto no salta al cargar la fuente */
     @font-face {
-      font-family: "Cormorant Fallback"; src: local("Times New Roman"), local("TimesNewRomanPSMT"), local("Times");
-      size-adjust: 96.35%; ascent-override: 95.90%; descent-override: 29.79%; line-gap-override: 0%;
-    }
-    @font-face {
       font-family: "Garamond Fallback"; src: local("Times New Roman"), local("TimesNewRomanPSMT"), local("Times");
       size-adjust: 93.61%; ascent-override: 107.57%; descent-override: 31.83%; line-gap-override: 0%;
     }
@@ -106,30 +103,34 @@
     :root {
       color-scheme: light;
 
-      /* Hoja de pergamino */
-      --page:        #E6DCC8;                 /* fondo fuera de la hoja */
-      --sheet-1:     #F4E0B6;                 /* centro de la hoja */
-      --sheet-2:     #E5C48A;                 /* hacia los bordes */
-      --burn:        rgba(122,66,18,.55);     /* borde quemado */
-      --burn-soft:   rgba(122,66,18,.22);
-      --roll-1:      #C9965A;                 /* rollos superior e inferior */
-      --roll-2:      #F2DCAE;
-      --roll-3:      #9C6A38;
+      /* Hoja de pergamino envejecido */
+      --page:        #E2D3B0;                 /* fondo fuera de la hoja */
+      --sheet-1:     #F4E4BC;                 /* centro de la hoja */
+      --sheet-2:     #E8D5A3;                 /* hacia los bordes */
+      --sheet-3:     #D4B483;                 /* manchas y orillas tostadas */
+      --burn:        rgba(92,58,30,.72);      /* borde quemado (#5C3A1E) */
+      --burn-soft:   rgba(92,58,30,.26);
+      --roll-1:      #C9A063;                 /* rollos superior e inferior */
+      --roll-2:      #F4E4BC;
+      --roll-3:      #8A6234;
 
-      /* Paleta de contenido */
-      --bg:          #F4E0B6;
-      --bg-2:        #EAD09C;                 /* avisos, filas al pasar el ratón */
-      --surface:     #FAEFD6;                 /* campos, baldosas, ventanas */
-      --ink:         #2B2118;                 /* texto principal */
-      --sepia:       #7A6A53;                 /* líneas y bordes */
-      --sepia-text:  #5A4830;                 /* texto de apoyo */
-      --accent:      #8B3A2F;                 /* lacre: enlaces, botón principal */
-      --accent-deep: #6F2C23;
-      --on-accent:   #FAEFD6;
+      /* Paleta propia: tinta, lacre y dorado */
+      --bg:          #F4E4BC;
+      --bg-2:        #EAD6A6;                 /* avisos, filas al pasar el ratón */
+      --surface:     #FAF0D4;                 /* campos, baldosas, ventanas */
+      --ink:         #3B2414;                 /* tinta: texto principal (11.5:1) */
+      --sepia:       #7A5C3C;                 /* líneas y bordes */
+      --sepia-text:  #5C4128;                 /* texto de apoyo (≥4.7:1 en toda la hoja) */
+      --accent:      #7A1F1F;                 /* lacre: enlaces, sello, capitulares */
+      --accent-deep: #5A1414;
+      --accent-glow: #A8423A;                 /* brillo del lacre */
+      --on-accent:   #F6E7C4;
+      --gilt:        #B8913A;                 /* dorado: SOLO adornos (no texto, 2.3:1) */
+      --gilt-light:  #E8CB7A;
       --ok:          #46592F;
-      --line:        rgba(110,78,40,.42);
-      --line-strong: #7A6A53;
-      --selection:   rgba(139,58,47,.2);
+      --line:        rgba(92,58,30,.38);
+      --line-strong: #7A5C3C;
+      --selection:   rgba(122,31,31,.18);
       --overlay:     rgba(43,25,10,.5);
 
       /* Rangos (insignias) */
@@ -137,7 +138,7 @@
       --rk-3: #634659; --rk-4: #335956; --rk-5: #714440;
 
       /* Menús: barra de sesión y un color por sección del panel */
-      --bar-bg:       #2B2118;
+      --bar-bg:       #3B2414;
       --on-dark:      #F3EAD3;
       --on-dark-soft: #D8CCB2;
       --sec-alumnos:      #355C7D;
@@ -158,22 +159,24 @@
 
       /* Texturas y ornamentos (SVG inline, < 1 KB cada uno) */
       --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .2 0 0 0 0 .06 0 0 0 .13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
-      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 12'%3E%3Cpath d='M0 6h64M96 6h64' stroke='%237A6A53' stroke-width='.8'/%3E%3Cpath d='M80 1.5l4.5 4.5-4.5 4.5-4.5-4.5z' fill='none' stroke='%237A6A53' stroke-width='.8'/%3E%3Ccircle cx='69' cy='6' r='1' fill='%237A6A53'/%3E%3Ccircle cx='91' cy='6' r='1' fill='%237A6A53'/%3E%3C/svg%3E");
+      /* Filigrana dorada: separadores (240×24) */
+      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' fill='none' stroke='%23B8913A' stroke-linecap='round'%3E%3Cpath d='M6 12H82M158 12H234' stroke-width='.9'/%3E%3Cpath d='M82 12C91 12 95 4 103 4C109 4 111 9 107 11C104 12.4 101 10 103 8M82 12C91 12 95 20 103 20C109 20 111 15 107 13C104 11.6 101 14 103 16M158 12C149 12 145 4 137 4C131 4 129 9 133 11C136 12.4 139 10 137 8M158 12C149 12 145 20 137 20C131 20 129 15 133 13C136 11.6 139 14 137 16' stroke-width='1.2'/%3E%3Cpath d='M120 3L127 12L120 21L113 12Z' fill='%23B8913A' stroke='none'/%3E%3Cpath d='M120 7.5L123.5 12L120 16.5L116.5 12Z' fill='%23F4E4BC' stroke='none'/%3E%3Ccircle cx='6' cy='12' r='1.3' fill='%23B8913A' stroke='none'/%3E%3Ccircle cx='234' cy='12' r='1.3' fill='%23B8913A' stroke='none'/%3E%3C/svg%3E");
       --torn-top: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='14' viewBox='0 0 240 14' preserveAspectRatio='none'%3E%3Cpath d='M0 14 L0 6.9 L6 5.6 L12 4.9 L18 7.3 L24 11.1 L30 8.1 L36 6 L42 5.9 L48 6.9 L54 9.6 L60 9 L66 8 L72 6 L78 4.8 L84 5.5 L90 6.7 L96 7 L102 4.6 L108 6 L114 8.2 L120 10.6 L126 10.3 L132 10.1 L138 8.5 L144 7.3 L150 6.5 L156 7.8 L162 8.1 L168 6.1 L174 4.2 L180 2.4 L186 3 L192 5.2 L198 6.8 L204 8.5 L210 10.7 L216 7.8 L222 13.3 L228 9.4 L234 9.1 L240 6.9 L240 14Z'/%3E%3C/svg%3E");
       --torn-bottom: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='14' viewBox='0 0 240 14' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L0 13.3 L6 12.6 L12 9.7 L18 8.2 L24 6.1 L30 2.1 L36 0.7 L42 0.7 L48 0.8 L54 1.2 L60 1.4 L66 3.5 L72 5.1 L78 7.1 L84 6.6 L90 7.3 L96 4.7 L102 4.2 L108 4.6 L114 2.2 L120 2.6 L126 4.7 L132 4.4 L138 5.3 L144 5.7 L150 6.2 L156 7.1 L162 8.5 L168 8.5 L174 8.8 L180 7.1 L186 7.7 L192 9.8 L198 10.3 L204 9.9 L210 10.2 L216 13.3 L222 13.3 L228 13.3 L234 13.3 L240 13.3 L240 0Z'/%3E%3C/svg%3E");
       --torn-left: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='260' viewBox='0 0 14 260' preserveAspectRatio='none'%3E%3Cpath d='M14 0 L7.8 0 L11.9 6 L7.4 12.1 L6.5 18.1 L8.5 24.2 L5.1 30.2 L3.9 36.3 L4.3 42.3 L7.3 48.4 L5.9 54.4 L7.1 60.5 L6.1 66.5 L5.7 72.6 L7.3 78.6 L8 84.7 L12.1 90.7 L10.5 96.7 L11.2 102.8 L9.1 108.8 L7.2 114.9 L8.4 120.9 L6.1 127 L5.4 133 L6.8 139.1 L8 145.1 L11.3 151.2 L10.4 157.2 L10.7 163.3 L10 169.3 L8.4 175.3 L7 181.4 L7 187.4 L7.9 193.5 L8.2 199.5 L8.7 205.6 L7.8 211.6 L4.7 217.7 L4.3 223.7 L1.5 229.8 L4.4 235.8 L5.8 241.9 L7.6 247.9 L7.2 254 L7.8 260 L14 260Z'/%3E%3C/svg%3E");
       --torn-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='260' viewBox='0 0 14 260' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L11.8 0 L11.0 6 L10.9 12.1 L10.7 18.1 L9.8 24.2 L10.5 30.2 L11.0 36.3 L6.9 42.3 L5.0 48.4 L0.7 54.4 L3.5 60.5 L2.0 66.5 L3.4 72.6 L3.7 78.6 L2.9 84.7 L5.7 90.7 L6.5 96.7 L8.7 102.8 L8.5 108.8 L7.6 114.9 L7.9 120.9 L4.3 127 L8.2 133 L8.6 139.1 L8.8 145.1 L8.0 151.2 L4.5 157.2 L6.4 163.3 L8.0 169.3 L7.9 175.3 L8.7 181.4 L7.6 187.4 L6.5 193.5 L7.4 199.5 L7.0 205.6 L4.7 211.6 L6.1 217.7 L1.3 223.7 L1.6 229.8 L3.8 235.8 L2.6 241.9 L8.4 247.9 L11.0 254 L11.8 260 L0 260Z'/%3E%3C/svg%3E");
 
       /* Tipografía */
-      --font-display: "Cormorant Garamond", "Cormorant Fallback", Georgia, serif;
+      --font-display: "Cinzel Decorative", Georgia, serif;           /* títulos */
       --font-body:    "EB Garamond", "Garamond Fallback", Georgia, serif;
+      --font-name:    var(--font-body);   /* nombres de personas: legibles, no decorativos */
       --font-mono:    ui-monospace, "Cascadia Mono", Consolas, monospace;
       --w-light: 300; --w-regular: 400; --w-medium: 500;
       --step--1: clamp(.875rem, .85rem + .12vw, .9375rem);
       --step-0:  clamp(1.0625rem, 1rem + .3vw, 1.1875rem);
       --step-1:  clamp(1.25rem, 1.12rem + .55vw, 1.5rem);
       --step-2:  clamp(1.6rem, 1.35rem + 1.1vw, 2.1rem);
-      --step-3:  clamp(2.25rem, 1.7rem + 2.4vw, 3.4rem);
+      --step-3:  clamp(1.9rem, 1.3rem + 2.6vw, 3.4rem);
       --leading: 1.75;
       --measure: 68ch;
 
@@ -186,7 +189,9 @@
       --sheet-pad: clamp(1.4rem, 4.5vw, 3.25rem); /* margen interior de la hoja */
       --col: 52rem;        /* ancho de lectura cómodo (acceso, textos) */
       --col-wide: 90rem;   /* ancho de la hoja: aprovecha la pantalla */
-      --radius: 2px;
+      --radius: 0;         /* rejilla editorial: esquinas vivas */
+      --rule: 1px solid var(--line-strong);   /* filete fino */
+      --rule-thick: 3px solid var(--ink);     /* filete de cabecera */
       --tap: 44px;
 
       /* Movimiento */
@@ -210,6 +215,10 @@
       --page:        #0D0906;
       --sheet-1:     #33271A;
       --sheet-2:     #241B12;
+      --sheet-3:     #1A130C;
+      --gilt:        #D9B45E;
+      --gilt-light:  #F0D58C;
+      --accent-glow: #F2AE96;
       --burn:        rgba(0,0,0,.75);
       --burn-soft:   rgba(0,0,0,.45);
       --roll-1:      #4A3826;
@@ -254,7 +263,7 @@
       --sec-ico-active:   rgba(28,19,12,.14);
 
       --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .93 0 0 0 0 .85 0 0 0 0 .7 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
-      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 12'%3E%3Cpath d='M0 6h64M96 6h64' stroke='%239C8566' stroke-width='.8'/%3E%3Cpath d='M80 1.5l4.5 4.5-4.5 4.5-4.5-4.5z' fill='none' stroke='%239C8566' stroke-width='.8'/%3E%3Ccircle cx='69' cy='6' r='1' fill='%239C8566'/%3E%3Ccircle cx='91' cy='6' r='1' fill='%239C8566'/%3E%3C/svg%3E");
+      --ornament: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' fill='none' stroke='%23D9B45E' stroke-linecap='round'%3E%3Cpath d='M6 12H82M158 12H234' stroke-width='.9'/%3E%3Cpath d='M82 12C91 12 95 4 103 4C109 4 111 9 107 11C104 12.4 101 10 103 8M82 12C91 12 95 20 103 20C109 20 111 15 107 13C104 11.6 101 14 103 16M158 12C149 12 145 4 137 4C131 4 129 9 133 11C136 12.4 139 10 137 8M158 12C149 12 145 20 137 20C131 20 129 15 133 13C136 11.6 139 14 137 16' stroke-width='1.2'/%3E%3Cpath d='M120 3L127 12L120 21L113 12Z' fill='%23D9B45E' stroke='none'/%3E%3Cpath d='M120 7.5L123.5 12L120 16.5L116.5 12Z' fill='%2333271A' stroke='none'/%3E%3Ccircle cx='6' cy='12' r='1.3' fill='%23D9B45E' stroke='none'/%3E%3Ccircle cx='234' cy='12' r='1.3' fill='%23D9B45E' stroke='none'/%3E%3C/svg%3E");
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -296,9 +305,12 @@
       content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
       background:
         var(--paper),
-        radial-gradient(ellipse 75% 60% at 50% 42%, var(--sheet-1) 0%, var(--sheet-1) 30%, var(--sheet-2) 100%);
+        radial-gradient(circle at 9% 14%, color-mix(in srgb, var(--sheet-3) 55%, transparent), transparent 22rem),
+        radial-gradient(circle at 92% 78%, color-mix(in srgb, var(--sheet-3) 50%, transparent), transparent 26rem),
+        radial-gradient(circle at 70% 6%, color-mix(in srgb, var(--sheet-3) 30%, transparent), transparent 14rem),
+        radial-gradient(ellipse 75% 60% at 50% 42%, var(--sheet-1) 0%, var(--sheet-1) 30%, var(--sheet-2) 82%, var(--sheet-3) 100%);
       background-color: var(--sheet-2);
-      box-shadow: inset 0 0 4rem var(--burn-soft), inset 0 0 1.1rem var(--burn);
+      box-shadow: inset 0 0 4rem var(--burn-soft), inset 0 0 1.1rem var(--burn), inset 0 0 .25rem #5C3A1E;
       -webkit-mask:
         var(--torn-top) top left / 240px 14px repeat-x,
         var(--torn-bottom) bottom left / 240px 14px repeat-x,
@@ -325,8 +337,9 @@
     .theme-row { display: flex; justify-content: flex-end; margin: calc(-1 * var(--space-s)) 0 var(--space-xs); }
     .theme-toggle {
       display: inline-flex; align-items: center; gap: .5rem; min-height: var(--tap); padding: 0 .9rem;
-      font-size: var(--step--1); color: var(--ink); background: var(--surface); cursor: pointer;
-      border: 1px solid var(--line-strong); border-radius: 999px;
+      font-size: .8125rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--ink); background: var(--surface); cursor: pointer;
+      border: var(--rule); border-radius: 0;
     }
     .theme-toggle .ico { font-size: 1.05rem; color: var(--accent); }
     .theme-toggle .to-light, :root[data-theme="dark"] .theme-toggle .to-dark { display: none; }
@@ -338,26 +351,68 @@
     .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
     .ico { width: 1.25em; height: 1.25em; flex-shrink: 0; fill: currentColor; }
 
-    /* Cabecera */
-    .header { text-align: center; margin-bottom: var(--space-l); }
-    .crest { font-size: 1.75rem; line-height: 1; color: var(--accent); margin-bottom: var(--space-xs); }
-    h1 {
-      font-family: var(--font-display); font-weight: var(--w-light);
-      font-size: var(--step-3); line-height: 1.1; letter-spacing: -.005em; text-wrap: balance;
+    /* Cabecera: masthead editorial (tira superior, emblema + título, doble filete) */
+    .header { margin-bottom: var(--space-l); }
+    .masthead-strip {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2xs) var(--space-s);
+      margin: calc(-1 * var(--space-s)) 0 var(--space-s); padding-bottom: var(--space-2xs);
+      border-bottom: var(--rule);
     }
-    .subtitle { margin-top: var(--space-2xs); color: var(--sepia-text); }
+    .kicker {
+      display: inline-flex; align-items: center; gap: .55rem;
+      font-size: .8125rem; font-weight: var(--w-medium); letter-spacing: .18em; text-transform: uppercase; color: var(--sepia-text);
+    }
+    .kicker::before { content: ""; width: .5rem; height: .5rem; background: var(--gilt); transform: rotate(45deg); flex-shrink: 0; }
+    .masthead-main {
+      display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-s) var(--space-m);
+      padding-bottom: var(--space-s);
+      border-bottom: var(--rule-thick);
+      box-shadow: 0 4px 0 -3px var(--ink);   /* segundo filete fino bajo el grueso */
+    }
+    .crest { display: block; width: clamp(3.5rem, 2.6rem + 3vw, 5.25rem); height: auto; aspect-ratio: 64 / 72; color: var(--gilt); }
+    h1 {
+      font-family: var(--font-display); font-weight: var(--w-regular);
+      font-size: var(--step-3); line-height: 1.08; letter-spacing: 0; text-wrap: balance;
+      color: var(--ink);
+      /* Tinta escribiéndose: el trazo se descubre de izquierda a derecha y el borrón se asienta */
+      animation: ink-write 2.4s cubic-bezier(.45, .05, .35, 1) .15s both;
+    }
+    h1::first-letter { color: var(--accent); }
+    @keyframes ink-write {
+      0%   { clip-path: inset(-.3em 100% -.3em 0); filter: blur(1.2px); }
+      75%  { filter: blur(0); }
+      100% { clip-path: inset(-.3em -.3em -.3em 0); filter: none; }
+    }
+    .subtitle { margin-top: var(--space-2xs); font-style: italic; color: var(--sepia-text); }
     .header::after {
-      content: ""; display: block; width: 10rem; height: 12px; margin: var(--space-m) auto 0;
+      content: ""; display: block; width: min(15rem, 70%); height: 24px; margin: var(--space-s) auto 0;
       background: var(--ornament) center / contain no-repeat;
     }
 
     /* Pantalla de acceso */
     #scSearch, #scAdminLogin { max-width: 30rem; margin-inline: auto; }
-    .card { border: 1px solid var(--line); border-radius: var(--radius); padding: var(--space-m); margin-bottom: var(--space-m); }
+    /* Tarjeta: pergamino enrollado (rollos arriba y abajo, orillas tostadas) */
+    .card {
+      position: relative; padding: var(--space-m); margin: .75rem 0 calc(var(--space-m) + .5rem);
+      background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--surface) 70%, transparent), transparent 75%);
+      border: var(--rule); border-block: 0; border-radius: 0;
+      box-shadow: inset 0 0 1.75rem var(--burn-soft);
+    }
+    .card::before, .card::after {
+      content: ""; position: absolute; left: -.4rem; right: -.4rem; height: .8rem; pointer-events: none;
+      border-radius: .4rem;
+      background: linear-gradient(to bottom, var(--roll-3), var(--roll-2) 38%, var(--roll-1) 70%, var(--roll-3));
+      box-shadow: 0 1px 2px var(--burn-soft);
+    }
+    .card::before { top: -.55rem; }
+    .card::after  { bottom: -.55rem; }
+    /* Título de bloque: cabecera de sección con filete grueso */
     .card-title {
       font-family: var(--font-display); font-weight: var(--w-regular);
       font-size: var(--step-1); line-height: 1.25; margin-bottom: var(--space-s); text-wrap: balance;
+      padding-bottom: var(--space-2xs); border-bottom: var(--rule-thick);
     }
+    .card-title::first-letter { color: var(--accent); }
     .home-search-card .card-title { text-align: center; }
     .field { margin-bottom: var(--space-s); }
     .field label, .rank-manual-edit label, .name-manual-edit label {
@@ -390,7 +445,8 @@
       position: relative; isolation: isolate;
       display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
       min-height: var(--tap); padding: .45rem 1.25rem;
-      font-size: 1rem; font-weight: var(--w-medium); line-height: 1.3; white-space: nowrap;
+      font-size: .9375rem; font-weight: var(--w-medium); line-height: 1.3; white-space: nowrap;
+      letter-spacing: .08em; text-transform: uppercase;
       color: var(--ink); background: transparent;
       border: 1px solid var(--line-strong); border-radius: var(--radius);
       cursor: pointer; text-decoration: none;
@@ -407,9 +463,44 @@
     .btn:active:not(:disabled) { transform: translateY(1px); }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
     .btn.full { width: 100%; }
-    /* Botón principal: lacre sólido; en hover se oscurece */
-    .btn.success, .home-search-btn { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+    /* Botón principal: sello de lacre (relieve, aro dorado y borde irregular);
+       en hover desprende un brillo mágico y un destello lo recorre */
+    .btn.success, .home-search-btn {
+      overflow: hidden;
+      color: var(--on-accent); border: 0;
+      background: radial-gradient(circle at 30% 25%, var(--accent-glow) 0%, var(--accent) 48%, var(--accent-deep) 100%);
+      border-radius: 1.6rem 1.1rem 1.5rem 1.2rem / 1.2rem 1.5rem 1.1rem 1.6rem;
+      text-shadow: 0 -1px 0 rgba(0,0,0,.35);
+      box-shadow:
+        inset 0 0 0 2px rgba(0,0,0,.2),
+        inset 0 0 0 4px color-mix(in srgb, var(--gilt) 60%, transparent),
+        inset 2px 3px 4px rgba(255,220,200,.25),
+        inset -2px -3px 6px rgba(40,5,5,.45),
+        0 2px 3px var(--burn-soft);
+      transition: box-shadow var(--dur) var(--ease), transform 160ms var(--ease);
+    }
     .btn.success::before, .home-search-btn::before { background: var(--accent-deep); }
+    .btn.success::after, .home-search-btn::after {
+      content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+      background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--gilt-light) 55%, transparent) 50%, transparent 65%);
+      transform: translateX(-120%);
+    }
+    @media (hover: hover) {
+      .btn.success:hover:not(:disabled), .home-search-btn:hover:not(:disabled) {
+        box-shadow:
+          inset 0 0 0 2px rgba(0,0,0,.2),
+          inset 0 0 0 4px var(--gilt),
+          inset 2px 3px 4px rgba(255,220,200,.25),
+          inset -2px -3px 6px rgba(40,5,5,.45),
+          0 0 0 2px color-mix(in srgb, var(--gilt) 70%, transparent),
+          0 0 1.25rem .25rem color-mix(in srgb, var(--gilt-light) 60%, transparent);
+      }
+      .btn.success:hover:not(:disabled)::before, .home-search-btn:hover:not(:disabled)::before { opacity: 0; }
+      .btn.success:hover:not(:disabled)::after, .home-search-btn:hover:not(:disabled)::after {
+        transform: translateX(120%); transition: transform 900ms var(--ease);
+      }
+    }
+    .btn.success:focus-visible, .home-search-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
     .err, .ok-msg, .saved-msg { display: none; }
     .err    { margin-top: var(--space-2xs); font-size: var(--step--1); color: var(--accent); }
@@ -433,14 +524,20 @@
       display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-s);
       width: 100%; min-height: 4.5rem; padding: var(--space-s); text-align: left; cursor: pointer;
       color: var(--ink); background: var(--surface);
-      border: 1px solid var(--line); border-left: 4px solid var(--bar-bg); border-radius: 4px;
+      border: var(--rule); border-left: 4px solid var(--bar-bg); border-radius: 0;
       transition: transform 200ms var(--ease);
     }
     .home-nav-ico {
-      display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 4px;
+      display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 0;
       color: var(--on-dark); background: var(--bar-bg); font-size: 1.15rem;
     }
-    .home-nav-text { display: grid; }
+    .home-nav-text { display: grid; min-width: 0; }
+    /* Móviles muy estrechos: Cinzel es ancha; sin flecha y con menos hueco cabe el título */
+    @media (max-width: 22rem) {
+      .home-nav-card { grid-template-columns: auto minmax(0, 1fr); gap: .6rem; padding: .75rem; }
+      .home-nav-arrow { display: none; }
+      .home-nav-card .home-nav-title { font-size: 1.05rem; }
+    }
     .home-nav-title { font-family: var(--font-display); font-size: var(--step-1); line-height: 1.25; }
     .home-nav-sub { font-size: var(--step--1); color: var(--sepia-text); }
     .home-nav-arrow { color: var(--sepia); }
@@ -482,12 +579,13 @@
         transition-duration: .01ms !important; transition-delay: 0s !important;
         scroll-behavior: auto !important;
       }
+      h1 { animation: none; }
     }
   </style>
 
   <!-- Resto de estilos, sin bloquear el render -->
-  <link rel="preload" href="styles.css?v=20261002e" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="styles.css?v=20261002e"></noscript>
+  <link rel="preload" href="styles.css?v=20261013a" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="styles.css?v=20261013a"></noscript>
 </head>
 <body>
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -518,7 +616,21 @@
   <symbol id="i-flecha" viewBox="0 0 256 256"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></symbol>
   <symbol id="i-luna" viewBox="0 0 256 256"><path d="M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z"/></symbol>
   <symbol id="i-sol" viewBox="0 0 256 256"><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></symbol>
+  <!-- Emblema propio del Colegio (original): escudo de lacre, filete dorado,
+       redoma con poción y estrella de cuatro puntas. El trazo toma currentColor. -->
+  <symbol id="i-emblema" viewBox="0 0 64 72">
+    <path d="M32 3 58 11v23c0 18-12 29-26 35C18 63 6 52 6 34V11Z" fill="#7A1F1F" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M32 8.5 53 15v19c0 14.5-9.6 23.6-21 28.8C20.6 57.6 11 48.5 11 34V15Z" fill="none" stroke="currentColor" stroke-width=".8" opacity=".85"/>
+    <path d="M32 10.5l1.4 3.1 3.1 1.4-3.1 1.4L32 19.5l-1.4-3.1-3.1-1.4 3.1-1.4Z" fill="currentColor"/>
+    <path d="M20.9 44h22.2l.9 1.5a5 5 0 0 1-4.3 7.5H24.3a5 5 0 0 1-4.3-7.5Z" fill="currentColor" opacity=".55"/>
+    <path d="M27 22h10v2h-1.5v7l8.5 14.5a5 5 0 0 1-4.3 7.5H24.3a5 5 0 0 1-4.3-7.5L28.5 31v-7H27Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle cx="29" cy="48.5" r="1" fill="#F4E4BC"/><circle cx="34.5" cy="50" r=".8" fill="#F4E4BC"/><circle cx="32" cy="40.5" r=".7" fill="currentColor"/>
+    <circle cx="17" cy="27" r="1" fill="currentColor"/><circle cx="47" cy="27" r="1" fill="currentColor"/>
+  </symbol>
 </svg>
+
+<!-- Polvo dorado: partículas decorativas (se ocultan con prefers-reduced-motion) -->
+<div class="motes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 
   <!-- BARRA DE NAVEGACIÓN (visible cuando hay sesión iniciada) -->
   <div id="appHeader" style="display:none">
@@ -540,15 +652,20 @@
 
   <!-- CABECERA -->
   <header class="header">
-    <div class="theme-row">
+    <div class="masthead-strip">
+      <span class="kicker">Colegio de Medimagia</span>
       <button class="theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()">
         <span class="to-dark"><svg class="ico" aria-hidden="true"><use href="#i-luna"/></svg>Modo oscuro</span>
         <span class="to-light"><svg class="ico" aria-hidden="true"><use href="#i-sol"/></svg>Modo claro</span>
       </button>
     </div>
-    <div class="crest" aria-hidden="true">⚕</div>
-    <h1>Registro de Ascensos</h1>
-    <p class="subtitle">Medimagia — Consulta y actualiza tu progreso</p>
+    <div class="masthead-main">
+      <svg class="crest" aria-hidden="true" focusable="false"><use href="#i-emblema"/></svg>
+      <div class="masthead-titles">
+        <h1>Registro de Ascensos</h1>
+        <p class="subtitle">Medimagia — Consulta y actualiza tu progreso</p>
+      </div>
+    </div>
   </header>
 
   <!-- ── PANTALLA: BLOQUEADO ──────────────────────────────────── -->

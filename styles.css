@@ -1021,3 +1021,167 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
 
 /* Cambio de tema: fundido suave entre claro y oscuro (View Transitions) */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 420ms; animation-timing-function: ease; }
+
+/* =================================================================
+   CAPA EDITORIAL + ESCUELA DE MAGIA
+   Estructura tomada de una portada de revista: filetes finos de 1px
+   como protagonistas, filetes gruesos de 3px bajo cada cabecera,
+   etiquetas en versalitas espaciadas, rejillas de celdas pegadas y
+   esquinas vivas. Encima, la piel de pergamino: tinta (--ink), lacre
+   (--accent) y dorado (--gilt, solo adornos: no cumple AA como texto).
+   ================================================================= */
+
+/* ── Cabecera compacta con sesión: sin emblema, una sola columna ── */
+body:has(#appHeader[style*="block"]) .masthead-main { grid-template-columns: minmax(0, 1fr); padding-bottom: var(--space-2xs); }
+body:has(#appHeader[style*="block"]) .masthead-strip { margin-top: 0; }
+
+/* ── Polvo dorado ───────────────────────────────────────────────── */
+.motes { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.motes i {
+  position: absolute; bottom: -1rem; left: var(--x, 50%);
+  width: var(--s, 3px); height: var(--s, 3px); border-radius: 50%;
+  background: radial-gradient(circle, var(--gilt-light) 0%, var(--gilt) 45%, transparent 72%);
+  opacity: 0; animation: mote var(--d, 18s) linear var(--w, 0s) infinite;
+}
+.motes i:nth-child(1)  { --x: 6%;  --s: 3px; --d: 19s; --w: -2s;  --dx: 2rem; }
+.motes i:nth-child(2)  { --x: 14%; --s: 2px; --d: 23s; --w: -9s;  --dx: -1.5rem; }
+.motes i:nth-child(3)  { --x: 23%; --s: 4px; --d: 27s; --w: -15s; --dx: 3rem; }
+.motes i:nth-child(4)  { --x: 31%; --s: 2px; --d: 21s; --w: -5s;  --dx: -2rem; }
+.motes i:nth-child(5)  { --x: 42%; --s: 3px; --d: 25s; --w: -18s; --dx: 1.5rem; }
+.motes i:nth-child(6)  { --x: 51%; --s: 2px; --d: 18s; --w: -11s; --dx: -3rem; }
+.motes i:nth-child(7)  { --x: 60%; --s: 4px; --d: 29s; --w: -3s;  --dx: 2.5rem; }
+.motes i:nth-child(8)  { --x: 68%; --s: 2px; --d: 22s; --w: -14s; --dx: -1rem; }
+.motes i:nth-child(9)  { --x: 77%; --s: 3px; --d: 26s; --w: -7s;  --dx: 2rem; }
+.motes i:nth-child(10) { --x: 85%; --s: 2px; --d: 20s; --w: -17s; --dx: -2.5rem; }
+.motes i:nth-child(11) { --x: 92%; --s: 3px; --d: 24s; --w: -10s; --dx: 1rem; }
+.motes i:nth-child(12) { --x: 97%; --s: 2px; --d: 28s; --w: -21s; --dx: -1.5rem; }
+@keyframes mote {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  12%  { opacity: .55; }
+  85%  { opacity: .35; }
+  100% { transform: translate3d(var(--dx, 0), -108vh, 0); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .motes { display: none; } }
+@media print { .motes { display: none; } }
+
+/* ── Barra de sesión: tira oscura con doble filete dorado ───────── */
+.app-header-bar { border-bottom: 3px solid var(--gilt); box-shadow: 0 2px 0 var(--accent); }
+.app-brand { width: 2.75rem; height: 2.75rem; border: 0; border-radius: 0; }
+.app-emblem { width: 2.25rem; height: auto; aspect-ratio: 64 / 72; color: var(--gilt); }
+.app-header-name { font-family: var(--font-name); font-size: var(--step-1); }
+.app-nav-btn { border-radius: 0; letter-spacing: .06em; }
+.admin-quick-btn { border-radius: 0; }
+
+/* ── Jerarquía tipográfica ──────────────────────────────────────── */
+/* Etiquetas: versalitas espaciadas, como las de una revista */
+.field label, .rank-manual-edit label, .name-manual-edit label,
+.bitacora-label, .stat-label, .creds-stat-label, .si-label, .si-rank,
+.admin-quick-label, .sort-bar-label, .cred-label {
+  font-size: .8125rem; font-weight: var(--w-medium); letter-spacing: .12em; text-transform: uppercase;
+}
+.bit-section-label {
+  display: flex; align-items: center; gap: .55rem;
+  font-size: .8125rem; letter-spacing: .18em; text-transform: uppercase; color: var(--sepia-text);
+}
+.bit-section-label::before { content: ""; width: .45rem; height: .45rem; background: var(--gilt); transform: rotate(45deg); flex-shrink: 0; }
+.bit-section-label::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); }
+.bit-label-hint { text-transform: none; letter-spacing: 0; }
+
+/* Nombres de personas: Garamond legible (Cinzel queda para los títulos) */
+.stu-name, .sc-name, .asc-name, .persona-name, .bitacora-patient, .grad-card-item .g-name, .dir-avatar {
+  font-family: var(--font-name);
+}
+.stu-name { font-weight: var(--w-medium); font-size: var(--step-3); line-height: 1.05; letter-spacing: -.01em; }
+.stu-header { border-bottom: var(--rule-thick); box-shadow: 0 4px 0 -3px var(--ink); }
+.stat-num, .creds-stat-num, .att-summary-stat strong { font-weight: 700; }
+
+/* Títulos de bloque secundarios con filete, a la manera de las cabeceras de sección */
+.stats-panel-title, .activity-title, .sec-title, .modal-title, .spell-group-label {
+  padding-bottom: .3rem; border-bottom: var(--rule);
+}
+.stats-panel-title::first-letter, .activity-title::first-letter, .modal-title::first-letter { color: var(--accent); }
+
+/* Capitulares en lacre al inicio de textos largos */
+.bitacora-proc { display: flow-root; }   /* la capitular no se sale de la caja */
+.bitacora-proc::first-letter {
+  float: left; margin: .06em .14em 0 0;
+  font-family: var(--font-display); font-weight: 700; font-size: 2.85em; line-height: .82;
+  color: var(--accent);
+}
+
+/* ── Separadores con filigrana dorada ───────────────────────────── */
+.divider, .stats-divider, .grad-banner .grad-divider { height: 24px; max-width: 15rem; }
+
+/* ── Tarjetas ───────────────────────────────────────────────────── */
+/* Dentro de secciones con scroll horizontal los rollos no deben sobresalir */
+.admin-section .card::before, .admin-section .card::after { left: 0; right: 0; }
+
+/* Rejillas de celdas pegadas: filetes de 1px compartidos (no deja huecos
+   oscuros si la última fila queda incompleta) */
+.stats-grid, .grad-grid, .asc-grid, .rk-grid {
+  gap: 0; border-top: var(--rule); border-left: var(--rule);
+}
+.stat-card, .grad-card-item, .asc-card, .rk-card {
+  border: 0; border-right: var(--rule); border-bottom: var(--rule); border-radius: 0;
+}
+.asc-card { box-shadow: inset 3px 0 0 var(--line-strong); }
+.asc-card.asc-ready { box-shadow: inset 3px 0 0 var(--ok); }
+/* En la rejilla, la celda se tiñe en lugar de elevarse (no rompe los filetes) */
+@media (hover: hover) {
+  .stat-card:hover, .grad-card-item:hover, .asc-card:hover, .rk-card:hover {
+    transform: none; background: color-mix(in srgb, var(--bg-2) 70%, transparent);
+  }
+}
+
+/* Baldosas del panel como tira de secciones con filetes */
+.admin-tabs { gap: 0; border-top: var(--rule); border-left: var(--rule); }
+.tab {
+  border: 0; border-right: var(--rule); border-bottom: var(--rule); border-radius: 0;
+  box-shadow: inset 4px 0 0 var(--c);
+}
+.tab-ico { border-radius: 0; }
+@media (hover: hover) { .tab:hover:not(.active) { transform: none; background: var(--bg-2); } }
+.tab.active { box-shadow: inset 0 -3px 0 var(--gilt); }
+
+/* Navegación secundaria del inicio: celdas pegadas */
+.home-nav { gap: 0; }
+.home-nav-card + .home-nav-card { border-top: 0; }
+
+/* Bitácoras: ficha con sello de lacre y orillas tostadas */
+.bitacora-card { border-radius: 0; border-color: var(--line-strong); }
+.bitacora-top { border-bottom: var(--rule); box-shadow: 0 2px 0 -1px var(--line); }
+.bitacora-date { border-radius: 0; font-size: .8125rem; letter-spacing: .08em; }
+.bitacora-proc { border-radius: 0; }
+
+/* Pantallas anchas: filete vertical entre columnas, como en una portada */
+@media (min-width: 75rem) {
+  #scBitacoras > .bit-list-head, #scBitacoras > #bitacoraListWrap,
+  #scPersonas > #personaBitacorasWrap {
+    padding-left: var(--space-l); border-left: var(--rule);
+  }
+}
+
+/* ── Tablas: cabecera en banda de tinta con filete dorado ───────── */
+.student-table th, .att-history-table th, .inv-table th {
+  color: var(--bg); background: var(--ink);
+  font-size: .75rem; letter-spacing: .14em; text-transform: uppercase;
+  border-bottom: 3px solid var(--gilt);
+}
+.student-table th .sort-arr, .att-history-table th .sort-arr, .inv-table th .sort-arr { color: inherit; opacity: .6; }
+.student-table th .sort-arr.on, .att-history-table th .sort-arr.on, .inv-table th .sort-arr.on { opacity: 1; }
+.student-table, .att-history-table, .inv-table { border-bottom: var(--rule); }
+
+/* ── Ventanas modales: hoja de pergamino con cabecera de filete grueso ── */
+.modal {
+  background:
+    var(--paper),
+    radial-gradient(ellipse 80% 70% at 50% 40%, var(--sheet-1) 0%, var(--sheet-2) 85%, var(--sheet-3) 100%);
+  border: var(--rule); border-top: var(--rule-thick); border-radius: 0;
+  box-shadow: inset 0 0 2.5rem var(--burn-soft), inset 0 0 .6rem var(--burn), 0 1.25rem 3rem rgba(20,10,4,.45);
+}
+
+/* ── Detalles ───────────────────────────────────────────────────── */
+.back-btn { font-size: .875rem; letter-spacing: .14em; text-transform: uppercase; }
+.toast { border-radius: 0; }
+.notice { border-left: 3px solid var(--gilt); }
+.footer { padding-top: var(--space-s); border-top: var(--rule); letter-spacing: .06em; }
