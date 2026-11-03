@@ -2745,6 +2745,93 @@ const BITS_BATCH      = 10;
 let bitacorasFiltered = [];
 let bitacorasObserver = null;
 let editingBitacoraId = null;
+const commentSaving = new Set();
+const commentLoads = new Map();
+
+function commentElement(kind, id, scope) {
+  return document.getElementById(`${kind}-${scope}-${domKey(id)}`);
+}
+
+function bitacoraCommentsHtml(id, scope) {
+  if (!isAdmin && !loggedInStudent) return "";
+  const key = `${scope}-${domKey(id)}`;
+  return `<details class="bitacora-comments" ontoggle="if(this.open)loadBitacoraComments('${safeAttr(id)}','${scope}')">
+    <summary>Ver comentarios</summary>
+    <div id="bitComments-${key}" aria-live="polite"></div>
+    <form onsubmit="submitBitacoraComment(event,'${safeAttr(id)}','${scope}')">
+      <label for="bitCommentText-${key}">Añadir comentario</label>
+      <textarea id="bitCommentText-${key}" rows="3" maxlength="2000" required placeholder="Escribe un comentario…"></textarea>
+      <button class="btn sm" id="bitCommentSend-${key}" type="submit">Publicar comentario</button>
+      <p id="bitCommentStatus-${key}" class="muted-note" role="status"></p>
+    </form>
+  </details>`;
+}
+
+function commentSessionCurrent(session, epoch) {
+  return session && session.generation === authGeneration && epoch === sensitiveEpoch;
+}
+
+window.loadBitacoraComments = async function(id, scope) {
+  if ((!isAdmin && !loggedInStudent) || !["list", "persona"].includes(scope)) return;
+  const el = commentElement("bitComments", id, scope);
+  if (!el) return;
+  const epoch = sensitiveEpoch;
+  const key = `${scope}-${id}`;
+  const ticket = {};
+  commentLoads.set(key, ticket);
+  const current = session => commentSessionCurrent(session, epoch) && commentLoads.get(key) === ticket;
+  let session;
+  try {
+    session = await verifiedSession();
+    if (!current(session)) {
+      if (epoch === sensitiveEpoch && commentLoads.get(key) === ticket) el.textContent = "Inicia sesión para ver comentarios.";
+      return;
+    }
+    el.textContent = "Cargando comentarios…";
+    const comments = await fetchAllRows("bitacora_comments", "id, author_name, body, created_at",
+      q => q.eq("bitacora_id", id).order("created_at", { ascending: true }).order("id", { ascending: true }));
+    if (!current(session)) return;
+    el.innerHTML = comments.length ? comments.map(c => `<article class="bitacora-comment">
+      <p class="muted-note">${escHtml(c.author_name)} · ${escHtml(formatDate(c.created_at))}</p>
+      <p class="bitacora-comment-body">${escHtml(c.body)}</p>
+    </article>`).join("") : '<p class="muted-note">Todavía no hay comentarios.</p>';
+  } catch {
+    if (epoch === sensitiveEpoch && commentLoads.get(key) === ticket) el.textContent = "No se pudieron cargar los comentarios. Vuelve a abrir esta sección para reintentar.";
+  }
+};
+
+window.submitBitacoraComment = async function(event, id, scope) {
+  event.preventDefault();
+  if ((!isAdmin && !loggedInStudent) || !["list", "persona"].includes(scope)) return;
+  const input = commentElement("bitCommentText", id, scope);
+  const status = commentElement("bitCommentStatus", id, scope);
+  const button = commentElement("bitCommentSend", id, scope);
+  if (!input || !status || !button) return;
+  const body = input.value.trim();
+  if (!body || body.length > 2000) { status.textContent = "Escribe un comentario de entre 1 y 2000 caracteres."; return; }
+  const epoch = sensitiveEpoch;
+  const key = `${epoch}-${id}`;
+  if (commentSaving.has(key)) return;
+  commentSaving.add(key);
+  button.disabled = true;
+  status.textContent = "";
+  try {
+    const session = await verifiedSession();
+    if (epoch !== sensitiveEpoch) return;
+    if (!commentSessionCurrent(session, epoch)) { status.textContent = "Inicia sesión para publicar comentarios."; return; }
+    const { error } = await supabase.from("bitacora_comments").insert({ bitacora_id: id, body });
+    if (error) throw error;
+    if (!commentSessionCurrent(session, epoch)) return;
+    if (input.value.trim() === body) input.value = "";
+    status.textContent = "Comentario publicado.";
+    await Promise.all(["list", "persona"].map(view => loadBitacoraComments(id, view)));
+  } catch {
+    if (epoch === sensitiveEpoch) status.textContent = "No se pudo publicar el comentario. Comprueba tu sesión y vuelve a intentarlo.";
+  } finally {
+    commentSaving.delete(key);
+    if (epoch === sensitiveEpoch) button.disabled = false;
+  }
+};
 let bitacoraQuery     = "";
 
 // Paginador compacto: con más de 1000 bitácoras, pintar un botón por página
@@ -3248,6 +3335,7 @@ function bitacoraCardHtml(b) {
           `<span class="att-badge">${escHtml(a)}</span>`).join("")}</div>
       </div>
       ${editHistoryField(b)}
+      ${bitacoraCommentsHtml(b.id, "list")}
     </div>`;
 }
 
@@ -3671,6 +3759,7 @@ function renderPersonaBitacoras() {
           `<span class="att-badge">${escHtml(a)}</span>`).join("")}</div>
       </div>
       ${editHistoryField(b)}
+      ${bitacoraCommentsHtml(b.id, "persona")}
     </div>`;
   }).join("");
 
@@ -3815,6 +3904,12 @@ let authGeneration = 0;
 
 function clearSensitiveData() {
   sensitiveEpoch++;
+  commentSaving.clear();
+  commentLoads.clear();
+  document.querySelectorAll(".bitacora-comments").forEach(el => {
+    el.innerHTML = "";
+    el.hidden = true;
+  });
   allAttendance = [];
   attendanceLoaded = false;
   for (const id of ["pAttendance", "securityWrap", "attHistoryWrap", "attStudentList", "attDetailPanel"]) {
