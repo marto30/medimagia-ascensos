@@ -722,6 +722,13 @@ button.list-summary-chip { min-height: var(--tap); cursor: pointer; }
 @media (max-width: 30rem) { .bitacora-top { flex-wrap: wrap; } }
 .bitacora-field { margin-bottom: var(--space-xs); }
 .bitacora-field:last-child { margin-bottom: 0; }
+.bitacora-comments { margin-top: var(--space-s); border-top: 1px dashed var(--line); padding-top: var(--space-xs); }
+.bitacora-comments summary { cursor: pointer; color: var(--sepia-text); }
+.bitacora-comments form { display: grid; gap: var(--space-xs); margin-top: var(--space-s); }
+.bitacora-comments textarea { width: 100%; resize: vertical; }
+.bitacora-comments button { justify-self: start; }
+.bitacora-comment { border-bottom: 1px solid var(--line); padding: var(--space-xs) 0; }
+.bitacora-comment-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 .bitacora-label { display: block; font-size: var(--step--1); font-weight: var(--w-medium); color: var(--sepia-text); }
 .bitacora-proc {
   display: block; white-space: pre-wrap; margin-top: .2rem; padding: var(--space-xs) var(--space-s);
