@@ -869,6 +869,8 @@ function updateAppHeader() {
 }
 
 function goSearch() {
+  clearSensitiveData();
+  isSuperAdmin = false;
   loggedInStudent = null;
   clearSession();              // volver al inicio = cerrar sesión
   selectedAttendants.clear();  // la selección del formulario no debe pasar a otra sesión
@@ -881,6 +883,9 @@ function goSearch() {
   if (eEl) eEl.style.display = "none";
   pendingChanges = {}; isAdmin = false;
   updateAppHeader();
+  return supabase.auth.signOut().then(({ error }) => {
+    if (error) toast("No se pudo cerrar la sesión del servidor. Intenta de nuevo.", "error");
+  }).catch(() => toast("No se pudo cerrar la sesión del servidor. Intenta de nuevo.", "error"));
 }
 window.goSearch = goSearch;
 
@@ -909,14 +914,14 @@ window.backFromProfile = async function() {
   else { loggedInStudent = null; goSearch(); }
 };
 
-window.cerrarSesion = function() {
+window.cerrarSesion = async function() {
   isAdmin = false; isSuperAdmin = false;
   clearTimeout(_sessionTimer); _sessionTimer = null;
   clearSession();
   const secBtn = document.getElementById("tabSecurityBtn");
   if (secBtn) secBtn.style.display = "none";
   updateAppHeader();
-  goSearch();
+  await goSearch();
   toast("Sesión cerrada");
 };
 
@@ -924,6 +929,8 @@ window.cerrarSesion = function() {
 //  STUDENT LOGIN
 // =====================================================================
 window.studentLogin = async function() {
+  clearSensitiveData();
+  isAdmin = false; isSuperAdmin = false;
   const uEl = document.getElementById("loginUser");
   const pEl = document.getElementById("loginPwd");
   const eEl = document.getElementById("loginErr");
@@ -995,6 +1002,10 @@ window.studentLogin = async function() {
 
       // 4. Si ya está migrado, login directo
       if (legacyCreds.auth_user_id) {
+        const { data: verifiedLogin, error: verifiedError } = await supabase.auth.signInWithPassword({
+          email: authEmailForUsername(user), password: pwd
+        });
+        if (verifiedError || !verifiedLogin?.user) throw new Error("Sesión no válida");
         console.log(`[studentLogin] Usuario ya migrado, login directo`);
         await loadAllStudents();
         const studentName = usernameIndex[user.toLowerCase()] || user;
@@ -1592,13 +1603,16 @@ window.toggleGraduation = async function() {
 // =====================================================================
 function applyAdminRole() {
   const secBtn = document.getElementById("tabSecurityBtn");
-  if (secBtn) secBtn.style.display = isSuperAdmin ? "" : "none";
+  if (secBtn) secBtn.style.display = isAdmin ? "" : "none";
   // Sección de config: admin normal ve "Establecer superadmin", superadmin no
   const superSection = document.getElementById("superAdminPwdSection");
   if (superSection) superSection.style.display = isSuperAdmin ? "none" : "block";
 }
 
 window.loginAdmin = async function() {
+  clearSensitiveData();
+  isAdmin = false; isSuperAdmin = false;
+  const epoch = sensitiveEpoch;
   // const remaining = loginLockRemaining(); // Rate limiting deshabilitado
   // if (remaining > 0) {
   //   document.getElementById("adminErr").textContent =
@@ -1647,20 +1661,16 @@ window.loginAdmin = async function() {
         password: password
       });
 
-      return !loginError;
+      return !loginError && !!loginData?.user;
     };
 
     // Probar superadmin primero
     if (await tryAdminLogin("superadmin")) {
       loginSuccess = true;
-      isSuperAdmin = true;
-      isAdmin = true;
       selectedRole = "superadmin";
     } else if (await tryAdminLogin("admin")) {
       // Luego probar admin
       loginSuccess = true;
-      isAdmin = true;
-      isSuperAdmin = false;
       selectedRole = "admin";
     }
 
@@ -1671,6 +1681,15 @@ window.loginAdmin = async function() {
       if (btn) { btn.disabled = false; btn.textContent = "Entrar"; }
       return;
     }
+
+    const verified = await verifiedSession();
+    if (epoch !== sensitiveEpoch || (verified && verified.generation !== authGeneration)) return;
+    if (!verified || !["admin", "superadmin"].includes(verified.role)) {
+      throw new Error("La cuenta no tiene permisos de administrador");
+    }
+    isAdmin = true;
+    isSuperAdmin = verified.role === "superadmin";
+    loggedInStudent = null;
 
     clearLoginLock();
     document.getElementById("adminPwd").value = "";
@@ -1685,6 +1704,7 @@ window.loginAdmin = async function() {
     updateAppHeader();
     show("scAdmin");
     await loadAllStudents();
+    if (!isAdmin || epoch !== sensitiveEpoch) return;
     renderList(); renderAscensos(); renderGraduados();
     resetSessionTimer();
     if (!bitacorasLoaded) {
@@ -1705,6 +1725,7 @@ window.loginAdmin = async function() {
 //  ADMIN — TABS
 // =====================================================================
 window.showTab = function(id) {
+  if (!isAdmin) return;
   show("scAdmin");
   document.querySelectorAll(".admin-section").forEach(el => el.className = "admin-section");
   document.querySelectorAll(".tab[data-tab]").forEach(el => {
@@ -1731,7 +1752,7 @@ window.showTab = function(id) {
   if (id === "tabRanks")        renderRanksEditor();
   if (id === "tabCredentials")  renderCredentialsOverview();
   if (id === "tabAttendance")   renderAttendanceTab();
-  if (id === "tabSecurity")     { if (isSuperAdmin) renderSecurityTab(); }
+  if (id === "tabSecurity")     renderSecurityTab();
 };
 
 // =====================================================================
@@ -3787,54 +3808,124 @@ window.setSuperAdminPwd = async function() {
 // =====================================================================
 //  SEGURIDAD — monitoreo de accesos y bloqueo por IP
 // =====================================================================
-async function initSecurity() {
-  try {
+let visitorHashPromise = null;
+let sensitiveEpoch = 0;
+let authAccountId;
+let authGeneration = 0;
+
+function clearSensitiveData() {
+  sensitiveEpoch++;
+  allAttendance = [];
+  attendanceLoaded = false;
+  for (const id of ["pAttendance", "securityWrap", "attHistoryWrap", "attStudentList", "attDetailPanel"]) {
+    const el = document.getElementById(id);
+    if (el) { el.innerHTML = ""; if (id === "attDetailPanel") el.remove(); }
+  }
+  const secBtn = document.getElementById("tabSecurityBtn");
+  if (secBtn) secBtn.style.display = "none";
+}
+
+async function verifiedSession() {
+  const generation = authGeneration;
+  const { data, error } = await supabase.auth.getUser();
+  if (generation !== authGeneration) return null;
+  if (error || !data?.user) return null;
+  if (authAccountId !== undefined && authAccountId !== data.user.id) return null;
+  authAccountId = data.user.id;
+  const { data: role, error: roleError } = await supabase.rpc("current_user_role");
+  if (generation !== authGeneration || authAccountId !== data.user.id) return null;
+  if (roleError) throw roleError;
+  return { user: data.user, role, generation };
+}
+
+async function getVisitorHash() {
+  if (!visitorHashPromise) visitorHashPromise = (async () => {
     const ctrl = new AbortController();
     const tid  = setTimeout(() => ctrl.abort(), 4000);
-    const res  = await fetch("https://api.ipify.org?format=json", { signal: ctrl.signal });
-    clearTimeout(tid);
-    const { ip } = await res.json();
-    // Nunca almacenamos la IP real — solo su hash irreversible
-    const ipHash = await hashIP(ip);
-    visitorIP = ipHash; // guardamos el hash, no la IP
+    try {
+      const res = await fetch("https://api.ipify.org?format=json", { signal: ctrl.signal });
+      const { ip } = await res.json();
+      visitorIP = await hashIP(ip);
+      return visitorIP;
+    } finally { clearTimeout(tid); }
+  })().catch(error => { visitorHashPromise = null; throw error; });
+  return visitorHashPromise;
+}
 
-    const { data: blocked, error: blockedErr } = await supabase
-      .from("blocked_ips")
-      .select("*")
-      .eq("ip_hash", ipHash)
-      .maybeSingle();
-    if (blockedErr) {
-      console.warn("No se pudo comprobar blocked_ips:", blockedErr);
+async function initSecurity() {
+  try {
+    const ipHash = await getVisitorHash();
+    // The server derives account identity; a browser IP hash is telemetry only.
+    const { data, error } = await supabase.rpc("record_access", {
+      p_ip_hash: ipHash, p_ua: uaSummary(navigator.userAgent)
+    });
+    if (error) throw error;
+    if (data?.blocked) { clearSensitiveData(); isAdmin = false; isSuperAdmin = false; show("scBlocked"); }
+  } catch (error) { console.warn("No se pudo registrar el acceso:", error?.message || error); }
+}
+
+function watchAccessAuth() {
+  supabase.auth.onAuthStateChange((event, session) => {
+    const accountEvent = ["SIGNED_IN", "SIGNED_OUT", "INITIAL_SESSION"].includes(event);
+    const nextAccountId = session?.user?.id || null;
+    const switchedAccount = accountEvent && authAccountId !== undefined && nextAccountId !== authAccountId;
+    if (accountEvent) {
+      // Invalidate in-flight verification even before an administrator UI exists.
+      if (event === "SIGNED_OUT" || switchedAccount) authGeneration++;
+      authAccountId = nextAccountId;
     }
-    if (blocked) { show("scBlocked"); return; }
+    if (event === "SIGNED_OUT" || (switchedAccount && (isAdmin || loggedInStudent))) {
+      clearSensitiveData(); isAdmin = false; isSuperAdmin = false; loggedInStudent = null;
+      clearSession(); updateAppHeader();
+      if (currentScreen !== "scBlocked") show("scSearch");
+    }
+    // Avoid database calls inside Supabase's synchronous auth callback.
+    if (event === "SIGNED_IN") setTimeout(() => initSecurity(), 0);
+  });
+}
 
-    // Registrar visita: solo hash + timestamp + navegador resumido (fire & forget)
-    supabase
-      .from("access_logs")
-      .insert({
-        ip_hash: ipHash,
-        ts: new Date().toISOString(),
-        ua: uaSummary(navigator.userAgent)
-      })
-      .catch(() => {});
-  } catch { /* fallo silencioso */ }
+function groupAccessLogs(logs) {
+  const groups = new Map();
+  for (const log of logs) {
+    if (!/^[a-f0-9]{64}$/.test(log.ip_hash || "")) continue;
+    let group = groups.get(log.ip_hash);
+    if (!group) {
+      group = { ip_hash: log.ip_hash, ts: log.ts || "", ua: log.ua, users: new Map(), count: 0 };
+      groups.set(log.ip_hash, group);
+    }
+    group.count++;
+    if ((log.ts || "") > group.ts) { group.ts = log.ts; group.ua = log.ua; }
+    if (log.user_id) group.users.set(log.user_id, log.profile?.display_name || log.profile?.username || log.user_id);
+  }
+  return [...groups.values()].sort((a, b) => b.ts.localeCompare(a.ts));
 }
 
 async function renderSecurityTab() {
   const wrap = document.getElementById("securityWrap");
-  if (!wrap) return;
+  if (!wrap || !isAdmin) return;
+  const epoch = sensitiveEpoch;
   wrap.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando seguridad…</div>';
   try {
-    const [{ data: logs }, { data: blockedList }] = await Promise.all([
-      supabase.from("access_logs").select("*"),
-      supabase.from("blocked_ips").select("*")
-    ]);
-
-    const sortedLogs = (logs || []).sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
-    const recent = sortedLogs.slice(0, 100);
+    // Group after pagination so old account associations are not silently lost.
+    const logs = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await supabase.from("access_logs")
+        .select("id, ip_hash, ts, ua, user_id, profile:profiles(username, display_name)")
+        .order("id", { ascending: true }).range(offset, offset + 999);
+      if (!isAdmin || epoch !== sensitiveEpoch) return;
+      if (error) throw error;
+      logs.push(...(data || []));
+      if ((data || []).length < 1000) break;
+    }
+    const { data: blockedList, error } = await supabase.from("blocked_ips").select("*");
+    if (!isAdmin || epoch !== sensitiveEpoch) return;
+    if (error) throw error;
+    const groups = groupAccessLogs(logs);
+    const associated = groups.filter(g => g.users.size);
+    const anonymous = groups.filter(g => !g.users.size);
 
     const blocked = {};
-    (blockedList || []).forEach(b => { blocked[b.ip_hash] = b; });
+    (blockedList || []).filter(b => /^[a-f0-9]{64}$/.test(b.ip_hash)).forEach(b => { blocked[b.ip_hash] = b; });
 
     // Los hashes de IP son hex seguros — no necesitan escapeHtml
     // — IPs bloqueadas —
@@ -3851,10 +3942,10 @@ async function renderSecurityTab() {
         </table>`;
 
     // — Registro de accesos —
-    const logsHtml = !recent.length
+    const logsHtml = (recent, registered) => !recent.length
       ? '<p class="empty-state">Sin registros de acceso aún.</p>'
       : `<table class="student-table">
-          <thead><tr><th>Hash IP</th><th>Fecha</th><th>Navegador</th><th></th></tr></thead>
+          <thead><tr><th>Hash IP</th>${registered ? '<th>Usuarios asociados</th>' : ''}<th>Último acceso</th><th>Navegador</th><th>Accesos</th><th></th></tr></thead>
           <tbody>${recent.map(l => {
             const isBlk = !!blocked[l.ip_hash];
             return `<tr class="${isBlk ? "blocked-row" : ""}">
@@ -3862,8 +3953,10 @@ async function renderSecurityTab() {
                 ${l.ip_hash === visitorIP ? '<span class="ip-you-badge">tú</span>' : ""}
                 ${isBlk ? '<span class="ip-blocked-badge">bloqueada</span>' : ""}
               </td>
+              ${registered ? `<td>${[...l.users.values()].map(escHtml).join(", ")}</td>` : ""}
               <td>${l.ts ? formatDate(l.ts) : "—"}</td>
               <td class="ua-cell">${escHtml(l.ua || "—")}</td>
+              <td>${l.count}</td>
               <td>${!isBlk
                 ? `<button class="btn sm danger" onclick="blockIP('${l.ip_hash}')">Bloquear</button>`
                 : `<button class="btn sm success" onclick="unblockIP('${l.ip_hash}')">Desbloquear</button>`}
@@ -3878,17 +3971,24 @@ async function renderSecurityTab() {
         ${blockedHtml}
       </div>
       <div class="sec-section" style="margin-top:1.6rem">
-        <p class="sec-title">Últimos ${recent.length} accesos
+        <p class="sec-title">IPs con usuario registrado <span class="sec-count">${associated.length}</span>
           <button class="btn sm ghost" style="margin-left:.6rem" onclick="clearOldLogs()">Limpiar logs</button>
         </p>
-        ${logsHtml}
+        <p class="muted-note">La asociación se registra al iniciar sesión. Una conexión puede ser compartida por varios usuarios. Se muestran hashes, no IPs originales.</p>
+        ${logsHtml(associated, true)}
+      </div>
+      <div class="sec-section" style="margin-top:1.6rem">
+        <p class="sec-title">IPs sin usuario registrado <span class="sec-count">${anonymous.length}</span></p>
+        <p class="muted-note">Accesos sin ninguna cuenta asociada en los registros disponibles.</p>
+        ${logsHtml(anonymous, false)}
       </div>`;
   } catch (e) {
-    wrap.innerHTML = `<p class="notice" style="color:var(--red)">Error al cargar datos: ${e.message}</p>`;
+    if (isAdmin && epoch === sensitiveEpoch) wrap.innerHTML = `<p class="notice" style="color:var(--red)">Error al cargar datos: ${escHtml(e?.message || "Comprueba tu conexión.")}</p>`;
   }
 }
 
 window.blockIP = async function(ipHash) {
+  if (!isAdmin) return;
   const ok = await showModal(
     "Bloquear IP",
     `¿Bloquear acceso desde ${ipHash}? No podrá acceder a la web.`,
@@ -3911,6 +4011,7 @@ window.blockIP = async function(ipHash) {
 };
 
 window.unblockIP = async function(ipHash) {
+  if (!isAdmin) return;
   try {
     const { error } = await supabase
       .from("blocked_ips")
@@ -3925,6 +4026,7 @@ window.unblockIP = async function(ipHash) {
 };
 
 window.clearOldLogs = async function() {
+  if (!isAdmin) return;
   const ok = await showModal(
     "Limpiar registros",
     "¿Eliminar todos los registros de acceso? Los bloqueos activos no se verán afectados.",
@@ -4049,38 +4151,46 @@ window.addEventListener("beforeunload", e => {
 // =====================================================================
 //  AUTO-LOGIN — restaura la sesión guardada (si sigue siendo válida)
 // =====================================================================
-function tryAutoLogin() {
+async function tryAutoLogin() {
   const d = loadSession();
   if (!d) return;
   // No restaurar si el visitante está bloqueado
   const blk = document.getElementById("scBlocked");
   if (currentScreen === "scBlocked" || (blk && blk.style.display === "block")) return;
 
-  if (d.kind === "student" && d.name && allStudents[d.name]) {
-    window.loggedInStudent = d.name;
-    updateAppHeader();
-    loadAllStudents().then(() => {
-      openProfile(d.name);
-    }).catch(() => {
-      openProfile(d.name);
-    });
-    return;
-  }
-
-  if (d.kind === "admin") {
-    window.isAdmin = true;
-    window.isSuperAdmin = d.role === "superadmin";
-    applyAdminRole();
-    updateAppHeader();
-    show("scAdmin");
-    loadAllStudents().then(() => {
-      renderList(); renderAscensos(); renderGraduados();
-      resetSessionTimer();
+  const epoch = sensitiveEpoch;
+  try {
+    const verified = await verifiedSession();
+    if (epoch !== sensitiveEpoch) return;
+    if (!verified) { clearSession(); return; }
+    if (verified.generation !== authGeneration) return;
+    if (d.kind === "admin") {
+      if (!["admin", "superadmin"].includes(verified.role)) { clearSession(); return; }
+      isAdmin = true;
+      isSuperAdmin = verified.role === "superadmin";
+      loggedInStudent = null;
+      applyAdminRole();
+      updateAppHeader();
+      show("scAdmin");
+      await loadAllStudents();
+      if (!isAdmin || epoch !== sensitiveEpoch) return;
+      renderList(); renderAscensos(); renderGraduados(); resetSessionTimer();
       if (!bitacorasLoaded) {
-        loadBitacoras().then(() => { bitacorasLoaded = true; renderList(); }).catch(() => {});
+        loadBitacoras().then(() => { if (isAdmin && epoch === sensitiveEpoch) { bitacorasLoaded = true; renderList(); } }).catch(() => {});
       }
-    });
-  }
+    } else if (d.kind === "student" && d.userId === verified.user.id) {
+      const { data: profile, error } = await supabase.from("profiles")
+        .select("username, display_name").eq("id", verified.user.id).single();
+      if (error) throw error;
+      if (epoch !== sensitiveEpoch || verified.generation !== authGeneration) return;
+      const name = usernameIndex[profile?.username?.toLowerCase()];
+      if (!name || !allStudents[name]) { clearSession(); return; }
+      isAdmin = false; isSuperAdmin = false;
+      loggedInStudent = name;
+      updateAppHeader();
+      openProfile(name);
+    } else { clearSession(); }
+  } catch (error) { clearSensitiveData(); isAdmin = false; isSuperAdmin = false; clearSession(); }
 }
 
 // =====================================================================
@@ -4095,6 +4205,7 @@ enhancePasswordFields();
 initScrollTop();
 
 initSecurity(); // corre en paralelo: detecta IP, verifica bloqueo y registra visita
+watchAccessAuth();
 
 loadRanksConfig()
   .then(() => Promise.all([loadAllStudents(), loadAdminConfig()]))
@@ -4466,16 +4577,20 @@ function renderEditSelectedPotions() {
 let attendanceLoaded = false;
 
 async function loadAttendance() {
+  if (!isAdmin) return;
+  const epoch = sensitiveEpoch;
   const { data: sessions, error: sessErr } = await supabase
     .from("attendance_sessions")
     .select("id, session_date, title, created_by")
     .order("session_date", { ascending: false });
-  if (sessErr) { console.error("Error cargando asistencias:", sessErr); return; }
+  if (!isAdmin || epoch !== sensitiveEpoch) return;
+  if (sessErr) throw sessErr;
 
   const { data: records, error: recErr } = await supabase
     .from("attendance_records")
     .select("session_id, student_id, attended");
-  if (recErr) { console.error("Error cargando registros:", recErr); return; }
+  if (!isAdmin || epoch !== sensitiveEpoch) return;
+  if (recErr) throw recErr;
 
   const recBySession = {};
   (records || []).forEach(r => {
@@ -4501,6 +4616,7 @@ function idToName(studentId) {
 }
 
 function renderAttendanceTab() {
+  if (!isAdmin) return;
   const dateInput = document.getElementById("attDate");
   if (!dateInput.value) {
     dateInput.value = new Date().toISOString().slice(0, 10);
@@ -4528,6 +4644,7 @@ function renderAttendanceTab() {
 }
 
 function renderAttendanceHistory() {
+  if (!isAdmin) return;
   const wrap = document.getElementById("attHistoryWrap");
   if (!allAttendance.length) {
     wrap.innerHTML = `<p class="muted-note">No hay sesiones de asistencia registradas.</p>`;
@@ -4553,6 +4670,7 @@ function renderAttendanceHistory() {
 }
 
 window.showAttendanceDetail = function(sessionId) {
+  if (!isAdmin) return;
   const session = allAttendance.find(s => s.id === sessionId);
   if (!session) return;
 
@@ -4593,6 +4711,7 @@ window.showAttendanceDetail = function(sessionId) {
 function escJsAttr(id) { return String(id).replace(/'/g, "\\'"); }
 
 window.editAttendanceSession = function(sessionId) {
+  if (!isAdmin) return;
   const session = allAttendance.find(s => s.id === sessionId);
   if (!session) return;
 
@@ -4639,10 +4758,13 @@ window.editAttendanceSession = function(sessionId) {
 };
 
 window.attEditSelectAll = function(checked) {
+  if (!isAdmin) return;
   document.querySelectorAll("#attEditList input[type=checkbox]").forEach(cb => cb.checked = checked);
 };
 
 window.saveAttendanceEdit = async function(sessionId) {
+  if (!isAdmin) return;
+  const epoch = sensitiveEpoch;
   const session = allAttendance.find(s => s.id === sessionId);
   const errEl = document.getElementById("attEditErr");
   if (!session) return;
@@ -4661,12 +4783,14 @@ window.saveAttendanceEdit = async function(sessionId) {
       .from("attendance_records")
       .delete()
       .eq("session_id", sessionId);
+    if (!isAdmin || epoch !== sensitiveEpoch) return;
     if (delErr) throw delErr;
 
     if (records.length) {
       const { error: insErr } = await supabase
         .from("attendance_records")
         .insert(records);
+      if (!isAdmin || epoch !== sensitiveEpoch) return;
       if (insErr) throw insErr;
     }
 
@@ -4675,16 +4799,20 @@ window.saveAttendanceEdit = async function(sessionId) {
     showAttendanceDetail(sessionId);
   } catch (err) {
     console.error("Error actualizando asistencia:", err);
+    if (!isAdmin || epoch !== sensitiveEpoch) return;
     errEl.textContent = `Error al guardar: ${err?.message || "Comprueba tu conexión."}`;
     errEl.style.display = "block";
   }
 };
 
 window.attSelectAll = function(checked) {
+  if (!isAdmin) return;
   document.querySelectorAll("#attStudentList input[type=checkbox]").forEach(cb => cb.checked = checked);
 };
 
 window.saveAttendance = async function() {
+  if (!isAdmin) return;
+  const epoch = sensitiveEpoch;
   const dateVal = document.getElementById("attDate").value;
   const titleVal = document.getElementById("attTitle").value.trim() || "Clase";
   const okEl = document.getElementById("attOk");
@@ -4718,12 +4846,14 @@ window.saveAttendance = async function() {
       .insert({ session_date: dateVal, title: titleVal, created_by: "admin" })
       .select("id")
       .single();
+    if (!isAdmin || epoch !== sensitiveEpoch) return;
     if (sessErr) throw sessErr;
 
     const inserts = records.map(r => ({ session_id: session.id, ...r }));
     const { error: recErr } = await supabase
       .from("attendance_records")
       .insert(inserts);
+    if (!isAdmin || epoch !== sensitiveEpoch) return;
     if (recErr) throw recErr;
 
     allAttendance.unshift({
@@ -4743,6 +4873,7 @@ window.saveAttendance = async function() {
     renderAttendanceHistory();
   } catch (err) {
     console.error("Error guardando asistencia:", err);
+    if (!isAdmin || epoch !== sensitiveEpoch) return;
     errEl.textContent = `Error al guardar: ${err?.message || "Comprueba tu conexión."}`;
     errEl.style.display = "block";
   }
@@ -4756,7 +4887,7 @@ function renderProfileAttendance(name) {
   if (!sid || !attendanceLoaded) {
     if (!attendanceLoaded) {
       el.innerHTML = "";
-      loadAttendance().then(() => renderProfileAttendance(name)).catch(() => {});
+      loadAttendance().then(() => { if (attendanceLoaded) renderProfileAttendance(name); }).catch(() => {});
     }
     return;
   }
@@ -4813,4 +4944,3 @@ window.removeEditSelectedPotion = function(id) {
   editSelectedPotions.delete(id);
   renderEditSelectedPotions();
 };
-                                                                          
